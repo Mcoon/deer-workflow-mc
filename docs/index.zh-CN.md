@@ -68,6 +68,15 @@ Deer Workflow 也支持 Claude Code。如果更愿意使用它，请安装并登
 [Claude Code CLI](https://claude.com/product/claude-code)，然后在下一步使用
 `create --agent claude`。
 
+同时支持 Pi Coding Agent 0.84.1。安装并认证官方 CLI 后，可使用
+`create --agent pi`：
+
+```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.84.1
+pi auth check
+pi --version
+```
+
 ## 创建第一个 Workflow
 
 描述编排目标，而不是具体实现：
@@ -92,7 +101,8 @@ deer-workflow skill install
 ```
 
 该命令会把 `workflow-creator` 复制到已有的 `~/.agents/skills` 和
-`~/.claude/skills` 目录，并报告每个实际安装或跳过的位置。
+`~/.claude/skills` 目录，并报告每个实际安装或跳过的位置。Pi 0.84.1 会发现共享
+的 `~/.agents/skills` 目标，因此无须重复安装另一份 Skill。
 
 ## 阅读生成的模块
 
@@ -258,10 +268,11 @@ Typed Subscription、自定义输出位置、嵌套 Workflow、结果序列化�
 
 ## 选择 Agent Runtime
 
-`create` 命令接受 `--agent codex|claude`，默认使用 Codex：
+`create` 命令接受 `--agent codex|claude|pi`，默认使用 Codex：
 
 ```bash
 deer-workflow create --agent claude "描述需要的 Workflow" > workflow.ts
+deer-workflow create --agent pi "描述需要的 Workflow" > workflow.ts
 ```
 
 该选项只选择生成器使用的 Harness。Workflow 模块通过导入的 TypeScript
@@ -278,7 +289,24 @@ const result = await runtime.run("Inspect this repository.", {
 });
 ```
 
-两个 Adapter 都实现同一个厂商中立的 `Agent` 接口。提供 Schema 的调用会约束并
+如需直接调用 Pi，请实例化它的 Adapter：
+
+```typescript
+import { PiAgent } from "@deerwork-ai/deer-workflow/agents";
+
+const runtime = new PiAgent({ model: "anthropic/claude-sonnet-4" });
+const result = await runtime.run("Inspect this repository.", {
+  sandbox: "read-only",
+});
+```
+
+Pi 0.84.1 没有内置操作系统 Sandbox。`PiAgent` 通过非修改型工具 allowlist
+落实 `read-only`；`workspace-write` 使用受路径守卫限制的 edit/write 工具，
+写入范围为 `cwd` 与 `additionalWritableDirectories`，并且不启用 bash；
+`danger-full-access` 具有 Pi 进程本身的权限。如需宿主机隔离，应使用外部容器或
+虚拟机。
+
+三个 Adapter 都实现同一个厂商中立的 `Agent` 接口。提供 Schema 的调用会约束并
 解析最终响应，但不会把完整 Agent Loop 降级成单次模型生成。
 
 ## 继续学习

@@ -56,13 +56,14 @@ instead drives the TUI. Default-mode redirected stderr remains pure JSONL.
 There is no global API injection. Caller input is the Handler's first
 parameter, conventionally named `args`; it is not a `globalThis` property.
 
-The CLI can ask the default Codex Agent, or Claude Code selected with
-`--agent claude`, to apply this [bundled Skill](../) and emit a new module as
-raw source:
+The CLI can ask the default Codex Agent, Claude Code selected with
+`--agent claude`, or Pi selected with `--agent pi` to apply this
+[bundled Skill](../) and emit a new module as raw source:
 
 ```sh
 deer-workflow create "Describe the Workflow" > workflow.ts
 deer-workflow create --agent claude "Describe the Workflow" > workflow.ts
+deer-workflow create --agent pi "Describe the Workflow" > workflow.ts
 ```
 
 `--agent` is scoped to `create` and selects the generator harness. There is no
@@ -85,6 +86,7 @@ deer-workflow skill install
 
 The command copies `workflow-creator` into existing `~/.agents/skills` and
 `~/.claude/skills` directories and reports installed or skipped destinations.
+Pi 0.84.1 discovers the shared `~/.agents/skills` destination.
 
 ## Imports
 

@@ -92,6 +92,8 @@ export function printSkillInstallUsage(): void {
 Installs into existing user Skill directories:
   ~/.agents/skills
   ~/.claude/skills
+
+Pi 0.84.1 discovers ~/.agents/skills.
 `);
 }
 

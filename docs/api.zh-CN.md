@@ -256,6 +256,69 @@ interface ClaudeAgentConfig {
 无法解析配置的可执行文件时，`run()` 会在启动进程之前抛出
 `ClaudeCliNotFoundError`。错误信息包含官方 npm 安装命令和登录检查。
 
+### `PiAgent`
+
+```typescript
+class PiAgent implements Agent {
+  constructor(config?: PiAgentConfig);
+
+  run<TOutput = string>(
+    prompt: string,
+    options?: AgentOptions,
+  ): Promise<TOutput>;
+}
+```
+
+面向 Pi Coding Agent 0.84.1 的 Agent Harness。文本调用通过 stdin 把 Prompt
+发送给临时的 `pi --print` 进程。Schema-backed 调用使用 `pi --mode json`，并
+为本次运行创建一个 Extension；该 Extension 注册 terminating final-response
+工具，以调用方提供的 JSON Schema 作为工具参数 Schema。`PiAgent` 只返回成功
+`tool_execution_end` 事件中的 details，不会把尽力生成的 JSON 文本当成已校验
+响应。
+
+```typescript
+import { PiAgent } from "@deerwork-ai/deer-workflow/agents";
+
+const runtime = new PiAgent({ model: "anthropic/claude-sonnet-4" });
+const result = await runtime.run("Inspect this repository.", {
+  sandbox: "read-only",
+});
+```
+
+```typescript
+interface PiAgentConfig {
+  command?: string;
+  commandArgs?: string[];
+  cwd?: string;
+  model?: string;
+  sandbox?: AgentSandbox;
+  ephemeral?: boolean;
+  extraArgs?: string[];
+  env?: Record<string, string | undefined>;
+}
+```
+
+Pi 0.84.1 不提供操作系统 Sandbox，因此 `PiAgent` 对共享策略采用保守映射：
+
+- `read-only` 只启用 `read`、`grep`、`find` 和 `ls`；
+- `workspace-write` 额外启用 `edit` 和 `write`，加载路径守卫，把写入限制在
+  `cwd` 与 `additionalWritableDirectories`，并且不启用 bash；
+- `danger-full-access` 使用 Pi 进程正常拥有的宿主机能力。
+
+省略 `sandbox` 时，Pi 保留正常的宿主机进程行为。无人值守自动化应显式设置策略。
+
+受约束模式会禁用自动发现的 Extension 和未经批准的项目资源，避免它们绕过
+活动工具策略。规范路径检查会拒绝符号链接和目录穿越逃逸。如需在不受限制的
+命令执行下隔离宿主机，请使用外部容器、虚拟机或其他操作系统边界。
+
+`extraArgs` 可以配置不影响协议的 Pi 功能，但输出、会话、Extension、Trust 和
+工具控制参数由 Harness 保留，在 `extraArgs` 中提供时会被拒绝。
+
+进程失败、非法 JSONL 或缺少结构化结果时抛出 `PiAgentError`，并保留
+`exitCode`、`stdout` 和 `stderr`。找不到可执行文件时，会在创建临时文件前抛出
+`PiCliNotFoundError`，其中包含 Pi 0.84.1 的安装和认证步骤。每次运行生成的
+Extension 与策略文件都会在成功、失败或取消后删除。
+
 ## Flow
 
 ### `parallel()`
@@ -500,16 +563,18 @@ DeerWork 会让选中的 Coding Agent 应用
 ```text
 deer-workflow create "Describe the Workflow"
 deer-workflow create --agent claude "Describe the Workflow"
+deer-workflow create --agent pi "Describe the Workflow"
 echo "Describe the Workflow" | deer-workflow create
 ```
 
-`create --agent` 接受 `codex` 或 `claude`，默认值为 `codex`。该选项只选择
+`create --agent` 接受 `codex`、`claude` 或 `pi`，默认值为 `codex`。该选项只选择
 Workflow 生成器使用的 Harness；CLI 不提供独立的通用 Agent 命令。Workflow
 模块应使用 TypeScript `agent()` API。
 `create` 从已安装的包中定位[内置 Skill](../skills/workflow-creator/)，让选中的
 Agent 读取它及其要求的 references，然后追加用户 Prompt。Agent 使用只读
-Sandbox；Codex 还允许在 Git 仓库外运行。命令会移除包裹完整响应的一层
-Markdown 源码围栏，因此 stdout 可以直接重定向到 `.ts` 或 `.js` 文件。生成
+Sandbox；Codex 还允许在 Git 仓库外运行，Pi 则使用只读内置工具 allowlist。
+命令会移除包裹完整响应的一层 Markdown 源码围栏，因此 stdout 可以直接重定向
+到 `.ts` 或 `.js` 文件。生成
 开始前，stdout 会先写入一条包含所选 Agent 名称的有效源码注释，因此重定向
 目标会立即成为非空文件。生成的 Workflow 不会自动执行。
 
@@ -529,7 +594,8 @@ deer-workflow skill install
 
 `skill install` 会检查已有的 `~/.agents/skills` 与 `~/.claude/skills` 目录，
 把 `workflow-creator` 复制到其中每个存在的目录，必要时以包内版本更新文件，
-跳过缺失目录，并报告每个目标位置。它不会创建 Agent 的上级 Skill 目录。
+跳过缺失目录，并报告每个目标位置。它不会创建 Agent 的上级 Skill 目录。Pi
+0.84.1 会发现共享的 `~/.agents/skills` 目标。
 
 运行 Workflow 模块：
 

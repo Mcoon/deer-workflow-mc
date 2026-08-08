@@ -41,6 +41,7 @@
     "agent",
     "codex",
     "dynamic-workflow",
+    "pi",
     "workflow"
   ],
   "license": "MIT",
