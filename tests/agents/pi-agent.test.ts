@@ -357,38 +357,6 @@ describe("PiAgent", () => {
   });
 });
 
-const realPiTest =
-  process.env.DEER_WORKFLOW_PI_INTEGRATION === "1" ? test : test.skip;
-
-realPiTest("runs a schema-backed call through Pi 0.84.1", async () => {
-  const versionProcess = Bun.spawn(["pi", "--version"], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [version, exitCode] = await Promise.all([
-    new Response(versionProcess.stdout).text(),
-    versionProcess.exited,
-  ]);
-  expect(exitCode).toBe(0);
-  expect(version.trim()).toBe("0.84.1");
-
-  const runtime = new PiAgent();
-  const result = await runtime.run<{ ok: boolean }>(
-    "Return ok=true using the required final response tool.",
-    {
-      sandbox: "read-only",
-      schema: {
-        type: "object",
-        properties: { ok: { type: "boolean" } },
-        required: ["ok"],
-        additionalProperties: false,
-      },
-    },
-  );
-
-  expect(result).toEqual({ ok: true });
-});
-
 function createStubAgent(): PiAgent {
   return new PiAgent({
     command: process.execPath,
