@@ -266,6 +266,75 @@ When the configured executable cannot be resolved, `run()` throws
 `ClaudeCliNotFoundError` before starting a process. Its message includes the
 official npm installation command and login check.
 
+### `PiAgent`
+
+```typescript
+class PiAgent implements Agent {
+  constructor(config?: PiAgentConfig);
+
+  run<TOutput = string>(
+    prompt: string,
+    options?: AgentOptions,
+  ): Promise<TOutput>;
+}
+```
+
+An Agent Harness targeting Pi Coding Agent 0.84.1. Text calls send the prompt
+over stdin to an ephemeral `pi --print` process. Schema-backed calls use
+`pi --mode json` and a unique per-run extension that registers a terminating
+final-response tool with the supplied JSON Schema as its parameter schema.
+`PiAgent` returns the details from the successful `tool_execution_end` event;
+it does not treat best-effort JSON text as a validated response.
+
+```typescript
+import { PiAgent } from "@deerwork-ai/deer-workflow/agents";
+
+const runtime = new PiAgent({ model: "anthropic/claude-sonnet-4" });
+const result = await runtime.run("Inspect this repository.", {
+  sandbox: "read-only",
+});
+```
+
+```typescript
+interface PiAgentConfig {
+  command?: string;
+  commandArgs?: string[];
+  cwd?: string;
+  model?: string;
+  sandbox?: AgentSandbox;
+  ephemeral?: boolean;
+  extraArgs?: string[];
+  env?: Record<string, string | undefined>;
+}
+```
+
+Pi 0.84.1 does not provide an operating-system Sandbox. `PiAgent` therefore
+maps the shared policies conservatively:
+
+- `read-only` enables only `read`, `grep`, `find`, and `ls`;
+- `workspace-write` also enables `edit` and `write`, loads a path guard for
+  `cwd` and `additionalWritableDirectories`, and does not enable bash; and
+- `danger-full-access` uses Pi's normal host-process capabilities.
+
+When `sandbox` is omitted, Pi retains its normal host-process behavior. Set an
+explicit policy for unattended automation.
+
+Discovered extensions and unapproved project resources are disabled for the
+constrained modes so they cannot bypass the active tool policy. Symlink and
+directory-traversal escapes are rejected by canonical path checks. Use an
+external container, VM, or other OS boundary when unrestricted command
+execution also needs host isolation.
+
+`extraArgs` may configure non-protocol Pi features, but output, session,
+extension, trust, and tool-control flags are reserved by the Harness and are
+rejected when supplied there.
+
+Process failures, invalid JSONL, and missing structured results throw
+`PiAgentError`, which retains `exitCode`, `stdout`, and `stderr`. A missing
+executable throws `PiCliNotFoundError` before temporary files are created and
+includes installation and authentication steps for Pi 0.84.1. Per-run
+extensions and policy files are removed after success, failure, or abort.
+
 ## Flow
 
 ### `parallel()`
@@ -520,10 +589,11 @@ and generate a runnable TypeScript Workflow module:
 ```text
 deer-workflow create "Describe the Workflow"
 deer-workflow create --agent claude "Describe the Workflow"
+deer-workflow create --agent pi "Describe the Workflow"
 echo "Describe the Workflow" | deer-workflow create
 ```
 
-`create --agent` accepts `codex` or `claude` and defaults to `codex`. The
+`create --agent` accepts `codex`, `claude`, or `pi` and defaults to `codex`. The
 option selects only the Workflow generator harness; there is no standalone
 general-purpose Agent CLI command. Use the TypeScript `agent()` API inside
 Workflow modules.
@@ -531,7 +601,8 @@ Workflow modules.
 [bundled Skill](../skills/workflow-creator/) from the installed package, asks
 the selected Agent to read it and its required references, then appends the
 user's prompt. The Agent runs with a read-only sandbox. Codex may also run
-outside a Git repository. One enclosing Markdown source fence is removed, so
+outside a Git repository; Pi uses its read-only built-in tool allowlist. One
+enclosing Markdown source fence is removed, so
 stdout can be redirected directly to a `.ts` or `.js` file. Before generation
 begins, stdout receives a valid source comment naming the selected Agent, so a
 redirected target is immediately non-empty while generation runs. The
@@ -556,7 +627,8 @@ deer-workflow skill install
 `~/.claude/skills` directories. It copies `workflow-creator` into each
 directory that exists, updates files from the bundled version when necessary,
 skips missing directories, and reports every destination. It does not create
-an Agent's parent Skill directory.
+an Agent's parent Skill directory. Pi 0.84.1 discovers the shared
+`~/.agents/skills` destination.
 
 Run a Workflow module:
 

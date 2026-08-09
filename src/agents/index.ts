@@ -11,6 +11,7 @@ export type {
   JsonPrimitive,
   JsonSchema,
   JsonValue,
+  PiAgentConfig,
 } from "./types";
 export {
   ClaudeAgent,
@@ -22,6 +23,7 @@ export {
   CodexAgentError,
   CodexCliNotFoundError,
 } from "./codex-agent";
+export { PiAgent, PiAgentError, PiCliNotFoundError } from "./pi-agent";
 
 /**
  * Shared default Agent runtime backed by Codex CLI.

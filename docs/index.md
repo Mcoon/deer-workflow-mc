@@ -72,6 +72,15 @@ Claude Code is also supported. If you prefer it, install and sign in to
 [Claude Code CLI](https://claude.com/product/claude-code), then use
 `create --agent claude` in the next step.
 
+Pi Coding Agent 0.84.1 is supported as well. Install and authenticate the
+official CLI, then use `create --agent pi`:
+
+```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.84.1
+pi auth check
+pi --version
+```
+
 ## Create your first Workflow
 
 Describe the orchestration rather than its implementation:
@@ -100,7 +109,8 @@ deer-workflow skill install
 
 The command copies `workflow-creator` into existing `~/.agents/skills` and
 `~/.claude/skills` directories and reports every installed or skipped
-destination.
+destination. Pi 0.84.1 discovers the shared `~/.agents/skills` destination, so
+it does not need a duplicate Skill installation.
 
 ## Read the generated module
 
@@ -276,10 +286,11 @@ serialization, and the complete event schema, see the
 
 ## Choose an Agent runtime
 
-The `create` command accepts `--agent codex|claude` and defaults to Codex:
+The `create` command accepts `--agent codex|claude|pi` and defaults to Codex:
 
 ```bash
 deer-workflow create --agent claude "Describe the Workflow" > workflow.ts
+deer-workflow create --agent pi "Describe the Workflow" > workflow.ts
 ```
 
 This option selects the generator harness only. Workflow modules invoke Agent
@@ -297,7 +308,24 @@ const result = await runtime.run("Inspect this repository.", {
 });
 ```
 
-Both adapters implement the same vendor-neutral `Agent` interface. A
+For direct Pi calls, instantiate its adapter:
+
+```typescript
+import { PiAgent } from "@deerwork-ai/deer-workflow/agents";
+
+const runtime = new PiAgent({ model: "anthropic/claude-sonnet-4" });
+const result = await runtime.run("Inspect this repository.", {
+  sandbox: "read-only",
+});
+```
+
+Pi 0.84.1 has no built-in operating-system Sandbox. `PiAgent` enforces
+`read-only` with a non-mutating tool allowlist. `workspace-write` uses guarded
+edit/write tools scoped to `cwd` and `additionalWritableDirectories` and does
+not enable bash. `danger-full-access` has the permissions of the Pi process;
+use an external container or VM when host isolation is required.
+
+All three adapters implement the same vendor-neutral `Agent` interface. A
 schema-backed call constrains and parses the final response without reducing
 the complete Agent Loop to a single model completion.
 

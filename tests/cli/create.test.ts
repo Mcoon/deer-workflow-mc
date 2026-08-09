@@ -80,6 +80,44 @@ console.log(JSON.stringify({
     "utf8",
   );
   await chmod(claudeStubPath, 0o755);
+
+  const piStubPath = join(temporaryDirectory, "pi");
+  await writeFile(
+    piStubPath,
+    `#!/usr/bin/env bun
+const args = Bun.argv.slice(2);
+const prompt = await Bun.stdin.text();
+const modeIndex = args.indexOf("--mode");
+const toolsIndex = args.indexOf("--tools");
+const extensionIndex = args.indexOf("--extension");
+
+if (args[modeIndex + 1] !== "json" || !args[extensionIndex + 1]) {
+  console.error("create must use Pi structured output mode");
+  process.exit(8);
+}
+
+if (args[toolsIndex + 1] !== "read,grep,find,ls,deer_workflow_final_response") {
+  console.error("create must use Pi read-only tools");
+  process.exit(9);
+}
+
+console.log(JSON.stringify({ type: "agent_start" }));
+console.log(JSON.stringify({
+  type: "tool_execution_end",
+  toolName: "deer_workflow_final_response",
+  result: {
+    details: {
+      source: prompt,
+      exampleArgsJson: JSON.stringify({ topic: "Example topic" }),
+    },
+  },
+  isError: false,
+}));
+console.log(JSON.stringify({ type: "agent_end", messages: [] }));
+`,
+    "utf8",
+  );
+  await chmod(piStubPath, 0o755);
 });
 
 afterAll(async () => {
@@ -135,6 +173,25 @@ describe("deer-workflow create", () => {
     );
   });
 
+  test("generates through Pi when selected with equals syntax", async () => {
+    const result = await runCli([
+      "create",
+      "--agent=pi",
+      "Research",
+      "three",
+      "markets",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout).toStartWith(
+      "/* Generating a DeerFlow Dynamic Workflow with Pi */\n",
+    );
+    expect(result.stdout).toEndWith(
+      "--- USER REQUEST ---\nResearch three markets",
+    );
+  });
+
   test("rejects an empty prompt", async () => {
     const result = await runCli(["create"]);
 
@@ -150,10 +207,10 @@ describe("deer-workflow create", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain(
-      "deer-workflow create [--agent codex|claude]",
+      "deer-workflow create [--agent codex|claude|pi]",
     );
     expect(result.stdout).toContain(
-      "--agent <codex|claude>  Agent runtime (default: codex)",
+      "--agent <codex|claude|pi>  Agent runtime (default: codex)",
     );
   });
 
@@ -162,13 +219,13 @@ describe("deer-workflow create", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain(
-      "deer-workflow create [--agent codex|claude]",
+      "deer-workflow create [--agent codex|claude|pi]",
     );
     expect(result.stdout).toContain(
       "create  Generate a Workflow with the bundled workflow-creator Skill",
     );
     expect(result.stdout).toContain(
-      "--agent <codex|claude>  Agent runtime for create (default: codex)",
+      "--agent <codex|claude|pi>  Agent runtime for create (default: codex)",
     );
     expect(result.stdout).not.toContain("deer-workflow agent");
   });

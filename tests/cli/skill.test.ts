@@ -125,6 +125,7 @@ describe("deer-workflow skill", () => {
     expect(result.stdout).toContain("deer-workflow skill install");
     expect(result.stdout).toContain("~/.agents/skills");
     expect(result.stdout).toContain("~/.claude/skills");
+    expect(result.stdout).toContain("Pi 0.84.1 discovers ~/.agents/skills");
   });
 
   test("lists skill install in top-level help", async () => {

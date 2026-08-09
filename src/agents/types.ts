@@ -212,3 +212,62 @@ export interface ClaudeAgentResultMessage {
   structured_output?: JsonValue;
   session_id?: string;
 }
+
+/**
+ * Construction options for {@link PiAgent}.
+ */
+export interface PiAgentConfig {
+  /** Pi executable name or absolute path. Defaults to `pi`. */
+  command?: string;
+
+  /** Arguments inserted immediately after the executable. */
+  commandArgs?: string[];
+
+  /** Default working directory for Agent runs. */
+  cwd?: string;
+
+  /** Default Pi model identifier or provider-qualified pattern. */
+  model?: string;
+
+  /** Default tool-isolation policy enforced by the Pi Harness. */
+  sandbox?: AgentSandbox;
+
+  /** Whether Pi should avoid persisting sessions. Defaults to `true`. */
+  ephemeral?: boolean;
+
+  /**
+   * Additional raw Pi arguments applied to every run. Protocol, session,
+   * extension, trust, and tool-control options are reserved by the Harness.
+   */
+  extraArgs?: string[];
+
+  /** Environment variables applied to every Pi process. */
+  env?: Record<string, string | undefined>;
+}
+
+/**
+ * Fully normalized Pi Agent configuration.
+ *
+ * @internal
+ */
+export interface ResolvedPiAgentConfig {
+  command: string;
+  commandArgs: string[];
+  cwd?: string;
+  model?: string;
+  sandbox?: AgentSandbox;
+  ephemeral: boolean;
+  extraArgs: string[];
+  env?: Record<string, string | undefined>;
+}
+
+/**
+ * Captured process details used to construct a {@link PiAgentError}.
+ *
+ * @internal
+ */
+export interface PiAgentErrorDetails {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}

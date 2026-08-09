@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { ClaudeAgentError, CodexAgentError } from "./agents";
+import { ClaudeAgentError, CodexAgentError, PiAgentError } from "./agents";
 import { runCreateCommand } from "./cli/create";
 import { CliUsageError } from "./cli/errors";
 import { runWorkflowCommand } from "./cli/run";
@@ -24,7 +24,11 @@ try {
     throw new CliUsageError(`Unknown command: ${command}`);
   }
 } catch (error) {
-  if (error instanceof CodexAgentError || error instanceof ClaudeAgentError) {
+  if (
+    error instanceof CodexAgentError ||
+    error instanceof ClaudeAgentError ||
+    error instanceof PiAgentError
+  ) {
     console.error(error.message);
     if (error.stderr.trim()) {
       console.error(error.stderr.trimEnd());
@@ -41,8 +45,8 @@ function printUsage(): void {
   console.log(`deer-workflow
 
 Usage:
-  deer-workflow create [--agent codex|claude] "Describe the Workflow"
-  echo "Describe the Workflow" | deer-workflow create [--agent codex|claude]
+  deer-workflow create [--agent codex|claude|pi] "Describe the Workflow"
+  echo "Describe the Workflow" | deer-workflow create [--agent codex|claude|pi]
   deer-workflow skill install
   deer-workflow run <workflow> [--print] [--input '<json>']
   deer-workflow run <workflow> [--input-file <path>]
@@ -54,6 +58,6 @@ Commands:
   run     Execute a Workflow module
 
 Agent selection:
-  --agent <codex|claude>  Agent runtime for create (default: codex)
+  --agent <codex|claude|pi>  Agent runtime for create (default: codex)
 `);
 }
