@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { WorkflowRunner } from "../runner";
+import { TraceRecorder, runWithTraceRecorder } from "../trace";
 import { TerminalUI } from "../tui";
 import { CliUsageError } from "./errors";
 import type { RunCommandArguments } from "./types";
@@ -46,18 +47,44 @@ export async function runWorkflowCommand(
     task === undefined
       ? () => {}
       : runner.on((event) => task.handleEvent(event));
+  const traceRecorder = arguments_.trace
+    ? new TraceRecorder(arguments_.scriptPath, {
+        rootDirectory: arguments_.traceDirectory,
+      })
+    : undefined;
+  await traceRecorder?.initialize(input);
+  const removeTraceListener = traceRecorder
+    ? runner.on((event) => traceRecorder.recordWorkflowEvent(event))
+    : () => {};
 
   try {
-    const result = await runner.run(arguments_.scriptPath, input);
+    const result = traceRecorder
+      ? await runWithTraceRecorder(traceRecorder, () =>
+          runner.run(arguments_.scriptPath, input),
+        )
+      : await runner.run(arguments_.scriptPath, input);
+    const traceArtifacts = await traceRecorder?.finalizeSuccess(result);
     if (!arguments_.print) {
       const preparedResult = prepareResult(result);
       task?.succeed();
       writeResult(preparedResult);
     }
+    if (traceArtifacts) {
+      process.stderr.write(
+        `Trace HTML  ${traceArtifacts.htmlPath}\nTrace JSONL ${traceArtifacts.tracePath}\n`,
+      );
+    }
   } catch (error) {
+    const traceArtifacts = await traceRecorder?.finalizeError(error);
     task?.fail();
+    if (traceArtifacts) {
+      process.stderr.write(
+        `Trace HTML  ${traceArtifacts.htmlPath}\nTrace JSONL ${traceArtifacts.tracePath}\n`,
+      );
+    }
     throw error;
   } finally {
+    removeTraceListener();
     removeTuiPresenter();
     runner.dispose();
     task?.dispose();
@@ -73,6 +100,7 @@ export function printRunUsage(): void {
   console.log(`Usage:
   deer-workflow run <workflow>
   deer-workflow run <workflow> --print
+  deer-workflow run <workflow> --trace [--trace-dir <directory>]
   deer-workflow run <workflow> --input '<json>'
   deer-workflow run <workflow> --input-file <path>
   echo '<json>' | deer-workflow run <workflow>
@@ -82,6 +110,8 @@ Output:
   --print, -p   Server and automation mode
                 stdout: one JSON Workflow event per line; no separate result
                 stderr: CLI diagnostics only
+  --trace       Write trace.jsonl, summary.json, result.json, and trace.html
+  --trace-dir   Override the default /tmp/ios_perf-opt/deer-workflow-traces root
 `);
 }
 
@@ -90,12 +120,30 @@ function parseRunArguments(values: readonly string[]): RunCommandArguments {
   let inlineInput: string | undefined;
   let inputFile: string | undefined;
   let print = false;
+  let trace = false;
+  let traceDirectory: string | undefined;
 
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
 
     if (value === "--print" || value === "-p") {
       print = true;
+      continue;
+    }
+
+    if (value === "--trace") {
+      trace = true;
+      continue;
+    }
+
+    if (value === "--trace-dir") {
+      const optionValue = values[index + 1];
+      if (optionValue === undefined) {
+        throw new CliUsageError(`${value} requires a value.`);
+      }
+      trace = true;
+      traceDirectory = optionValue;
+      index += 1;
       continue;
     }
 
@@ -140,6 +188,8 @@ function parseRunArguments(values: readonly string[]): RunCommandArguments {
   return {
     scriptPath,
     print,
+    trace,
+    ...(traceDirectory === undefined ? {} : { traceDirectory }),
     ...(inlineInput === undefined ? {} : { inlineInput }),
     ...(inputFile === undefined ? {} : { inputFile }),
   };

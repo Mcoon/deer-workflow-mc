@@ -1,0 +1,38 @@
+{
+  "发送文本消息": ["message.send_text"],
+  "拍照发送消息问这是什么": ["photo.capture_and_ask"],
+  "选择一张照片": ["photo.select_only"],
+  "上滑加载更多消息": ["chat.load_more"],
+  "查看更早消息": ["chat.load_more"],
+  "打开自动播报": ["chat.enable_auto_read"],
+  "打开自动朗读": ["chat.enable_auto_read"],
+  "进入当前bot的设置页": ["bot.open_settings"],
+  "打开豆包设置": ["bot.open_settings"],
+  "打开快捷媒体面板": ["dynamic.chat.open_more_panel"],
+  "删除指定文本消息": ["message.delete_last"],
+  "删除内容为指定文本的消息": ["message.delete_last"],
+  "滑动actionbar到最后": ["chat.actionbar_scroll_end"],
+  "打开侧边栏": ["chat.open_sidebar"],
+  "打开侧边栏然后点击云盘进入云盘": ["cloud.drive.open.from.chat.sidebar"],
+  "打开侧边栏，然后进入技能页面": ["skills.open_from_chat_sidebar"],
+  "打开豆包bot的记忆设置": ["bot.open_memory_settings"],
+  "打开设置页面": ["dynamic.chat.open_bot_settings"],
+  "将字号设置成最大": ["bot.settings.set_max_font_size"],
+  "将字号设置成最大并重启生效": ["bot.settings.set_max_font_size"],
+  "把聊天字体调到最大并应用": ["bot.settings.set_max_font_size"],
+  "打开相机": ["dynamic.chat.open_camera"],
+  "打开帮助与反馈": ["runtime.task.66ed2576a0a7"],
+  "打开隐私和权限": ["runtime.task.c3fbdf062d77"],
+  "执行到 scene:bot.settings.about_debug.privacy_policy": [
+    "runtime.task.f088f50dd89b"
+  ],
+  "bot.settings": ["runtime.task.4c2df6917265"],
+  "bot.settings.customer_service": ["runtime.task.6fdc61326fe3"],
+  "页面的录屏不对 需要重新录一下": ["runtime.task.0bfe5ef60d62"],
+  "查找并验证从会话页到场景 bot.settings.customer_service 的完整导航路径。当前上下文只证明 bot.settings 可通过已验证 operator bot.settings.item-120ed8fe.tap.bot.settings.customer_service 到达该页面，并存在一个从 chat.ai_song.more_menu 到该页面的 stale operator；缺少从会话页起点到这些中间场景的可靠证据。": [
+    "runtime.task.c8b0a2c3e43b"
+  ],
+  "chat.detail": ["runtime.task.82e1765d043c"],
+  "chat.ppt.generate.panel": ["runtime.task.0bc77bb53bb7"],
+  "chat.buy_before_ask": ["runtime.task.e08b0d608de3"]
+}

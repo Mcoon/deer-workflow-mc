@@ -710,6 +710,15 @@ interface WorkflowRunnerOptions {
 clearing external Emitter listeners. A disposed Runner cannot start new
 executions.
 
+## Trace API
+
+`@deerwork-ai/deer-workflow/trace` exports `TraceRecorder`,
+`runWithTraceRecorder`, and `runTracedCommand`. CLI `--trace` creates the
+recorder automatically, and the default `agent()` writes Agent start/end data
+through async-local trace context. Direct `Bun.spawn` calls cannot be
+intercepted; custom Workflows should use `runTracedCommand(command, cwd)`. Trace
+values are recursively redacted and oversized text is bounded.
+
 ## Examples
 
 - [Deep Research](../examples/deep-research/README.md) runs a scoping search
@@ -719,3 +728,50 @@ executions.
   numbered fallbacks preserve existing reports.
 - [Blog Writer](../examples/blog-writer/README.md) combines `agent()`,
   `phase()`, `pipeline()`, `log()`, and `WorkflowRunner`.
+- [iOS Build and Install](../examples/ios-build-install/README.md) combines
+  deterministic TypeScript orchestration, `phase()`, and `log()` with
+  flow-ios-dev build output and install-only devicectl deployment.
+- [iOS Launch Trace](../examples/ios-launch-trace/README.md) combines
+  deterministic TypeScript orchestration, `phase()`, and `log()` with a local
+  xctrace collector and HTML timeline renderer.
+- [iOS Attach Trace](../examples/ios-attach-trace/README.md) combines
+  deterministic TypeScript orchestration, `phase()`, and `log()` with
+  `xctrace record --attach`, Time Profiler XML export, and the shared HTML
+  timeline renderer.
+- [iOS UI Discovery](../examples/ios-ui-discovery/README.md) combines
+  deterministic `mobilecli` orchestration with reusable page, control, device,
+  and transition assets.
+- [iOS Case Authoring](../examples/ios-case-authoring/README.md) combines
+  bounded recording-frame extraction, schema-backed `agent()` output, and
+  deterministic page/control reference validation.
+- [iOS Functional Regression](../examples/ios-functional-regression/README.md)
+  consumes validated case assets, serializes every device action, and writes
+  per-case evidence plus an HTML report.
+- [iOS UI Map Report](../examples/ios-ui-map-report/README.md) compiles pages,
+  controls, transitions, and policy into a machine graph, model index, and
+  interactive HTML projection.
+- [iOS UI Navigate](../examples/ios-ui-navigate/README.md) resolves aliases,
+  applies category-safe path planning, and records live UI dump versus device
+  binding action sources.
+- [iOS UI Graph Experiment](../examples/ios-ui-graph-experiment/README.md)
+  separates verified real-device knowledge from `guarded`, `fast`, and
+  `quarantined` execution trust. Guarded steps relocate against the current UI
+  dump, app-version changes force guarded revalidation, and Tasks are optional
+  path caches rather than planning prerequisites.
+- [iOS UI Graph Discovery](../examples/ios-ui-graph-discovery/README.md)
+  persists real before/after evidence as verified knowledge with guarded
+  execution trust and provides `evidenceMigrationOnly` for offline Graph
+  migration and map refresh without Agent or device work.
+- [App Graph v2 Plan](../examples/app-graph-plan/README.md),
+  [Exec](../examples/app-graph-exec/README.md),
+  [Discovery](../examples/app-graph-discovery/README.md), and
+  [Accept](../examples/app-graph-accept/README.md) demonstrate a typed semantic
+  Plan contract, live-selector-first execution, one goal-and-Element-scoped
+  repair action, and complete Plan propagation across batch acceptance.
+- [App Graph v2 Map](../examples/app-graph-map-report/README.md) and
+  [Console](../examples/ios-ui-graph-console/README.md) expose that pipeline
+  through Graph-ID actions and a serialized device queue.
+- [App Graph Unified Workflow](../examples/app-graph/README.md) composes Plan,
+  strict PID restart, Exec, bounded runtime Agent recovery, Graph learning, and
+  retry behind one typed input and one final result; failures never launch an
+  exhaustive Discovery crawler automatically.

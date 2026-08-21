@@ -1,0 +1,697 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 8 月 19 日 16 时 20 分",
+        "name": "未选中，照片，2026 年 8 月 19 日 16 时 20 分",
+        "rect": {
+          "x": 72,
+          "y": 108,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 8 月 19 日 16 时 20 分",
+        "name": "照片，2026 年 8 月 19 日 16 时 20 分",
+        "rect": {
+          "x": 0,
+          "y": 102,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 54,
+              "y": 102,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 7 月 28 日 19 时 53 分",
+        "name": "未选中，照片，2026 年 7 月 28 日 19 时 53 分",
+        "rect": {
+          "x": 176,
+          "y": 108,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 7 月 28 日 19 时 53 分",
+        "name": "照片，2026 年 7 月 28 日 19 时 53 分",
+        "rect": {
+          "x": 104,
+          "y": 102,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 158,
+              "y": 102,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 7 月 16 日 6 时 49 分",
+        "name": "未选中，照片，2026 年 7 月 16 日 6 时 49 分",
+        "rect": {
+          "x": 280,
+          "y": 108,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 7 月 16 日 6 时 49 分",
+        "name": "照片，2026 年 7 月 16 日 6 时 49 分",
+        "rect": {
+          "x": 208,
+          "y": 102,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 262,
+              "y": 102,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 7 月 14 日 11 时 36 分",
+        "name": "未选中，照片，2026 年 7 月 14 日 11 时 36 分",
+        "rect": {
+          "x": 384,
+          "y": 108,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 7 月 14 日 11 时 36 分",
+        "name": "照片，2026 年 7 月 14 日 11 时 36 分",
+        "rect": {
+          "x": 311,
+          "y": 102,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 366,
+              "y": 102,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 7 月 2 日 7 时 48 分",
+        "name": "未选中，照片，2026 年 7 月 2 日 7 时 48 分",
+        "rect": {
+          "x": 72,
+          "y": 212,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 7 月 2 日 7 时 48 分",
+        "name": "照片，2026 年 7 月 2 日 7 时 48 分",
+        "rect": {
+          "x": 0,
+          "y": 206,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 54,
+              "y": 206,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 6 月 19 日 14 时 49 分",
+        "name": "未选中，照片，2026 年 6 月 19 日 14 时 49 分",
+        "rect": {
+          "x": 176,
+          "y": 212,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 6 月 19 日 14 时 49 分",
+        "name": "照片，2026 年 6 月 19 日 14 时 49 分",
+        "rect": {
+          "x": 104,
+          "y": 206,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 158,
+              "y": 206,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 6 月 16 日 17 时 35 分",
+        "name": "未选中，照片，2026 年 6 月 16 日 17 时 35 分",
+        "rect": {
+          "x": 280,
+          "y": 212,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 6 月 16 日 17 时 35 分",
+        "name": "照片，2026 年 6 月 16 日 17 时 35 分",
+        "rect": {
+          "x": 208,
+          "y": 206,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 262,
+              "y": 206,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 6 月 14 日 19 时 42 分",
+        "name": "未选中，照片，2026 年 6 月 14 日 19 时 42 分",
+        "rect": {
+          "x": 384,
+          "y": 212,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 6 月 14 日 19 时 42 分",
+        "name": "照片，2026 年 6 月 14 日 19 时 42 分",
+        "rect": {
+          "x": 311,
+          "y": 206,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 366,
+              "y": 206,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 31 日 22 时 20 分",
+        "name": "未选中，照片，2026 年 5 月 31 日 22 时 20 分",
+        "rect": {
+          "x": 72,
+          "y": 316,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 31 日 22 时 20 分",
+        "name": "照片，2026 年 5 月 31 日 22 时 20 分",
+        "rect": {
+          "x": 0,
+          "y": 310,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 54,
+              "y": 310,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 31 日 21 时 23 分",
+        "name": "未选中，照片，2026 年 5 月 31 日 21 时 23 分",
+        "rect": {
+          "x": 176,
+          "y": 316,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 31 日 21 时 23 分",
+        "name": "照片，2026 年 5 月 31 日 21 时 23 分",
+        "rect": {
+          "x": 104,
+          "y": 310,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 158,
+              "y": 310,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 31 日 20 时 24 分",
+        "name": "未选中，照片，2026 年 5 月 31 日 20 时 24 分",
+        "rect": {
+          "x": 280,
+          "y": 316,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 31 日 20 时 24 分",
+        "name": "照片，2026 年 5 月 31 日 20 时 24 分",
+        "rect": {
+          "x": 208,
+          "y": 310,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 262,
+              "y": 310,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 28 日 21 时 15 分",
+        "name": "未选中，照片，2026 年 5 月 28 日 21 时 15 分",
+        "rect": {
+          "x": 384,
+          "y": 316,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 28 日 21 时 15 分",
+        "name": "照片，2026 年 5 月 28 日 21 时 15 分",
+        "rect": {
+          "x": 311,
+          "y": 310,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 366,
+              "y": 310,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 28 日 17 时 17 分",
+        "name": "未选中，照片，2026 年 5 月 28 日 17 时 17 分",
+        "rect": {
+          "x": 72,
+          "y": 419,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 28 日 17 时 17 分",
+        "name": "照片，2026 年 5 月 28 日 17 时 17 分",
+        "rect": {
+          "x": 0,
+          "y": 413,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 54,
+              "y": 413,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 26 日 14 时 59 分",
+        "name": "未选中，照片，2026 年 5 月 26 日 14 时 59 分",
+        "rect": {
+          "x": 176,
+          "y": 419,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 26 日 14 时 59 分",
+        "name": "照片，2026 年 5 月 26 日 14 时 59 分",
+        "rect": {
+          "x": 104,
+          "y": 413,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 158,
+              "y": 413,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 26 日 14 时 57 分",
+        "name": "未选中，照片，2026 年 5 月 26 日 14 时 57 分",
+        "rect": {
+          "x": 280,
+          "y": 419,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 26 日 14 时 57 分",
+        "name": "照片，2026 年 5 月 26 日 14 时 57 分",
+        "rect": {
+          "x": 208,
+          "y": 413,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 262,
+              "y": 413,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 14 日 16 时 22 分",
+        "name": "未选中，照片，2026 年 5 月 14 日 16 时 22 分",
+        "rect": {
+          "x": 384,
+          "y": 419,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 14 日 16 时 22 分",
+        "name": "照片，2026 年 5 月 14 日 16 时 22 分",
+        "rect": {
+          "x": 311,
+          "y": 413,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 366,
+              "y": 413,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 11 日 14 时 13 分",
+        "name": "未选中，照片，2026 年 5 月 11 日 14 时 13 分",
+        "rect": {
+          "x": 72,
+          "y": 523,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 11 日 14 时 13 分",
+        "name": "照片，2026 年 5 月 11 日 14 时 13 分",
+        "rect": {
+          "x": 0,
+          "y": 517,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 54,
+              "y": 517,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "未选中，照片，2026 年 5 月 11 日 14 时 13 分",
+        "name": "未选中，照片，2026 年 5 月 11 日 14 时 13 分",
+        "rect": {
+          "x": 176,
+          "y": 523,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Image",
+        "label": "照片，2026 年 5 月 11 日 14 时 13 分",
+        "name": "照片，2026 年 5 月 11 日 14 时 13 分",
+        "rect": {
+          "x": 104,
+          "y": 517,
+          "width": 102,
+          "height": 102
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "album_ic_selection_background",
+            "identifier": "album_ic_selection_background",
+            "rect": {
+              "x": 158,
+              "y": 517,
+              "width": 48,
+              "height": 48
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "关闭",
+        "name": "btn:album_ic_close",
+        "identifier": "btn:album_ic_close",
+        "rect": {
+          "x": 15,
+          "y": 63,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "Button",
+        "label": "所有照片",
+        "name": "btn:album_ic_more",
+        "identifier": "btn:album_ic_more",
+        "rect": {
+          "x": 163,
+          "y": 64,
+          "width": 88,
+          "height": 21
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "所有照片",
+            "name": "所有照片",
+            "rect": {
+              "x": 163,
+              "y": 64,
+              "width": 68,
+              "height": 21
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "23:42",
+        "name": "23:42",
+        "rect": {
+          "x": 20,
+          "y": 15,
+          "width": 45,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 68,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

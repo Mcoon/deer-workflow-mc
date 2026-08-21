@@ -1,0 +1,715 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "label": "返回",
+        "name": "返回",
+        "rect": {
+          "x": 8,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        },
+        "children": [
+          {
+            "type": "Button",
+            "label": "Chevron Left",
+            "name": "btn:Chevron_Left",
+            "identifier": "btn:Chevron_Left",
+            "rect": {
+              "x": 8,
+              "y": 48,
+              "width": 44,
+              "height": 44
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 362,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        },
+        "children": [
+          {
+            "type": "Button",
+            "label": "ic settings normal",
+            "name": "btn:ic_settings_normal",
+            "identifier": "btn:ic_settings_normal",
+            "rect": {
+              "x": 362,
+              "y": 48,
+              "width": 44,
+              "height": 44
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "未成年人模式",
+        "name": "未成年人模式",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 51,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_settings_minor",
+            "identifier": "icon_settings_minor",
+            "rect": {
+              "x": 32,
+              "y": 63,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "未成年人模式",
+            "name": "未成年人模式",
+            "rect": {
+              "x": 80,
+              "y": 57,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 67,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "云盘存储",
+        "name": "云盘存储",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 123,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_drive_capacity",
+            "identifier": "icon_setting_drive_capacity",
+            "rect": {
+              "x": 32,
+              "y": 135,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "云盘存储",
+            "name": "云盘存储",
+            "rect": {
+              "x": 80,
+              "y": 129,
+              "width": 224,
+              "height": 44
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "0.81 MB",
+            "name": "0.81 MB",
+            "rect": {
+              "x": 320,
+              "y": 141,
+              "width": 61,
+              "height": 19
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "钱包",
+        "name": "钱包",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 179,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_wallet",
+            "identifier": "icon_setting_wallet",
+            "rect": {
+              "x": 32,
+              "y": 191,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "钱包",
+            "name": "钱包",
+            "rect": {
+              "x": 80,
+              "y": 185,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 195,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "我的订单",
+        "name": "我的订单",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 235,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_my_order",
+            "identifier": "icon_my_order",
+            "rect": {
+              "x": 32,
+              "y": 247,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "我的订单",
+            "name": "我的订单",
+            "rect": {
+              "x": 80,
+              "y": 241,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 251,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "隐私与权限",
+        "name": "隐私与权限",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 307,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_privacypermission",
+            "identifier": "icon_setting_privacypermission",
+            "rect": {
+              "x": 32,
+              "y": 319,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "隐私与权限",
+            "name": "隐私与权限",
+            "rect": {
+              "x": 80,
+              "y": 313,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 323,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "帮助与反馈",
+        "name": "帮助与反馈",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 363,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_feedback",
+            "identifier": "icon_setting_feedback",
+            "rect": {
+              "x": 32,
+              "y": 375,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "帮助与反馈",
+            "name": "帮助与反馈",
+            "rect": {
+              "x": 80,
+              "y": 369,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 379,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包官网",
+        "name": "豆包官网",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 419,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_website",
+            "identifier": "icon_setting_website",
+            "rect": {
+              "x": 32,
+              "y": 431,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "豆包官网",
+            "name": "豆包官网",
+            "rect": {
+              "x": 80,
+              "y": 425,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 435,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "关于豆包 Debug",
+        "name": "关于豆包 Debug",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 475,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_about",
+            "identifier": "icon_setting_about",
+            "rect": {
+              "x": 32,
+              "y": 487,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "关于豆包 Debug",
+            "name": "关于豆包 Debug",
+            "rect": {
+              "x": 80,
+              "y": 481,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 491,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "我的智能设备",
+        "name": "我的智能设备",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 531,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "dora_icon_device_manage_entrance",
+            "identifier": "dora_icon_device_manage_entrance",
+            "rect": {
+              "x": 32,
+              "y": 543,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "我的智能设备",
+            "name": "我的智能设备",
+            "rect": {
+              "x": 80,
+              "y": 537,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 547,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "切换账号",
+        "name": "切换账号",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 603,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_setting_account_switch",
+            "identifier": "icon_setting_account_switch",
+            "rect": {
+              "x": 32,
+              "y": 615,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "切换账号",
+            "name": "切换账号",
+            "rect": {
+              "x": 80,
+              "y": 609,
+              "width": 262,
+              "height": 44
+            }
+          },
+          {
+            "type": "Image",
+            "name": "icon_setting_right_enter",
+            "identifier": "icon_setting_right_enter",
+            "rect": {
+              "x": 358,
+              "y": 619,
+              "width": 24,
+              "height": 24
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "退出登录",
+        "name": "退出登录",
+        "value": "",
+        "rect": {
+          "x": 16,
+          "y": 659,
+          "width": 382,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "Image",
+            "name": "icon_log_out",
+            "identifier": "icon_log_out",
+            "rect": {
+              "x": 32,
+              "y": 671,
+              "width": 32,
+              "height": 32
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "退出登录",
+            "name": "退出登录",
+            "rect": {
+              "x": 80,
+              "y": 665,
+              "width": 302,
+              "height": 44
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "Version 14.7.0.6\nBranch:\nOfficeSDK: 14.7.23-flow",
+        "name": "Version 14.7.0.6\nBranch:\nOfficeSDK: 14.7.23-flow",
+        "rect": {
+          "x": 140,
+          "y": 731,
+          "width": 134,
+          "height": 43
+        }
+      },
+      {
+        "type": "Button",
+        "label": "由豆包大模型提供支持",
+        "name": "由豆包大模型提供支持",
+        "rect": {
+          "x": 137,
+          "y": 774,
+          "width": 139,
+          "height": 29
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "由豆包大模型提供支持",
+            "name": "由豆包大模型提供支持",
+            "rect": {
+              "x": 137,
+              "y": 780,
+              "width": 139,
+              "height": 17
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "《个人信息清单》",
+        "name": "《个人信息清单》",
+        "rect": {
+          "x": 90,
+          "y": 803,
+          "width": 98,
+          "height": 29
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "《个人信息清单》",
+            "name": "《个人信息清单》",
+            "rect": {
+              "x": 90,
+              "y": 809,
+              "width": 98,
+              "height": 17
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "《三方信息共享清单》",
+        "name": "《三方信息共享清单》",
+        "rect": {
+          "x": 198,
+          "y": 803,
+          "width": 126,
+          "height": 29
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "《三方信息共享清单》",
+            "name": "《三方信息共享清单》",
+            "rect": {
+              "x": 198,
+              "y": 809,
+              "width": 126,
+              "height": 17
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "《个人信息清单》",
+        "name": "《个人信息清单》",
+        "rect": {
+          "x": 90,
+          "y": 803,
+          "width": 98,
+          "height": 29
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "《个人信息清单》",
+            "name": "《个人信息清单》",
+            "rect": {
+              "x": 90,
+              "y": 809,
+              "width": 98,
+              "height": 17
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "《三方信息共享清单》",
+        "name": "《三方信息共享清单》",
+        "rect": {
+          "x": 198,
+          "y": 803,
+          "width": 126,
+          "height": 29
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "《三方信息共享清单》",
+            "name": "《三方信息共享清单》",
+            "rect": {
+              "x": 198,
+              "y": 809,
+              "width": 126,
+              "height": 17
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "00:17",
+        "name": "00:17",
+        "rect": {
+          "x": 21,
+          "y": 15,
+          "width": 42,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 67,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

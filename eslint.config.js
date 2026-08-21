@@ -25,5 +25,13 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ["examples/ios-ui-semantic-map-report/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
   prettier,
 );

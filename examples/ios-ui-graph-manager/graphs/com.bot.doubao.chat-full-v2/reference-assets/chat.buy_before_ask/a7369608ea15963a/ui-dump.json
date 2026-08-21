@@ -1,0 +1,351 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "label": "按预算挑",
+        "name": "按预算挑",
+        "rect": {
+          "x": 16,
+          "y": 312,
+          "width": 119,
+          "height": 68
+        }
+      },
+      {
+        "type": "Button",
+        "label": "七夕送礼",
+        "name": "七夕送礼",
+        "rect": {
+          "x": 147,
+          "y": 312,
+          "width": 119,
+          "height": 68
+        }
+      },
+      {
+        "type": "Button",
+        "label": "商品对比",
+        "name": "商品对比",
+        "rect": {
+          "x": 278,
+          "y": 312,
+          "width": 119,
+          "height": 68
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "按预算挑",
+        "name": "按预算挑",
+        "rect": {
+          "x": 49,
+          "y": 351,
+          "width": 52,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "七夕送礼",
+        "name": "七夕送礼",
+        "rect": {
+          "x": 181,
+          "y": 351,
+          "width": 52,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "商品对比",
+        "name": "商品对比",
+        "rect": {
+          "x": 312,
+          "y": 351,
+          "width": 52,
+          "height": 18
+        }
+      },
+      {
+        "type": "Button",
+        "label": "商品测评",
+        "name": "商品测评",
+        "rect": {
+          "x": 16,
+          "y": 398,
+          "width": 119,
+          "height": 68
+        }
+      },
+      {
+        "type": "Button",
+        "label": "扒成分参数",
+        "name": "扒成分参数",
+        "rect": {
+          "x": 147,
+          "y": 398,
+          "width": 119,
+          "height": 68
+        }
+      },
+      {
+        "type": "Button",
+        "label": "避坑指南",
+        "name": "避坑指南",
+        "rect": {
+          "x": 278,
+          "y": 398,
+          "width": 119,
+          "height": 68
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "商品测评",
+        "name": "商品测评",
+        "rect": {
+          "x": 49,
+          "y": 437,
+          "width": 52,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "扒成分参数",
+        "name": "扒成分参数",
+        "rect": {
+          "x": 174,
+          "y": 437,
+          "width": 65,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "避坑指南",
+        "name": "避坑指南",
+        "rect": {
+          "x": 312,
+          "y": 437,
+          "width": 52,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "📱 1000 左右的高性价比手机",
+        "name": "📱 1000 左右的高性价比手机",
+        "rect": {
+          "x": 227,
+          "y": 526,
+          "width": 186,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "📱 2000 元左右性价比高的手机",
+        "name": "📱 2000 元左右性价比高的手机",
+        "rect": {
+          "x": 162,
+          "y": 585,
+          "width": 202,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "📱 追星女是换 iPhone 17 Pro 还是等 18",
+        "name": "📱 追星女是换 iPhone 17 Pro 还是等 18",
+        "rect": {
+          "x": 426,
+          "y": 585,
+          "width": 251,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "五千预算能买红魔 11S Pro 吗",
+        "name": "五千预算能买红魔 11S Pro 吗",
+        "rect": {
+          "x": 223,
+          "y": 644,
+          "width": 181,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "📱第一台 iPhone 手机怎么选",
+        "name": "📱第一台 iPhone 手机怎么选",
+        "rect": {
+          "x": 120,
+          "y": 703,
+          "width": 184,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "40 元预算，学生党挑夏天女生牛仔裤",
+        "name": "40 元预算，学生党挑夏天女生牛仔裤",
+        "rect": {
+          "x": 366,
+          "y": 703,
+          "width": 230,
+          "height": 22
+        }
+      },
+      {
+        "type": "Button",
+        "label": "我的订单",
+        "name": "我的订单",
+        "rect": {
+          "x": 262,
+          "y": 60,
+          "width": 48,
+          "height": 36
+        }
+      },
+      {
+        "type": "Button",
+        "label": "打开更多操作",
+        "name": "打开更多操作",
+        "rect": {
+          "x": 326,
+          "y": 62,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "关闭当前页面",
+        "name": "关闭当前页面",
+        "rect": {
+          "x": 366,
+          "y": 62,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包专属福利来啦~",
+        "name": "豆包专属福利来啦~",
+        "rect": {
+          "x": 161,
+          "y": 170,
+          "width": 110,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包惊喜补贴待领取",
+        "name": "豆包惊喜补贴待领取",
+        "rect": {
+          "x": 12,
+          "y": 192,
+          "width": 390,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "一键领取",
+        "name": "一键领取",
+        "rect": {
+          "x": 26,
+          "y": 236,
+          "width": 362,
+          "height": 42
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "🎁 给 TA 拍照，问豆包七夕送什么",
+        "name": "🎁 给 TA 拍照，问豆包七夕送什么",
+        "rect": {
+          "x": 28,
+          "y": 743,
+          "width": 250,
+          "height": 23
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "拍照/截图问商品是否值得买",
+        "name": "拍照/截图问商品是否值得买",
+        "rect": {
+          "x": 66,
+          "y": 810,
+          "width": 236,
+          "height": 24
+        }
+      },
+      {
+        "type": "Button",
+        "label": "相机",
+        "name": "btn:ic_camera",
+        "identifier": "btn:ic_camera",
+        "rect": {
+          "x": 24,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "语音输入",
+        "name": "语音输入",
+        "rect": {
+          "x": 314,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "更多面板",
+        "name": "btn:ic_plus_circle",
+        "identifier": "btn:ic_plus_circle",
+        "rect": {
+          "x": 358,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "00:12",
+        "name": "00:12",
+        "rect": {
+          "x": 21,
+          "y": 15,
+          "width": 43,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 67,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

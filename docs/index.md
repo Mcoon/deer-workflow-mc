@@ -336,12 +336,54 @@ the complete Agent Loop to a single model completion.
   interactive HTML report.
 - [Blog Writer](../examples/blog-writer/README.md) uses `pipeline()` to draft
   and review sections independently.
+- [iOS Build and Install](../examples/ios-build-install/README.md) prepares a
+  trace-ready flow_iOS `.app` and dSYM, then installs without launching.
+- [iOS Launch Trace](../examples/ios-launch-trace/README.md) wraps a fixed iOS
+  Time Profiler launch collection and renders a local HTML timeline.
+- [iOS Attach Trace](../examples/ios-attach-trace/README.md) records an
+  already-running iOS app with `xctrace --attach` for manual interaction
+  captures and renders the same HTML timeline.
+- [iOS UI Discovery](../examples/ios-ui-discovery/README.md) captures a
+  deterministic UI map with serialized `mobilecli` routes.
+- [iOS Case Authoring](../examples/ios-case-authoring/README.md) combines
+  recording frames, requirements, the UI map, and schema-backed `agent()` output.
+- [iOS Functional Regression](../examples/ios-functional-regression/README.md)
+  consumes validated cases and keeps device execution deterministic.
+- [iOS UI Map Report](../examples/ios-ui-map-report/README.md) builds
+  `graph.json`, `page-index.json`, and an interactive navigation map.
+- [iOS UI Navigate](../examples/ios-ui-navigate/README.md) resolves a page
+  target and plans or executes an active policy-approved route from cold start.
+- [App Graph v2 Plan](../examples/app-graph-plan/README.md) compiles a
+  coordinate-optional semantic Plan.
+- [App Graph v2 Exec](../examples/app-graph-exec/README.md) resolves current
+  selectors before policy-approved profile Bindings and verifies typed Oracles.
+- [App Graph v2 Discovery](../examples/app-graph-discovery/README.md) consumes
+  structured execution gaps; it requires a user goal plus one explicit Element
+  and performs one depth-zero targeted action before synthesizing evidence-backed
+  candidate patches.
+- [App Graph v2 Accept](../examples/app-graph-accept/README.md) runs structured
+  cases through the complete Plan-to-Exec contract.
+- [App Graph v2 Map](../examples/app-graph-map-report/README.md) and
+  [Console](../examples/ios-ui-graph-console/README.md) expose the same canonical
+  Graph through a visual planning, execution, and discovery surface.
+- [App Graph Unified Workflow](../examples/app-graph/README.md) is the
+  single-goal user entry. It performs strict PID restart, orchestrates Plan/Exec
+  and bounded recovery, and never starts a full-page crawler automatically.
 - [API Reference](./api.md) documents every public function, type, event, and
   runtime contract.
 - [Workflow Creator Skill](../skills/workflow-creator/SKILL.md) contains the
   generation instructions used by `create`.
 
 ## Develop the repository
+
+### Execution trace
+
+`deer-workflow run <workflow> --trace` writes `trace.jsonl`, `summary.json`,
+`result.json`, and `trace.html` under `/tmp/ios_perf-opt/deer-workflow-traces`
+by default; `--trace-dir` overrides the root. The default `agent()` is traced
+automatically. Commands executed through `runTracedCommand()` include command,
+cwd, duration, exit code, stdout, and stderr. Environment variables are omitted
+and common credential values are redacted.
 
 Clone the repository and install local dependencies and Git hooks:
 

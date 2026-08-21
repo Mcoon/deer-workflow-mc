@@ -84,6 +84,51 @@ Want to understand or edit the generated module? Continue with the
   interactive HTML report.
 - [Blog Writer](./examples/blog-writer/README.md) plans an article, drafts its
   sections through a pipeline, reviews them, and returns structured output.
+- [iOS Build and Install](./examples/ios-build-install/README.md) builds a
+  flow_iOS app with dSYM artifacts and installs it without launching.
+- [iOS Launch Trace](./examples/ios-launch-trace/README.md) runs a deterministic
+  launch Time Profiler collection and renders an Instruments-style HTML
+  timeline.
+- [iOS Attach Trace](./examples/ios-attach-trace/README.md) attaches Time
+  Profiler to a running app for manual interaction capture and renders the same
+  HTML timeline.
+- [iOS UI Discovery](./examples/ios-ui-discovery/README.md) uses serialized
+  `mobilecli` routes to collect reusable page, control, coordinate-space, and
+  transition assets.
+- [iOS Case Authoring](./examples/ios-case-authoring/README.md) turns recordings
+  or requirements into validated cases grounded in the collected UI map.
+- [iOS Functional Regression](./examples/ios-functional-regression/README.md)
+  executes validated cases serially with `mobilecli` and renders an evidence
+  report.
+- [iOS UI Map Report](./examples/ios-ui-map-report/README.md) compiles
+  discovered UI assets into a machine-readable navigation graph and an
+  interactive HTML map.
+- [iOS UI Navigate](./examples/ios-ui-navigate/README.md) resolves page names,
+  plans safe cold-start routes, and optionally executes them without
+  screenshot-by-screenshot Agent reasoning.
+- [iOS Semantic Graph Discovery](./examples/ios-ui-graph-discovery/README.md)
+  recursively crawls Scene, Element, Action, and Effect frontiers with
+  resumable state, safety budgets, and canonical Graph writes.
+- [iOS Executable Semantic Graph](./examples/ios-ui-graph-experiment/README.md)
+  resolves natural-language goals, plans verified or candidate Graph paths,
+  executes them, verifies outcomes, and repairs targeted gaps.
+- [iOS Semantic Map Report](./examples/ios-ui-semantic-map-report/README.md)
+  renders the executable Scene, Element, Operator, Task, Binding, and Verifier
+  Graph as interactive HTML.
+- [iOS UI Graph Console](./examples/ios-ui-graph-console/README.md) serves that
+  Map with exact Graph-ID execution, scoped exploration, Agent chat, correction
+  proposals, and serialized Workflow event streaming.
+- [App Graph v2 Plan](./examples/app-graph-plan/README.md),
+  [Exec](./examples/app-graph-exec/README.md),
+  [Discovery](./examples/app-graph-discovery/README.md), and
+  [Accept](./examples/app-graph-accept/README.md) form the canonical semantic
+  planning, safe execution, targeted repair, and batch acceptance pipeline.
+  [App Graph v2 Map](./examples/app-graph-map-report/README.md) and Console are
+  its visual control surface.
+- [App Graph Unified Workflow](./examples/app-graph/README.md) is the normal
+  user entry. Give it one goal; it owns strict PID restart, Plan, Exec, bounded
+  goal-driven Agent recovery, evidence-backed Graph updates, and bounded retry.
+  It never starts a full-page crawler automatically.
 
 These examples live in the repository. Clone or download it before running
 their documented commands.
@@ -97,6 +142,17 @@ their documented commands.
 - [Workflow Creator Skill](./skills/workflow-creator/SKILL.md) — see the
   instructions used to generate Workflow modules.
 - [简体中文文档](./README.zh-CN.md)
+
+## Execution Trace
+
+Pass `--trace` to `deer-workflow run` to persist `trace.jsonl`, `summary.json`,
+`result.json`, and an expandable `trace.html` under
+`/tmp/ios_perf-opt/deer-workflow-traces/<run-id>/`. Use `--trace-dir` to
+override the root. Workflow events, traced commands, and default `agent()`
+prompt/schema/model/response/error data are captured. Environment variables are
+never stored; common authorization, cookie, password, token, and API-key values
+are redacted, and oversized text is explicitly truncated. Custom Workflows
+should use the exported `runTracedCommand` helper for command visibility.
 
 # How to develop
 

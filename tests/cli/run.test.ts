@@ -166,6 +166,85 @@ describe("deer-workflow run", () => {
       "workflow:error",
     ]);
   });
+
+  test("writes durable trace artifacts with --trace", async () => {
+    const traceRoot = join(temporaryDirectory, "traces");
+    const result = await runCli([
+      "run",
+      echoWorkflowPath,
+      "--trace",
+      "--trace-dir",
+      traceRoot,
+      "--input",
+      JSON.stringify({ source: "trace" }),
+    ]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain("Trace HTML");
+    expect(result.stderr).toContain("Trace JSONL");
+    const directory = traceOutputDirectory(result.stderr);
+    expect(directory.startsWith(traceRoot)).toBeTrue();
+    for (const file of [
+      "trace.jsonl",
+      "summary.json",
+      "result.json",
+      "trace.html",
+    ]) {
+      expect(await Bun.file(join(directory, file)).exists()).toBeTrue();
+    }
+    const summary = JSON.parse(
+      await Bun.file(join(directory, "summary.json")).text(),
+    );
+    expect(summary).toMatchObject({
+      schemaVersion: "deer-workflow-trace-summary/v1",
+      status: "success",
+      commandCount: 0,
+      agentCallCount: 0,
+    });
+  });
+
+  test("keeps an error trace when the Workflow fails", async () => {
+    const traceRoot = join(temporaryDirectory, "error-traces");
+    const result = await runCli([
+      "run",
+      failingWorkflowPath,
+      "--trace-dir",
+      traceRoot,
+    ]);
+    expect(result.exitCode).toBe(1);
+    const directory = traceOutputDirectory(result.stderr);
+    expect(directory.startsWith(traceRoot)).toBeTrue();
+    const summary = JSON.parse(
+      await Bun.file(join(directory, "summary.json")).text(),
+    );
+    expect(summary.status).toBe("error");
+    expect(await Bun.file(join(directory, "trace.html")).exists()).toBeTrue();
+    expect(await Bun.file(join(directory, "trace.jsonl")).text()).toContain(
+      "workflow failed",
+    );
+  });
+
+  test("marks a returned success false result as a trace failure", async () => {
+    const traceRoot = join(temporaryDirectory, "business-failure-traces");
+    const businessFailurePath = join(temporaryDirectory, "business-failure.ts");
+    await writeFile(
+      businessFailurePath,
+      "export default () => ({ success: false, code: 'blocked' });\n",
+      "utf8",
+    );
+    const result = await runCli([
+      "run",
+      businessFailurePath,
+      "--trace-dir",
+      traceRoot,
+    ]);
+    expect(result.exitCode).toBe(0);
+    const summary = JSON.parse(
+      await Bun.file(
+        join(traceOutputDirectory(result.stderr), "summary.json"),
+      ).text(),
+    );
+    expect(summary.status).toBe("failure");
+  });
 });
 
 async function runCli(args: readonly string[], stdin = "") {
@@ -197,4 +276,14 @@ function parseEventLines(stderr: string): WorkflowEvent[] {
     .split("\n")
     .filter((line) => line.startsWith("{"))
     .map((line) => JSON.parse(line) as WorkflowEvent);
+}
+
+function traceOutputDirectory(stderr: string): string {
+  const htmlPath = stderr
+    .split("\n")
+    .find((line) => line.startsWith("Trace HTML"))
+    ?.replace(/^Trace HTML\s+/, "")
+    .trim();
+  if (!htmlPath) throw new Error("Trace HTML path was not printed.");
+  return resolve(htmlPath, "..");
 }

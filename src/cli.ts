@@ -48,7 +48,7 @@ Usage:
   deer-workflow create [--agent codex|claude|pi] "Describe the Workflow"
   echo "Describe the Workflow" | deer-workflow create [--agent codex|claude|pi]
   deer-workflow skill install
-  deer-workflow run <workflow> [--print] [--input '<json>']
+  deer-workflow run <workflow> [--print] [--trace] [--input '<json>']
   deer-workflow run <workflow> [--input-file <path>]
   echo '<json>' | deer-workflow run <workflow>
 

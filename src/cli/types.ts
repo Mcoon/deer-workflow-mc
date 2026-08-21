@@ -8,6 +8,12 @@ export interface RunCommandArguments {
   /** Whether stdout should contain only the JSONL Workflow Event Stream. */
   readonly print: boolean;
 
+  /** Whether a durable execution trace should be written. */
+  readonly trace: boolean;
+
+  /** Optional root directory for trace run folders. */
+  readonly traceDirectory?: string;
+
   /** JSON text supplied directly through `--input`. */
   readonly inlineInput?: string;
 

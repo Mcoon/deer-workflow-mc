@@ -83,6 +83,43 @@ deer-workflow run ./workflow.ts \
   并行调查、验证结论，并生成交互式 HTML 报告。
 - [Blog Writer](./examples/blog-writer/README.zh-CN.md) 会规划文章、通过 Pipeline
   起草各节、执行审阅，并返回结构化结果。
+- [iOS Build and Install](./examples/ios-build-install/README.zh-CN.md) 会构建
+  带 dSYM 的 flow_iOS App，并只安装不启动。
+- [iOS Launch Trace](./examples/ios-launch-trace/README.zh-CN.md) 会运行确定性的
+  启动 Time Profiler 采集，并生成接近 Instruments 的 HTML 时间线。
+- [iOS Attach Trace](./examples/ios-attach-trace/README.zh-CN.md) 会 attach 到
+  已运行的 App，采集手动操作阶段的 Time Profiler，并生成同款 HTML 时间线。
+- [iOS UI Discovery](./examples/ios-ui-discovery/README.zh-CN.md) 使用串行
+  `mobilecli` route 沉淀页面、控件、坐标空间和页面跳转资产。
+- [iOS Case Authoring](./examples/ios-case-authoring/README.zh-CN.md) 把录屏或
+  需求转换为经过 UI map 引用校验的结构化 case。
+- [iOS Functional Regression](./examples/ios-functional-regression/README.zh-CN.md)
+  使用 `mobilecli` 串行执行已验证 case，并生成证据报告。
+- [iOS UI Map Report](./examples/ios-ui-map-report/README.zh-CN.md) 把 UI
+  discovery 资产编译为机器可读导航图和交互式 HTML 地图。
+- [iOS UI Navigate](./examples/ios-ui-navigate/README.zh-CN.md) 解析页面名称、
+  从冷启动规划安全路径，并可在不逐屏调用模型的情况下执行。
+- [iOS Semantic Graph Discovery](./examples/ios-ui-graph-discovery/README.zh-CN.md)
+  以 `Scene → Element → Action → Effect` 递归探索 App，并维护可恢复状态、安全预算、
+  覆盖率和 canonical Graph 写回。
+- [iOS Executable Semantic Graph](./examples/ios-ui-graph-experiment/README.zh-CN.md)
+  解析自然语言目标、规划 verified/candidate Graph 路径、执行验证并定向修复缺口。
+- [iOS Semantic Map Report](./examples/ios-ui-semantic-map-report/README.zh-CN.md)
+  将 Scene、Element、Operator、Task、Binding 和 Verifier Graph 渲染成交互式 HTML。
+- [iOS UI Graph 控制台](./examples/ios-ui-graph-console/README.zh-CN.md)
+  为该 Map 提供按 Graph ID 精确执行、定向探索、Agent 对话、纠错提案和串行
+  Workflow 事件流。
+- [App Graph v2 Plan](./examples/app-graph-plan/README.zh-CN.md)、
+  [Exec](./examples/app-graph-exec/README.zh-CN.md)、
+  [Discovery](./examples/app-graph-discovery/README.zh-CN.md) 和
+  [Accept](./examples/app-graph-accept/README.zh-CN.md) 组成 canonical 语义规划、
+  安全执行、定向补图和批量验收链路；
+  [App Graph v2 Map](./examples/app-graph-map-report/README.zh-CN.md) 与 Console
+  是它的可视控制入口。
+- [App Graph 统一入口](./examples/app-graph/README.zh-CN.md) 是普通用户入口；只传一个
+  goal，由它内部负责严格 PID 重启、Plan、Exec、目标驱动的受限 Agent 恢复、有证据的
+  Graph 更新和有限重试；不会自动启动全页 crawler。独立 Discovery 只能在用户 goal +
+  明确 Element 下执行一次深度 0 动作。
 
 这些示例位于本仓库中。运行文档中的命令前，请先克隆或下载仓库。
 
@@ -93,6 +130,30 @@ deer-workflow run ./workflow.ts \
 - [Workflow Creator Skill](./skills/workflow-creator/SKILL.md) — 查看生成
   Workflow 模块时使用的指令。
 - [English Documentation](./README.md)
+
+## 执行 Trace
+
+`run` 支持 opt-in 的完整执行 Trace：
+
+```bash
+bun run dev -- run examples/app-graph/workflow.ts --trace --input '{
+  "goal": "打开帮助与反馈",
+  "udid": "<device-udid>",
+  "planOnly": false
+}'
+```
+
+默认输出到 `/tmp/ios_perf-opt/deer-workflow-traces/<run-id>/`：
+
+- `trace.jsonl`：严格时间序列，包含 Workflow event、Phase、Command、Agent 请求/回复；
+- `summary.json`：总耗时、事件数、命令数、Agent 调用数和产物路径；
+- `result.json`：最终返回值；
+- `trace.html`：可按事件类型筛选和展开的可视报告。
+
+使用 `--trace-dir <directory>` 可指定根目录。Trace 不记录进程环境变量；常见
+authorization/cookie/password/token/API key 会脱敏，超长文本会截断并标注原长度。
+Workflow 自定义命令应使用 `runTracedCommand`，框架的默认 `agent()` 会自动记录 prompt、
+schema、model、sandbox、结构化回复、错误和耗时。
 
 # 如何开发
 

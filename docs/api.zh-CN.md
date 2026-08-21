@@ -666,6 +666,13 @@ interface WorkflowRunnerOptions {
 `dispose()` 会移除构造函数安装的 JSON Writer，保留外部注册到 Emitter 的
 Listener。释放后的 Runner 不能启动新的 Workflow。
 
+## Trace API
+
+`@deerwork-ai/deer-workflow/trace` 导出 `TraceRecorder`、`runWithTraceRecorder` 和
+`runTracedCommand`。CLI `--trace` 会自动创建 Recorder；框架默认 `agent()` 从 async-local
+上下文取得 Recorder 并写 Agent start/end。自定义 Workflow 若直接 `Bun.spawn` 不会被自动
+拦截，应改用 `runTracedCommand(command, cwd)`。Trace value 会递归脱敏并限制长文本。
+
 ## 示例
 
 - [Deep Research](../examples/deep-research/README.zh-CN.md)：在规划前先执行
@@ -674,3 +681,41 @@ Listener。释放后的 Runner 不能启动新的 Workflow。
   Present 阶段通过操作系统打开生成的 HTML 文件。
 - [Blog Writer](../examples/blog-writer/README.zh-CN.md)：组合使用
   `agent()`、`phase()`、`pipeline()`、`log()` 和 `WorkflowRunner`。
+- [iOS Build and Install](../examples/ios-build-install/README.zh-CN.md)：组合
+  确定性 TypeScript 编排、`phase()`、`log()`、flow-ios-dev 构建输出和
+  install-only devicectl 安装。
+- [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md)：组合确定性
+  TypeScript 编排、`phase()`、`log()`、本地 xctrace collector 和 HTML 时间线
+  renderer。
+- [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md)：组合确定性
+  TypeScript 编排、`phase()`、`log()`、`xctrace record --attach`、Time
+  Profiler XML 导出和共享 HTML 时间线 renderer。
+- [iOS UI Discovery](../examples/ios-ui-discovery/README.zh-CN.md)：组合确定性
+  `mobilecli` 编排和可复用页面、控件、设备及跳转资产。
+- [iOS Case Authoring](../examples/ios-case-authoring/README.zh-CN.md)：组合有限
+  录屏抽帧、受 Schema 约束的 `agent()` 输出和确定性页面/控件引用校验。
+- [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)：
+  消费验证通过的 case 资产，串行执行设备动作，并输出逐 case 证据和 HTML 报告。
+- [iOS UI Map Report](../examples/ios-ui-map-report/README.zh-CN.md)：把页面、
+  控件、transition 和 policy 编译为机器图、模型索引和交互式 HTML 投影。
+- [iOS UI Navigate](../examples/ios-ui-navigate/README.zh-CN.md)：解析页面别名、
+  按类别安全规划路径，并记录点击来自实时 UI dump 还是 device binding。
+- [iOS UI Graph Experiment](../examples/ios-ui-graph-experiment/README.zh-CN.md)：
+  将真机事实 `verified` 与 `guarded`、`fast`、`quarantined` 执行可信度拆开；
+  guarded 步骤使用当前 UI dump 重定位，App 版本变化自动触发 guarded 重验证，
+  Task 只是可选路径缓存，不是规划前提。
+- [iOS UI Graph Discovery](../examples/ios-ui-graph-discovery/README.zh-CN.md)：
+  将真实 before/after 写为 verified 知识与 guarded 执行信任，并提供
+  `evidenceMigrationOnly`，可在不运行 Agent 或设备动作时离线迁移 Graph 和刷新 Map。
+- [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md)、
+  [Exec](../examples/app-graph-exec/README.zh-CN.md)、
+  [Discovery](../examples/app-graph-discovery/README.zh-CN.md) 和
+  [Accept](../examples/app-graph-accept/README.zh-CN.md)：展示 typed 语义 Plan、
+  实时 Selector 优先执行、goal + Element 约束的一次性定向补图，以及批量验收中的完整
+  Plan 透传。
+- [App Graph v2 Map](../examples/app-graph-map-report/README.zh-CN.md) 与
+  [Console](../examples/ios-ui-graph-console/README.zh-CN.md)：通过 Graph ID 动作和
+  串行设备队列提供该链路的可视入口。
+- [App Graph 统一入口](../examples/app-graph/README.zh-CN.md)：用一份 typed input
+  和一份最终结果封装严格 PID 重启、Plan、Exec、受限 Agent 恢复、Graph 学习和重试；
+  失败不会自动进入全页 Discovery。

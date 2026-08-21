@@ -12,7 +12,8 @@
     "./events": "./src/events/index.ts",
     "./flow": "./src/flow/index.ts",
     "./logging": "./src/logging/index.ts",
-    "./runner": "./src/runner/index.ts"
+    "./runner": "./src/runner/index.ts",
+    "./trace": "./src/trace/index.ts"
   },
   "files": [
     "src",
