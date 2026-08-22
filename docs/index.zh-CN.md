@@ -322,16 +322,8 @@ Pi 0.84.1 没有内置操作系统 Sandbox。`PiAgent` 通过非修改型工具 
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md) 通过
   `xctrace --attach` 记录已经运行中的 iOS App，适合手动操作采集，并渲染同款
   HTML 时间线。
-- [iOS UI Discovery](../examples/ios-ui-discovery/README.zh-CN.md) 使用串行
-  `mobilecli` route 采集确定性的 UI map。
-- [iOS Case Authoring](../examples/ios-case-authoring/README.zh-CN.md) 组合录屏
-  抽帧、需求、UI map 和受 Schema 约束的 `agent()` 输出。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)
   消费校验通过的 case，并保持设备执行确定性。
-- [iOS UI Map Report](../examples/ios-ui-map-report/README.zh-CN.md) 生成
-  `graph.json`、`page-index.json` 和交互式导航地图。
-- [iOS UI Navigate](../examples/ios-ui-navigate/README.zh-CN.md) 解析目标页面，
-  并从冷启动规划或执行 policy 批准的 active 路线。
 - [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md) 编译不依赖坐标
   也能理解的语义 Plan。
 - [App Graph v2 Exec](../examples/app-graph-exec/README.zh-CN.md) 优先解析当前

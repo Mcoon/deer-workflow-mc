@@ -1,0 +1,437 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "StaticText",
+        "label": "火山方舟 - 体验",
+        "name": "火山方舟 - 体验",
+        "rect": {
+          "x": 40,
+          "y": 48,
+          "width": 334,
+          "height": 44
+        }
+      },
+      {
+        "type": "Button",
+        "label": "返回",
+        "name": "btn:icon_navibar_back",
+        "identifier": "btn:icon_navibar_back",
+        "rect": {
+          "x": 16,
+          "y": 58,
+          "width": 24,
+          "height": 24
+        }
+      },
+      {
+        "type": "WebView",
+        "rect": {
+          "x": 0,
+          "y": 92,
+          "width": 414,
+          "height": 804
+        },
+        "children": [
+          {
+            "type": "Button",
+            "label": "全部产品",
+            "name": "全部产品",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 0,
+              "y": 108,
+              "width": 24,
+              "height": 24
+            }
+          },
+          {
+            "type": "Button",
+            "label": "火山方舟",
+            "name": "火山方舟",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 0,
+              "y": 110,
+              "width": 68,
+              "height": 20
+            }
+          },
+          {
+            "type": "Image",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 361,
+              "y": 575,
+              "width": 34,
+              "height": 34
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "在线咨询",
+            "name": "在线咨询",
+            "value": "在线咨询",
+            "placeholder": "",
+            "rect": {
+              "x": 371,
+              "y": 613,
+              "width": 14,
+              "height": 71
+            }
+          },
+          {
+            "type": "Button",
+            "label": "问卷反馈",
+            "name": "问卷反馈",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 354,
+              "y": 710,
+              "width": 48,
+              "height": 48
+            }
+          },
+          {
+            "type": "Button",
+            "label": "收起浮层",
+            "name": "收起浮层",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 356,
+              "y": 770,
+              "width": 46,
+              "height": 46
+            }
+          },
+          {
+            "type": "Button",
+            "label": "打开导航菜单",
+            "name": "打开导航菜单",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 12,
+              "y": 104,
+              "width": 36,
+              "height": 40
+            }
+          },
+          {
+            "type": "Button",
+            "label": "Doubao-Seed-Evolving",
+            "name": "Doubao-Seed-Evolving",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 60,
+              "y": 104,
+              "width": 290,
+              "height": 40
+            }
+          },
+          {
+            "type": "Button",
+            "label": "更多操作",
+            "name": "更多操作",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 362,
+              "y": 104,
+              "width": 40,
+              "height": 40
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "欢迎来到",
+            "name": "欢迎来到",
+            "value": "欢迎来到",
+            "placeholder": "",
+            "rect": {
+              "x": 79,
+              "y": 204,
+              "width": 113,
+              "height": 33
+            }
+          },
+          {
+            "type": "Button",
+            "label": "精选",
+            "name": "精选",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 28,
+              "y": 275,
+              "width": 60,
+              "height": 32
+            }
+          },
+          {
+            "type": "Button",
+            "label": "语言",
+            "name": "语言",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 94,
+              "y": 275,
+              "width": 60,
+              "height": 32
+            }
+          },
+          {
+            "type": "Button",
+            "label": "图片",
+            "name": "图片",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 160,
+              "y": 275,
+              "width": 60,
+              "height": 32
+            }
+          },
+          {
+            "type": "Button",
+            "label": "视频",
+            "name": "视频",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 226,
+              "y": 275,
+              "width": 60,
+              "height": 32
+            }
+          },
+          {
+            "type": "Button",
+            "label": "Doubao-Seedance-2.5",
+            "name": "Doubao-Seedance-2.5",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 28,
+              "y": 331,
+              "width": 358,
+              "height": 93
+            }
+          },
+          {
+            "type": "Button",
+            "label": "Doubao-Seed-Evolving",
+            "name": "Doubao-Seed-Evolving",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 28,
+              "y": 440,
+              "width": 358,
+              "height": 94
+            }
+          },
+          {
+            "type": "Button",
+            "label": "Doubao-Seedream-5.0-pro",
+            "name": "Doubao-Seedream-5.0-pro",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 28,
+              "y": 549,
+              "width": 358,
+              "height": 94
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "请输入问题，帮你深度解答",
+            "name": "请输入问题，帮你深度解答",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 40,
+              "y": 700,
+              "width": 169,
+              "height": 18
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "请输入问题，帮你深度解答",
+            "name": "请输入问题，帮你深度解答",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 40,
+              "y": 700,
+              "width": 169,
+              "height": 18
+            }
+          },
+          {
+            "type": "Button",
+            "label": "工具",
+            "name": "工具",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 76,
+              "y": 758,
+              "width": 57,
+              "height": 29
+            }
+          },
+          {
+            "type": "Button",
+            "label": "高",
+            "name": "高",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 140,
+              "y": 758,
+              "width": 71,
+              "height": 29
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "免登录体验10/10次，",
+            "name": "免登录体验10/10次，",
+            "value": "免登录体验10/10次，",
+            "placeholder": "",
+            "rect": {
+              "x": 218,
+              "y": 764,
+              "width": 117,
+              "height": 16
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "注册/登录",
+            "name": "注册/登录",
+            "value": "注册/登录",
+            "placeholder": "",
+            "rect": {
+              "x": 334,
+              "y": 764,
+              "width": 54,
+              "height": 16
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "后免费赠送每个模型50万tokens推理额度",
+            "name": "后免费赠送每个模型50万tokens推理额度",
+            "value": "后免费赠送每个模型50万tokens推理额度",
+            "placeholder": "",
+            "rect": {
+              "x": 387,
+              "y": 764,
+              "width": 218,
+              "height": 16
+            }
+          },
+          {
+            "type": "Button",
+            "value": "",
+            "placeholder": "",
+            "rect": {
+              "x": 345,
+              "y": 758,
+              "width": 29,
+              "height": 29
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "试用体验内容均由人工智能模型生成，不代表平台立场",
+            "name": "试用体验内容均由人工智能模型生成，不代表平台立场",
+            "value": "试用体验内容均由人工智能模型生成，不代表平台立场",
+            "placeholder": "",
+            "rect": {
+              "x": 53,
+              "y": 819,
+              "width": 288,
+              "height": 15
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "免责声明",
+            "name": "免责声明",
+            "value": "免责声明",
+            "placeholder": "",
+            "rect": {
+              "x": 123,
+              "y": 837,
+              "width": 48,
+              "height": 15
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "测试协议",
+            "name": "测试协议",
+            "value": "测试协议",
+            "placeholder": "",
+            "rect": {
+              "x": 183,
+              "y": 837,
+              "width": 48,
+              "height": 15
+            }
+          },
+          {
+            "type": "StaticText",
+            "label": "隐私政策",
+            "name": "隐私政策",
+            "value": "隐私政策",
+            "placeholder": "",
+            "rect": {
+              "x": 243,
+              "y": 837,
+              "width": 48,
+              "height": 15
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "14:35",
+        "name": "14:35",
+        "rect": {
+          "x": 21,
+          "y": 15,
+          "width": 43,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 67,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

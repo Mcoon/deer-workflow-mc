@@ -8,12 +8,15 @@ run the Workflow, operate the phone while the recording is active, and let
 
 ## What It Does
 
-1. prepares an output directory under `/tmp/ios_perf-opt/ios-attach-trace/`;
+1. prepares an output directory under
+   `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/`;
 2. runs `xcrun xctrace record --template "Time Profiler" --attach <target>` for
    the requested duration;
-3. exports `toc.xml` and `time_profile.xml`;
-4. parses the exported Time Profiler rows with the launch trace parser;
-5. renders `attach-trace-report.html` with the same zoomable timeline, frame
+3. resolves a recursive dSYM search path from explicit input or the newest
+   matching `ios-build-install` summary, then runs `xctrace symbolicate`;
+4. exports `toc.xml` and `time_profile.xml` from the symbolicated trace;
+5. parses the exported Time Profiler rows with the launch trace parser;
+6. renders `attach-trace-report.html` with the same zoomable timeline, frame
    details, top sampled frames, and artifact paths.
 
 The Workflow does not install, launch, terminate, or otherwise control the app.
@@ -54,11 +57,17 @@ The Workflow then exports and renders the report.
 - `template`: xctrace template name or path. Defaults to `Time Profiler`.
 - `timeLimit`: recording limit, defaults to `30s`.
 - `outputDir`: output directory. Defaults to
-  `/tmp/ios_perf-opt/ios-attach-trace/<runId>`.
+  `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/<runId>`.
 - `htmlReportPath`: report destination. Defaults to
   `<outputDir>/attach-trace-report.html`.
 - `targetBinary`: binary highlighted as app code in the HTML timeline. Defaults
   to `Grace`.
+- `symbolSearchPath`: directory recursively searched by `xctrace symbolicate`.
+  If omitted, the Workflow discovers the newest matching
+  `/tmp/ios_perf-opt/ios-build-install/*/build-summary.json` and uses the
+  directory containing `GraceCore.framework.dSYM`.
+- `businessBinary`: business framework used for source-coverage validation.
+  Defaults to `<targetBinary>Core`, normally `GraceCore`.
 - `maxSamples` / `maxDepth`: rendering limits for large traces.
 
 ## Output
@@ -66,6 +75,7 @@ The Workflow then exports and renders the report.
 For a normal attach collection, the output directory contains:
 
 - `attach_target.trace`
+- `symbolicated.trace` when a symbol search path is available
 - `toc.xml`
 - `time_profile.xml`
 - `summary.json`
@@ -80,3 +90,6 @@ separately from wall-clock range.
 `record.observed_recording_finished_at` timestamps. Use these fields to confirm
 whether a long-looking `Collect` phase was actual Time Profiler recording time
 or setup time before `xctrace` attached.
+It also records the selected symbol search path, its resolution source, and
+source-level `GraceCore` coverage. `symbolicationStatus=ready` now means the
+exported main-thread stacks actually contain `GraceCore` source locations.

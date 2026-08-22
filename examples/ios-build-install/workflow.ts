@@ -1,5 +1,5 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
@@ -91,6 +91,8 @@ export default async function iosBuildInstall(
       "## Validating build artifacts",
       `- **App:** \`${appPath || "missing"}\``,
       `- **dSYM:** \`${dsymPath || "missing"}\``,
+      `- **Business dSYM:** \`${symbolPaths.business || "missing"}\``,
+      `- **Symbol search path:** \`${symbolPaths.searchRoot || "missing"}\``,
       `- **Symbolication:** \`${symbolicationStatus}\``,
       `- **Build log:** \`${buildOutput.log_file ?? ""}\``,
       ...(compileErrors.length > 0
@@ -110,6 +112,7 @@ export default async function iosBuildInstall(
     buildOutput,
     appPath,
     dsymPath,
+    businessDsymPath: symbolPaths.business,
     requireReadySymbols: input.requireReadySymbols,
     symbolicationStatus,
     buildSummaryPath: input.buildSummaryPath,
@@ -178,6 +181,8 @@ export default async function iosBuildInstall(
     appPath,
     dsymPath,
     dsymPaths: symbolPaths.all,
+    businessDsymPath: symbolPaths.business,
+    symbolSearchPath: symbolPaths.searchRoot,
     exportedDsymPath: buildOutput.exported_dsym_path ?? "",
     symbolicationStatus,
     buildCommand,
@@ -330,6 +335,7 @@ async function assertBuildReady(options: {
   buildOutput: FlowIosBuildOutput;
   appPath: string;
   dsymPath: string;
+  businessDsymPath: string;
   requireReadySymbols: boolean;
   symbolicationStatus: string;
   buildSummaryPath: string;
@@ -343,6 +349,14 @@ async function assertBuildReady(options: {
   }
   if (!(await pathExists(options.dsymPath))) {
     issues.push(`dSYM is missing or does not exist: ${options.dsymPath}`);
+  }
+  if (
+    options.requireReadySymbols &&
+    !(await pathExists(options.businessDsymPath))
+  ) {
+    issues.push(
+      `business dSYM is missing or does not exist: ${options.businessDsymPath}`,
+    );
   }
   if (options.requireReadySymbols && options.symbolicationStatus !== "ready") {
     issues.push(
@@ -425,6 +439,8 @@ function buildFailureReason(
 export function resolveSymbolPaths(output: FlowIosBuildOutput): {
   primary: string;
   all: string[];
+  business: string;
+  searchRoot: string;
 } {
   const paths = [
     output.exported_dsym_path,
@@ -432,9 +448,17 @@ export function resolveSymbolPaths(output: FlowIosBuildOutput): {
     ...(output.dsym_paths ?? []),
   ].filter((path): path is string => Boolean(path));
   const all = [...new Set(paths)];
+  const business =
+    output.dsym_metadata?.find(
+      (metadata) => metadata.binary_name === "GraceCore",
+    )?.path ??
+    all.find((path) => basename(path) === "GraceCore.framework.dSYM") ??
+    "";
   return {
     primary: output.exported_dsym_path ?? output.dsym_path ?? all[0] ?? "",
     all,
+    business,
+    searchRoot: business ? dirname(business) : "",
   };
 }
 

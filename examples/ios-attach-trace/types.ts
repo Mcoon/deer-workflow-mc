@@ -35,6 +35,15 @@ export interface IosAttachTraceInput {
   /** Matching `.app.dSYM` bundle for source-level symbolication context. */
   dsymPath?: string;
 
+  /**
+   * Directory recursively searched by `xctrace symbolicate`. When omitted,
+   * the Workflow tries the most recent matching ios-build-install summary.
+   */
+  symbolSearchPath?: string;
+
+  /** Business framework whose source coverage determines symbolication status. */
+  businessBinary?: string;
+
   /** xctrace time limit, such as `30s` or `15000ms`. */
   timeLimit?: string;
 
@@ -96,8 +105,13 @@ export interface IosAttachTraceSummary extends LaunchTraceSummary {
   attach_target_resolution?: AttachTargetResolution;
   template: string;
   record?: AttachProcessSummary;
+  symbolicate?: AttachProcessSummary;
   export_toc?: AttachProcessSummary;
   export_time_profile?: AttachProcessSummary;
+  symbol_search_path?: string;
+  symbol_search_source?: string;
+  symbolicated_trace_path?: string;
+  build_summary_path?: string;
 }
 
 /**
@@ -110,6 +124,7 @@ export interface IosAttachTraceResult {
   outputDir: string;
   summaryPath: string;
   tracePath: string;
+  symbolicatedTracePath: string;
   tocPath: string;
   timeProfilePath: string;
   htmlReportPath: string;

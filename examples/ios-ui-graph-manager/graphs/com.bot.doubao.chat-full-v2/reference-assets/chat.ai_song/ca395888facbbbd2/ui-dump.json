@@ -1,0 +1,497 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "rect": {
+          "x": 9,
+          "y": 104,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "戏腔摇滚呐喊",
+        "name": "戏腔摇滚呐喊",
+        "rect": {
+          "x": 17,
+          "y": 158,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "摇滚",
+        "name": "摇滚",
+        "rect": {
+          "x": 17,
+          "y": 179,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 128,
+          "y": 259,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 142,
+          "y": 266,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 213,
+          "y": 104,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "夏日恋曲DJ",
+        "name": "夏日恋曲DJ",
+        "rect": {
+          "x": 221,
+          "y": 158,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "DJ",
+        "name": "DJ",
+        "rect": {
+          "x": 221,
+          "y": 179,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 259,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 347,
+          "y": 266,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 9,
+          "y": 308,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "伞下的告别",
+        "name": "伞下的告别",
+        "rect": {
+          "x": 17,
+          "y": 362,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "流行",
+        "name": "流行",
+        "rect": {
+          "x": 17,
+          "y": 384,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 128,
+          "y": 464,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 142,
+          "y": 471,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 213,
+          "y": 308,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "爱欲拉扯之悸",
+        "name": "爱欲拉扯之悸",
+        "rect": {
+          "x": 221,
+          "y": 362,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "电子",
+        "name": "电子",
+        "rect": {
+          "x": 221,
+          "y": 384,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 464,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 347,
+          "y": 471,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 9,
+          "y": 513,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "深夜心动试探",
+        "name": "深夜心动试探",
+        "rect": {
+          "x": 17,
+          "y": 567,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "R\u0026B",
+        "name": "R\u0026B",
+        "rect": {
+          "x": 17,
+          "y": 588,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 128,
+          "y": 668,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 142,
+          "y": 675,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 213,
+          "y": 513,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "破泪追光",
+        "name": "破泪追光",
+        "rect": {
+          "x": 221,
+          "y": 567,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "朋克",
+        "name": "朋克",
+        "rect": {
+          "x": 221,
+          "y": 588,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 668,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 347,
+          "y": 675,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 9,
+          "y": 717,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "旧梦心事飘零",
+        "name": "旧梦心事飘零",
+        "rect": {
+          "x": 17,
+          "y": 771,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "国风",
+        "name": "国风",
+        "rect": {
+          "x": 17,
+          "y": 793,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 128,
+          "y": 873,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 142,
+          "y": 880,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 213,
+          "y": 717,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "霓虹爵士之殇",
+        "name": "霓虹爵士之殇",
+        "rect": {
+          "x": 221,
+          "y": 771,
+          "width": 175,
+          "height": 19
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "爵士",
+        "name": "爵士",
+        "rect": {
+          "x": 221,
+          "y": 793,
+          "width": 175,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 873,
+          "width": 64,
+          "height": 28
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "做同款",
+        "name": "做同款",
+        "rect": {
+          "x": 347,
+          "y": 880,
+          "width": 36,
+          "height": 14
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 写歌",
+        "name": "AI 写歌",
+        "rect": {
+          "x": 180,
+          "y": 52,
+          "width": 54,
+          "height": 36
+        }
+      },
+      {
+        "type": "Button",
+        "label": "开始写歌",
+        "name": "开始写歌",
+        "rect": {
+          "x": 127,
+          "y": 798,
+          "width": 160,
+          "height": 56
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "开始写歌",
+            "name": "开始写歌",
+            "rect": {
+              "x": 188,
+              "y": 816,
+              "width": 64,
+              "height": 19
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "bar more",
+        "name": "btn:bar_more",
+        "identifier": "btn:bar_more",
+        "rect": {
+          "x": 322,
+          "y": 52,
+          "width": 36,
+          "height": 36
+        }
+      },
+      {
+        "type": "Button",
+        "label": "bar exit",
+        "name": "btn:bar_exit",
+        "identifier": "btn:bar_exit",
+        "rect": {
+          "x": 362,
+          "y": 52,
+          "width": 36,
+          "height": 36
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "13:05",
+        "name": "13:05",
+        "rect": {
+          "x": 21,
+          "y": 15,
+          "width": 43,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 67,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

@@ -8,11 +8,10 @@ import { WorkflowRunner } from "@deerwork-ai/deer-workflow/runner";
 
 import {
   buildStrictRestartCommand,
-  buildVisibilityScrollCommand,
   buildStepCommands,
   parseStrictRestartResult,
   resolveSemanticStepTarget,
-  resolveOffscreenScrollDirection,
+  runGroundCaptureCommand,
   validatePlanAgainstGraph,
 } from "../../examples/app-graph-exec/workflow";
 import type { AppGraphExecOutput } from "../../examples/app-graph-exec/types";
@@ -22,10 +21,20 @@ import type { AppGraphDiscoveryOutput } from "../../examples/app-graph-discovery
 import {
   buildDiscoveryActionCommand,
   buildDiscoveryPatch,
+  diagnoseAndRecoverStableDiscovery,
+  discoveryCompletionIssue,
   runDiscoveryCaptureCommand,
+  resolveDiscoveryExpectedSceneId,
   resolveDiscoveryElement,
+  resolveVisibleDiscoveryElement,
+  waitForStableDiscoveryObservation,
 } from "../../examples/app-graph-discovery/workflow";
-import { buildHorizontalVisibilityRecoveryCommands } from "../../examples/app-graph-exec/visibility-recovery";
+import {
+  buildViewportSearchCommand,
+  isHistoricalViewportHintStep,
+  searchViewports,
+  viewportSearchAxisForTarget,
+} from "../../examples/app-graph-exec/viewport-search";
 import { applyPatch } from "../../examples/ios-ui-graph-manager/patch";
 import type { AppGraphAcceptOutput } from "../../examples/app-graph-accept/types";
 import type { AgentFunction } from "@deerwork-ai/deer-workflow/agents";
@@ -179,20 +188,20 @@ describe("App Graph Plan pipeline", () => {
         }),
       ).toMatchObject({ source: "unresolved" });
       expect(
-        resolveOffscreenScrollDirection({
-          step,
-          uiElements: [offscreen, conflictingChild],
+        buildViewportSearchCommand({
+          udid: "device-1",
+          axis: "vertical",
+          direction: "up",
           viewportWidth: 414,
           viewportHeight: 896,
         }),
-      ).toBe("up");
-      expect(buildVisibilityScrollCommand("device-1", 414, 896, "up")).toEqual([
+      ).toEqual([
         "mobilecli",
         "io",
         "swipe",
         "--device",
         "device-1",
-        "207,699,207,251",
+        "207,573,207,466",
       ]);
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -221,14 +230,6 @@ describe("App Graph Plan pipeline", () => {
         ...offscreenRow,
         bounds: { x: 16, y: 92, width: 262, height: 44 },
       };
-      expect(
-        resolveOffscreenScrollDirection({
-          step,
-          uiElements: [offscreenRow, localCoordinateChild],
-          viewportWidth: 414,
-          viewportHeight: 896,
-        }),
-      ).toBe("up");
       expect(
         resolveSemanticStepTarget({
           step,
@@ -538,7 +539,8 @@ describe("App Graph Plan pipeline", () => {
         mode: "exec",
         verdict: "pass",
       });
-      expect(loadingCaptures).toBe(2);
+      // The target must be observed twice consecutively before the next step.
+      expect(loadingCaptures).toBe(3);
       expect(agentCalls).toBe(0);
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -770,7 +772,7 @@ describe("App Graph Plan pipeline", () => {
   test("requires strict devicectl PID proof for reset", () => {
     expect(buildStrictRestartCommand("device-1", "com.bot.doubao")).toEqual([
       "python3",
-      expect.stringContaining("devicectl_restart.py"),
+      expect.stringContaining("ios-regression-kit/devicectl_restart.py"),
       "--device",
       "device-1",
       "--bundle-id",
@@ -1000,20 +1002,278 @@ describe("App Graph Plan pipeline", () => {
     ]);
   });
 
-  test("uses a bounded verified ActionBar swipe to reveal a stale focus Element", () => {
+  test("Discovery prefers the overlapping full row for duplicate child text", () => {
+    const row = {
+      elementId: "row",
+      accessibilityId: "通知设置",
+      label: "通知设置",
+      text: "",
+      value: "",
+      role: "StaticText",
+      x: 16,
+      y: 652,
+      width: 382,
+      height: 56,
+    };
+    const child = {
+      ...row,
+      elementId: "child",
+      x: 80,
+      y: 658,
+      width: 262,
+      height: 44,
+    };
     expect(
-      buildHorizontalVisibilityRecoveryCommands({
+      resolveDiscoveryElement([row, child], "bot.settings.row.item-64676dfd", [
+        { type: "label", value: "通知设置" },
+      ]),
+    ).toEqual(row);
+
+    expect(
+      resolveDiscoveryElement(
+        [row, { ...child, x: 500 }],
+        "bot.settings.row.item-64676dfd",
+        [{ type: "label", value: "通知设置" }],
+      ),
+    ).toBeNull();
+  });
+
+  test("Discovery infers the known target Scene for one focused Element action", () => {
+    expect(
+      resolveDiscoveryExpectedSceneId(
         graph,
-        sceneId: "chat.detail",
-        focusElementId: "chat.detail.actionbar.ppt-dac81d06",
+        "bot.settings",
+        "bot.settings.row.item-64676dfd",
+        "探索通知设置",
+      ),
+    ).toBe("bot.settings.notification_settings");
+  });
+
+  test("Discovery scrolls toward a real offscreen row instead of tapping its local-coordinate shadow", () => {
+    const offscreen = {
+      elementId: "minor-row",
+      accessibilityId: "未成年人模式",
+      label: "未成年人模式",
+      text: "",
+      value: "",
+      role: "StaticText",
+      x: 16,
+      y: 1076,
+      width: 382,
+      height: 56,
+    };
+    const shadow = {
+      ...offscreen,
+      elementId: "minor-shadow",
+      y: 92,
+      width: 262,
+      height: 44,
+    };
+    const selectors = [{ type: "label", value: "未成年人模式" }];
+    expect(
+      resolveVisibleDiscoveryElement(
+        [offscreen, shadow],
+        "bot.settings.row.item-207b4043",
+        selectors,
+        414,
+        896,
+      ),
+    ).toBeNull();
+    expect(
+      viewportSearchAxisForTarget({
+        elementId: "bot.settings.row.item-207b4043",
+        semanticRole: "StaticText",
+      }),
+    ).toBe("vertical");
+    expect(
+      resolveVisibleDiscoveryElement(
+        [
+          {
+            ...offscreen,
+            y: 51,
+          },
+        ],
+        "bot.settings.row.item-207b4043",
+        selectors,
+        414,
+        896,
+        896 * 0.14,
+      ),
+    ).toBeNull();
+  });
+
+  test("Discovery never reports success when no focused action ran", () => {
+    expect(
+      discoveryCompletionIssue({
+        focusElementId: "bot.settings.row.item-64676dfd",
+        expectedSceneId: "bot.settings.notification_settings",
+        actionsExecuted: 0,
+        agentConfirmedTarget: false,
+        observedSceneIds: [],
+        explicitStaleRecovery: false,
+      }),
+    ).toEqual({
+      code: "focus_element_unresolved",
+      message:
+        "Focus Element bot.settings.row.item-64676dfd was not resolved and no exploration action was executed.",
+    });
+  });
+
+  test("uses the shared horizontal viewport gesture for an ActionBar Element", () => {
+    expect(
+      buildViewportSearchCommand({
         udid: "device-1",
-        maxAttempts: 3,
+        axis: viewportSearchAxisForTarget({
+          elementId: "chat.detail.actionbar.ppt-dac81d06",
+          semanticRole: "Button",
+        }),
+        direction: "left",
+        viewportWidth: 414,
+        viewportHeight: 896,
+        horizontalCenterY: 762,
       }),
     ).toEqual([
-      ["mobilecli", "io", "swipe", "--device", "device-1", "370,762,55,762"],
-      ["mobilecli", "io", "swipe", "--device", "device-1", "90,762,230,762"],
-      ["mobilecli", "io", "swipe", "--device", "device-1", "370,762,55,762"],
+      "mobilecli",
+      "io",
+      "swipe",
+      "--device",
+      "device-1",
+      "257,762,157,762",
     ]);
+  });
+
+  test("viewport search returns a target from the current screen without moving", async () => {
+    const moved: string[] = [];
+    const result = await searchViewports({
+      axis: "vertical",
+      initialObservation: "target",
+      resolveVisibleTarget: (screen) =>
+        screen === "target" ? { id: "wanted" } : null,
+      moveAndObserve: async (direction) => {
+        moved.push(direction);
+        return {
+          observation: "unexpected",
+          stable: true,
+          changedFromPrevious: true,
+          fingerprint: "unexpected",
+        };
+      },
+    });
+
+    expect(result.stopReason).toBe("found");
+    expect(result.moves).toEqual([]);
+    expect(moved).toEqual([]);
+  });
+
+  test("viewport search checks every screen and finds a target after one forward move", async () => {
+    const screens = ["first", "target"];
+    const result = await searchViewports({
+      axis: "vertical",
+      initialObservation: screens[0]!,
+      resolveVisibleTarget: (screen) =>
+        screen === "target" ? { id: "wanted" } : null,
+      moveAndObserve: async (direction, moveIndex) => ({
+        observation: screens[moveIndex]!,
+        stable: true,
+        changedFromPrevious: true,
+        fingerprint: screens[moveIndex]!,
+      }),
+    });
+
+    expect(result.stopReason).toBe("found");
+    expect(result.target).toEqual({ id: "wanted" });
+    expect(result.moves.map((move) => move.direction)).toEqual(["up"]);
+  });
+
+  test("viewport search reverses only after observing a boundary", async () => {
+    const directions: string[] = [];
+    const sequence = [
+      { screen: "bottom", changed: false },
+      { screen: "middle", changed: true },
+      { screen: "target", changed: true },
+    ];
+    const result = await searchViewports({
+      axis: "vertical",
+      initialObservation: "start",
+      resolveVisibleTarget: (screen) =>
+        screen === "target" ? { id: "wanted" } : null,
+      moveAndObserve: async (direction, moveIndex) => {
+        directions.push(direction);
+        const next = sequence[moveIndex - 1]!;
+        return {
+          observation: next.screen,
+          stable: true,
+          changedFromPrevious: next.changed,
+          fingerprint: next.screen,
+        };
+      },
+    });
+
+    expect(result.stopReason).toBe("found");
+    expect(directions).toEqual(["up", "down", "down"]);
+  });
+
+  test("viewport search stops after both boundaries without consulting target coordinates", async () => {
+    const result = await searchViewports({
+      axis: "vertical",
+      initialObservation: { name: "start", historicalY: 10_000 },
+      resolveVisibleTarget: () => null,
+      moveAndObserve: async (direction) => ({
+        observation: { name: direction, historicalY: -10_000 },
+        stable: true,
+        changedFromPrevious: false,
+        fingerprint: direction,
+      }),
+    });
+
+    expect(result.stopReason).toBe("boundaries_reached");
+    expect(result.moves.map((move) => move.direction)).toEqual(["up", "down"]);
+  });
+
+  test("viewport search respects its move budget when neither boundary is reached", async () => {
+    const result = await searchViewports({
+      axis: "horizontal",
+      initialObservation: 0,
+      maximumMoves: 3,
+      resolveVisibleTarget: () => null,
+      moveAndObserve: async (direction, moveIndex) => ({
+        observation: moveIndex,
+        stable: true,
+        changedFromPrevious: true,
+        fingerprint: `${direction}-${moveIndex}`,
+      }),
+    });
+
+    expect(result.stopReason).toBe("budget_exhausted");
+    expect(result.moves.map((move) => move.direction)).toEqual([
+      "left",
+      "left",
+      "left",
+    ]);
+  });
+
+  test("treats every consecutive same-Scene swipe before a semantic target as a hint", () => {
+    const steps = [
+      {
+        fromSceneId: "chat.detail",
+        toSceneId: "chat.detail",
+        operation: { type: "swipe" },
+      },
+      {
+        fromSceneId: "chat.detail",
+        toSceneId: "chat.detail",
+        operation: { type: "swipe" },
+      },
+      {
+        fromSceneId: "chat.detail",
+        toSceneId: "chat.buy_before_ask",
+        operation: { type: "tap" },
+        targetElement: { elementId: "buy-before-ask" },
+      },
+    ];
+    expect(isHistoricalViewportHintStep(steps, 0)).toBeTrue();
+    expect(isHistoricalViewportHintStep(steps, 1)).toBeTrue();
+    expect(isHistoricalViewportHintStep(steps, 2)).toBeFalse();
   });
 
   test("retries transient Discovery capture failures", async () => {
@@ -1030,6 +1290,111 @@ describe("App Graph Plan pipeline", () => {
 
     expect(attempts).toBe(3);
     expect(result.stdout).toBe("captured");
+  });
+
+  test("retries transient Exec ground capture failures", async () => {
+    let attempts = 0;
+    const result = await runGroundCaptureCommand(
+      ["mobilecli", "screenshot"],
+      async () => {
+        attempts += 1;
+        return attempts < 3
+          ? { stdout: "", stderr: "tunnel unavailable", exitCode: 1 }
+          : { stdout: "captured", stderr: "", exitCode: 0 };
+      },
+    );
+    expect(attempts).toBe(3);
+    expect(result.stdout).toBe("captured");
+  });
+
+  test("waits through loading until two consecutive stable observations", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-stability-"));
+    const sequence = [
+      discoveryObservation(root, "loading", [uiElement("加载中", 10, 20)]),
+      discoveryObservation(root, "stable-1", [uiElement("首页", 10, 20)]),
+      discoveryObservation(root, "stable-2", [uiElement("首页", 10, 20)]),
+    ];
+    let captures = 0;
+    try {
+      for (const observation of sequence) {
+        await writeFile(
+          observation.screenshotPath,
+          observation.sceneId.startsWith("stable")
+            ? "stable-image"
+            : "loading-image",
+          "utf8",
+        );
+      }
+      const stable = await waitForStableDiscoveryObservation({
+        udid: "fake-device",
+        outputDir: root,
+        prefix: "sample",
+        sceneId: "chat.detail",
+        maximumSamples: 3,
+        pollMs: 0,
+        sleep: async () => undefined,
+        capture: async () => sequence[captures++]!,
+      });
+      expect(stable).toMatchObject({
+        stable: true,
+        sampleCount: 3,
+        consecutiveMatches: 2,
+      });
+      expect(stable.observation.sceneId).toBe("stable-2");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("records a bounded Agent diagnosis when a stable stale Scene cannot recover", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-agent-diagnostic-"));
+    const current = discoveryObservation(root, "stable-home", [
+      uiElement("火山方舟 - 首页", 40, 48),
+      uiElement("返回", 16, 58),
+    ]);
+    const agentRunner: AgentFunction = async <TOutput>() =>
+      ({
+        status: "blocked",
+        candidateId: "",
+        actionType: "none",
+        confidence: 0.94,
+        reason: "No safe visible candidate leads to the stale experience page.",
+      }) as TOutput;
+    try {
+      await writeFile(current.screenshotPath, "stable-image", "utf8");
+      const result = await diagnoseAndRecoverStableDiscovery({
+        graph,
+        goal: "打开火山方舟体验页",
+        expectedSceneId: "volcengine.ark.console.experience",
+        startSceneId: "volcengine.ark.console.home",
+        focusElementId: "volcengine.ark.console.home.experience_entry",
+        observation: current,
+        udid: "fake-device",
+        outputDir: root,
+        deviceProfile: { viewportWidth: 414, viewportHeight: 896 },
+        agentCwd: process.cwd(),
+        agentTimeoutMs: 1_000,
+        maximumSteps: 2,
+        minimumConfidence: 0.75,
+        agentRunner,
+      });
+      expect(result).toMatchObject({
+        agentUsed: true,
+        atTarget: false,
+        actionsExecuted: 0,
+        finalDecision: { status: "blocked", actionType: "none" },
+      });
+      expect(
+        JSON.parse(await readFile(result.diagnosticPath, "utf8")),
+      ).toMatchObject({
+        agentUsed: true,
+        atTarget: false,
+        message:
+          "No safe visible candidate leads to the stale experience page.",
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   test("Discovery synthesizes observed Scenes and candidate Operators from real transitions", () => {
@@ -1238,6 +1603,30 @@ describe("App Graph Plan pipeline", () => {
       actionType: "none",
     });
 
+    const blockedAgent: AgentFunction = async <TOutput>() =>
+      ({
+        status: "blocked",
+        candidateId: "",
+        actionType: "none",
+        confidence: 0.96,
+        reason: "The stable page exposes no safe goal-relevant control.",
+      }) as TOutput;
+    const blocked = await decideSceneRecoveryWithAgent({
+      goal: "打开体验页",
+      expectedScene: graph.scenes["volcengine.ark.console.experience"]!,
+      observation: current,
+      previousActions: [],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      minimumConfidence: 0.75,
+      agentRunner: blockedAgent,
+    });
+    expect(blocked?.decision).toMatchObject({
+      status: "blocked",
+      actionType: "none",
+      reason: "The stable page exposes no safe goal-relevant control.",
+    });
+
     const offscreenAgent: AgentFunction = async <TOutput>(prompt: string) => {
       expect(prompt).not.toContain("离屏隐私入口");
       return {
@@ -1416,5 +1805,33 @@ function observation(uiElements: readonly ReturnType<typeof uiElement>[]) {
     foregroundPath: "/tmp/ios_perf-opt/runtime/foreground.json",
     foregroundBundleId: "com.bot.doubao",
     uiElements,
+  };
+}
+
+function discoveryObservation(
+  root: string,
+  sceneId: string,
+  uiElements: readonly ReturnType<typeof uiElement>[],
+) {
+  return {
+    sceneId,
+    screenshotPath: join(root, `${sceneId}.png`),
+    uiDumpPath: join(root, `${sceneId}.json`),
+    foregroundPath: join(root, `${sceneId}-foreground.json`),
+    foregroundBundleId: "com.bot.doubao",
+    elements: uiElements.map((element) => ({
+      elementId: element.accessibilityId,
+      accessibilityId: element.accessibilityId,
+      label: element.label,
+      text: "",
+      value: "",
+      role: element.role,
+      x: element.bounds.x,
+      y: element.bounds.y,
+      width: element.bounds.width,
+      height: element.bounds.height,
+    })),
+    uiElements,
+    timestamp: "2026-08-22T00:00:00.000Z",
   };
 }

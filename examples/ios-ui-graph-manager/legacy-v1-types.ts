@@ -1,5 +1,5 @@
 // NOTE: Self-contained copy of the legacy v1 experiment graph types,
-// vendored here so the archived ios-ui-graph-experiment example can be removed.
+// Vendored migration-only schema. No executable legacy Workflow depends on it.
 // Used only by migrate.ts (v1 -> v2 migration).
 export type GraphEntityStatus =
   "observed" | "candidate" | "verified" | "stale" | "blocked" | "disabled";

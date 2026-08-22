@@ -14,7 +14,7 @@ import type {
   TraceFrameSpan,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+const DEFAULT_ARTIFACT_ROOT = "/Users/bytedance/.ios_pref_optimizer";
 const DEFAULT_COLLECTOR_SCRIPT_PATH =
   "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/skills/collection/flow-ios-trace-collection/scripts/collect_trace.py";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
@@ -2909,7 +2909,7 @@ def binary_info(binary_element):
     return {}
 
 def is_app_frame(binary_name, binary_path, source_path):
-    if target_binary and binary_name == target_binary:
+    if target_binary and binary_name in (target_binary, target_binary + "Core"):
         return True
     local_markers = (
         "/BDWorkSpace/Dbao/",

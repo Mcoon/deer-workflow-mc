@@ -57,7 +57,16 @@ export interface FlowIosBuildOutput {
   exported_dsym_path?: string;
   dsym_paths?: string[];
   symbolication_status?: string;
-  dsym_metadata?: unknown[];
+  dsym_metadata?: FlowIosDsymMetadata[];
+}
+
+/** Metadata reported for one generated dSYM bundle. */
+export interface FlowIosDsymMetadata {
+  path?: string;
+  bundle_name?: string;
+  binary_name?: string;
+  uuids?: string[];
+  dwarf_path?: string;
 }
 
 /** Result returned by the build-install Workflow. */
@@ -69,6 +78,10 @@ export interface IosBuildInstallResult {
   appPath: string;
   dsymPath: string;
   dsymPaths: string[];
+  /** dSYM for the business framework that owns most flow_iOS code. */
+  businessDsymPath: string;
+  /** Directory recursively consumed by xctrace symbolicate. */
+  symbolSearchPath: string;
   exportedDsymPath: string;
   symbolicationStatus: string;
   buildCommand: string[];

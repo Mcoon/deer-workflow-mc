@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Fixed iOS attach traces to consume the complete dSYM set from the latest
+  matching build, run `xctrace symbolicate` before export, and validate
+  GraceCore source coverage instead of treating the main app dSYM as sufficient.
+- Consolidated iOS App Graph execution on the v2 Plan/Exec/Discovery/Accept
+  pipeline and removed the legacy executable Graph, crawler, semantic-map, and
+  archived workflow bundles.
+- Added consecutive page-stability checks, WebView body similarity, transient
+  device-capture retries, and auditable bounded Agent recovery before App Graph
+  execution advances or learns a transition.
+- Fixed targeted Element exploration to execute overlapping full-row controls,
+  verify the known Operator destination, and reject zero-action false success.
+- Replaced coordinate-directed offscreen recovery in App Graph Exec and
+  Discovery with a shared state-driven viewport search that re-checks the live
+  selector after each short gesture, detects boundaries, reverses direction,
+  and records an auditable search trace.
+- Stopped replaying historical same-Scene swipe coordinates in guarded and fast
+  execution; the following semantic target now drives live viewport search.
+- Made `allowLearning=false` suppress fast-path reference-asset promotion as
+  well as ordinary runtime learning.
 - Removed the general-purpose `deer-workflow agent` CLI command. Agent runtime
   selection remains available on `deer-workflow create`.
 

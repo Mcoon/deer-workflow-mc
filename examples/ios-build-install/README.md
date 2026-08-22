@@ -10,8 +10,9 @@ Workflow for [iOS Launch Trace](../ios-launch-trace/README.md).
 2. validates that the build returned an `.app`, a `.app.dSYM`, and
    `symbolication_status: "ready"`;
 3. installs the app with `xcrun devicectl device install app`;
-4. returns `appPath` and `dsymPath` that can be passed directly into the launch
-   trace Workflow.
+4. returns `appPath` and the main-app `dsymPath` for launch traces, plus
+   `businessDsymPath` and `symbolSearchPath` for recursively symbolicating
+   attach traces that execute inside `GraceCore`.
 
 It does not call `flow-ios-dev deploy.py`, `ios-deploy`, or any install-and-run
 wrapper. The install phase is install-only so the first launch can still be the
@@ -32,10 +33,17 @@ The returned JSON includes:
 
 - `appPath`
 - `dsymPath`
+- `businessDsymPath`
+- `symbolSearchPath`
 - `symbolicationStatus`
 - `buildSummaryPath`
 - `installJsonPath`
 - `installLogPath`
+
+`dsymPath` remains the main `Grace.app.dSYM` for compatibility with the launch
+collector's main-executable UUID check. Pass `symbolSearchPath` to
+`ios-attach-trace` when invoking it explicitly; if omitted, that Workflow
+automatically discovers the newest matching `ios-build-install` summary.
 
 Then run launch trace with the returned paths:
 

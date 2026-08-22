@@ -6,7 +6,7 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { setTimeout as delay } from "node:timers/promises";
 import { StringDecoder } from "node:string_decoder";
@@ -18,6 +18,7 @@ import {
   parseTraceTimeline,
   renderLaunchTraceHtml,
 } from "../ios-launch-trace/workflow";
+import type { ParsedTraceTimeline } from "../ios-launch-trace/types";
 
 import type {
   AttachTargetResolution,
@@ -26,7 +27,7 @@ import type {
   IosAttachTraceSummary,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+const DEFAULT_ARTIFACT_ROOT = "/Users/bytedance/.ios_pref_optimizer";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const DEFAULT_TARGET_BINARY = "Grace";
 const DEFAULT_TEMPLATE = "Time Profiler";
@@ -37,6 +38,7 @@ const DEFAULT_EXPORT_ATTEMPTS = 3;
 const DEFAULT_EXPORT_RETRY_DELAY_MS = 1000;
 const DEFAULT_TRACE_SETTLE_ATTEMPTS = 10;
 const DEFAULT_TRACE_SETTLE_DELAY_MS = 500;
+const DEFAULT_BUILD_ARTIFACT_ROOT = "/tmp/ios_perf-opt/ios-build-install";
 const OUTPUT_TAIL_LENGTH = 4000;
 const TIME_PROFILE_XPATH =
   '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]';
@@ -53,6 +55,7 @@ export const meta = {
     { title: "Attach" },
     { title: "Record" },
     { title: "Save Trace" },
+    { title: "Symbolicate" },
     { title: "Export" },
     { title: "Parse" },
     { title: "Report" },
@@ -139,12 +142,66 @@ export default async function iosAttachTrace(
     throw collectionError("iOS attach trace collection failed", summary, input);
   }
 
-  phase("Export");
+  phase("Symbolicate");
   summary.trace_settle = await waitForTraceTreeToSettle(input.tracePath);
+  const symbolContext = await resolveAttachSymbolContext({
+    projectRoot: input.projectRoot,
+    targetBinary: input.targetBinary,
+    businessBinary: input.businessBinary,
+    explicitDsymPath: input.dsymPath,
+    explicitSymbolSearchPath: input.symbolSearchPath,
+    buildArtifactRoot: DEFAULT_BUILD_ARTIFACT_ROOT,
+  });
+  summary.dsym_path = symbolContext.dsymPath || input.dsymPath;
+  summary.symbol_search_path = symbolContext.searchPath;
+  summary.symbol_search_source = symbolContext.source;
+  summary.build_summary_path = symbolContext.buildSummaryPath;
+
+  let exportTracePath = input.tracePath;
+  if (symbolContext.searchPath) {
+    log(
+      [
+        "## Symbolicating attach trace",
+        `- **Search path:** \`${symbolContext.searchPath}\``,
+        `- **Source:** \`${symbolContext.source}\``,
+        `- **Output:** \`${input.symbolicatedTracePath}\``,
+      ].join("\n"),
+    );
+    const symbolicateCommand = buildXctraceSymbolicateCommand({
+      tracePath: input.tracePath,
+      outputPath: input.symbolicatedTracePath,
+      symbolSearchPath: symbolContext.searchPath,
+    });
+    const symbolicate = await runCommand(symbolicateCommand, input.projectRoot);
+    summary.symbolicate = processSummary(symbolicate);
+    if (symbolicate.exitCode !== 0) {
+      summary.error = "symbolication_failed";
+      summary.message = `xctrace symbolicate failed with return code ${symbolicate.exitCode}.`;
+      await writeSummary(input.summaryPath, summary);
+      throw collectionError(
+        "iOS attach trace symbolication failed",
+        summary,
+        input,
+      );
+    }
+    exportTracePath = input.symbolicatedTracePath;
+    summary.symbolicated_trace_path = input.symbolicatedTracePath;
+  } else {
+    summary.warning =
+      "No dSYM symbol search path was found; exporting the unsymbolicated trace.";
+    log(
+      [
+        "## Skipping attach trace symbolication",
+        "- No explicit or recent build-install symbol search path was found.",
+      ].join("\n"),
+    );
+  }
+
+  phase("Export");
   log(
     [
       "## Exporting Time Profiler XML",
-      `- **Trace:** \`${input.tracePath}\``,
+      `- **Trace:** \`${exportTracePath}\``,
       `- **Trace settled:** ${summary.trace_settle.settled === true ? "yes" : "no"}`,
       `- **TOC:** \`${input.tocPath}\``,
       `- **Time profile:** \`${input.timeProfilePath}\``,
@@ -152,7 +209,7 @@ export default async function iosAttachTrace(
   );
   const tocExport = await runXctraceExportWithRetry({
     label: "toc",
-    command: buildTocExportCommand(input.tracePath, input.tocPath),
+    command: buildTocExportCommand(exportTracePath, input.tocPath),
     cwd: input.projectRoot,
     outputDir: input.outputDir,
   });
@@ -179,7 +236,7 @@ export default async function iosAttachTrace(
   const profileExport = await runXctraceExportWithRetry({
     label: "time-profile",
     command: buildTimeProfileExportCommand(
-      input.tracePath,
+      exportTracePath,
       input.timeProfilePath,
     ),
     cwd: input.projectRoot,
@@ -215,9 +272,16 @@ export default async function iosAttachTrace(
     maxDepth: input.maxDepth,
     python: input.python,
   });
+  const symbolCoverage = summarizeTimelineSymbolication(
+    timeline,
+    input.targetBinary,
+    input.businessBinary,
+  );
   summary.main_thread_rows = timeline.totalMainThreadRows;
+  summary.main_thread_grace_rows = symbolCoverage.appRows;
+  summary.main_thread_grace_source_rows = symbolCoverage.businessSourceRows;
   summary.success = true;
-  summary.symbolication_status = "unknown";
+  summary.symbolication_status = symbolCoverage.status;
   summary.summary_path = input.summaryPath;
   await writeSummary(input.summaryPath, summary);
 
@@ -252,6 +316,7 @@ export default async function iosAttachTrace(
     outputDir: input.outputDir,
     summaryPath: input.summaryPath,
     tracePath: input.tracePath,
+    symbolicatedTracePath: summary.symbolicated_trace_path ?? "",
     tocPath: input.tocPath,
     timeProfilePath: input.timeProfilePath,
     htmlReportPath: input.htmlReportPath,
@@ -274,6 +339,8 @@ interface NormalizedInput {
   python: string;
   appPath: string;
   dsymPath: string;
+  symbolSearchPath: string;
+  symbolicatedTracePath: string;
   timeLimit: string;
   outputDir: string;
   tracePath: string;
@@ -281,6 +348,7 @@ interface NormalizedInput {
   timeProfilePath: string;
   summaryPath: string;
   targetBinary: string;
+  businessBinary: string;
   htmlReportPath: string;
   maxSamples: number;
   maxDepth: number;
@@ -318,6 +386,29 @@ interface ExportAttemptSummary {
 interface XctraceExportRetryResult {
   result: CommandResult;
   attempts: ExportAttemptSummary[];
+}
+
+interface AttachSymbolContext {
+  dsymPath: string;
+  searchPath: string;
+  source:
+    | "explicit-symbol-search-path"
+    | "recent-build-summary"
+    | "explicit-dsym"
+    | "none";
+  buildSummaryPath?: string;
+}
+
+interface BuildSymbolSummary {
+  success?: boolean;
+  app_path?: string;
+  dsym_path?: string;
+  exported_dsym_path?: string;
+  dsym_paths?: string[];
+  dsym_metadata?: Array<{
+    path?: string;
+    binary_name?: string;
+  }>;
 }
 
 export interface AttachRecordObservation {
@@ -365,6 +456,8 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
     python: args.python?.trim() || "python3",
     appPath: args.appPath?.trim() || "",
     dsymPath: args.dsymPath?.trim() || "",
+    symbolSearchPath: args.symbolSearchPath?.trim() || "",
+    symbolicatedTracePath: join(outputDir, "symbolicated.trace"),
     timeLimit: args.timeLimit?.trim() || DEFAULT_TIME_LIMIT,
     outputDir,
     tracePath: join(outputDir, "attach_target.trace"),
@@ -372,6 +465,7 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
     timeProfilePath: join(outputDir, "time_profile.xml"),
     summaryPath: join(outputDir, "summary.json"),
     targetBinary,
+    businessBinary: args.businessBinary?.trim() || `${targetBinary}Core`,
     htmlReportPath,
     maxSamples: boundedInteger(args.maxSamples, 40, 50000, DEFAULT_MAX_SAMPLES),
     maxDepth: boundedInteger(args.maxDepth, 4, 120, DEFAULT_MAX_DEPTH),
@@ -434,6 +528,196 @@ export function buildTimeProfileExportCommand(
     "--output",
     timeProfilePath,
   ];
+}
+
+/** Builds the command that applies matching dSYMs before XML export. */
+export function buildXctraceSymbolicateCommand(input: {
+  tracePath: string;
+  outputPath: string;
+  symbolSearchPath: string;
+}): string[] {
+  return [
+    "xcrun",
+    "xctrace",
+    "symbolicate",
+    "--input",
+    input.tracePath,
+    "--output",
+    input.outputPath,
+    "--dsym",
+    input.symbolSearchPath,
+  ];
+}
+
+/** Resolves a recursive dSYM search root for an attach trace. */
+export async function resolveAttachSymbolContext(input: {
+  projectRoot: string;
+  targetBinary: string;
+  businessBinary: string;
+  explicitDsymPath?: string;
+  explicitSymbolSearchPath?: string;
+  buildArtifactRoot?: string;
+}): Promise<AttachSymbolContext> {
+  const explicitSearchPath = input.explicitSymbolSearchPath?.trim();
+  if (explicitSearchPath && (await pathExists(explicitSearchPath))) {
+    return {
+      dsymPath: input.explicitDsymPath?.trim() ?? "",
+      searchPath: resolve(explicitSearchPath),
+      source: "explicit-symbol-search-path",
+    };
+  }
+
+  const buildSummary = await findLatestBuildSymbolSummary({
+    projectRoot: input.projectRoot,
+    targetBinary: input.targetBinary,
+    businessBinary: input.businessBinary,
+    buildArtifactRoot: input.buildArtifactRoot ?? DEFAULT_BUILD_ARTIFACT_ROOT,
+  });
+  if (buildSummary) {
+    return {
+      dsymPath:
+        input.explicitDsymPath?.trim() ||
+        buildSummary.payload.exported_dsym_path ||
+        buildSummary.payload.dsym_path ||
+        "",
+      searchPath: dirname(buildSummary.businessDsymPath),
+      source: "recent-build-summary",
+      buildSummaryPath: buildSummary.path,
+    };
+  }
+
+  const explicitDsymPath = input.explicitDsymPath?.trim();
+  if (explicitDsymPath && (await pathExists(explicitDsymPath))) {
+    return {
+      dsymPath: resolve(explicitDsymPath),
+      searchPath: resolve(explicitDsymPath),
+      source: "explicit-dsym",
+    };
+  }
+
+  return { dsymPath: "", searchPath: "", source: "none" };
+}
+
+async function findLatestBuildSymbolSummary(input: {
+  projectRoot: string;
+  targetBinary: string;
+  businessBinary: string;
+  buildArtifactRoot: string;
+}): Promise<{
+  path: string;
+  payload: BuildSymbolSummary;
+  businessDsymPath: string;
+} | null> {
+  let entries: string[];
+  try {
+    entries = await readdir(input.buildArtifactRoot);
+  } catch {
+    return null;
+  }
+
+  const summaries: Array<{ path: string; mtimeMs: number }> = [];
+  for (const entry of entries) {
+    const path = join(input.buildArtifactRoot, entry, "build-summary.json");
+    try {
+      const stats = await stat(path);
+      summaries.push({ path, mtimeMs: stats.mtimeMs });
+    } catch {
+      continue;
+    }
+  }
+
+  summaries.sort((left, right) => right.mtimeMs - left.mtimeMs);
+  const projectRoot = resolve(input.projectRoot);
+  const workspaceRoot = dirname(projectRoot);
+  for (const summary of summaries) {
+    let payload: BuildSymbolSummary;
+    try {
+      payload = JSON.parse(
+        await readFile(summary.path, "utf8"),
+      ) as BuildSymbolSummary;
+    } catch {
+      continue;
+    }
+    if (
+      payload.success !== true ||
+      !payload.app_path ||
+      basename(payload.app_path) !== `${input.targetBinary}.app` ||
+      !isPathWithin(resolve(payload.app_path), workspaceRoot)
+    ) {
+      continue;
+    }
+    const businessDsymPath =
+      payload.dsym_metadata?.find(
+        (metadata) => metadata.binary_name === input.businessBinary,
+      )?.path ??
+      payload.dsym_paths?.find(
+        (path) => basename(path) === `${input.businessBinary}.framework.dSYM`,
+      );
+    if (
+      businessDsymPath &&
+      isPathWithin(resolve(businessDsymPath), projectRoot) &&
+      (await pathExists(businessDsymPath))
+    ) {
+      return { path: summary.path, payload, businessDsymPath };
+    }
+  }
+  return null;
+}
+
+/** Summarizes whether main-thread app frames have business source symbols. */
+export function summarizeTimelineSymbolication(
+  timeline: ParsedTraceTimeline,
+  targetBinary: string,
+  businessBinary: string,
+): {
+  status: "ready" | "partial" | "missing";
+  appRows: number;
+  businessSourceRows: number;
+} {
+  const mainThread = timeline.threads.find((thread) => thread.isMain);
+  const appRows = new Set<number>();
+  const businessSourceRows = new Set<number>();
+  for (const span of mainThread?.spans ?? timeline.spans) {
+    const isTargetBinary =
+      span.binary === targetBinary || span.binary === businessBinary;
+    const hasBusinessSource =
+      span.binary === businessBinary &&
+      span.sourcePath.length > 0 &&
+      span.line.length > 0 &&
+      span.line !== "0" &&
+      !isBootstrapFrame(span.name);
+    for (let index = span.startSample; index < span.endSample; index += 1) {
+      if (span.appFrame || isTargetBinary) {
+        appRows.add(index);
+      }
+      if (hasBusinessSource) {
+        businessSourceRows.add(index);
+      }
+    }
+  }
+  return {
+    status:
+      businessSourceRows.size > 0
+        ? "ready"
+        : appRows.size > 0
+          ? "partial"
+          : "missing",
+    appRows: appRows.size,
+    businessSourceRows: businessSourceRows.size,
+  };
+}
+
+function isBootstrapFrame(name: string): boolean {
+  return (
+    name === "main" ||
+    name === "start" ||
+    name === "flow_main" ||
+    name === "flow_main()"
+  );
+}
+
+function isPathWithin(path: string, parent: string): boolean {
+  return path === parent || path.startsWith(`${parent}/`);
 }
 
 async function runCommand(
@@ -1034,6 +1318,18 @@ function safeSegment(value: string): string {
     value.replaceAll(/[^A-Za-z0-9_.-]+/g, "-").replaceAll(/^-+|-+$/g, "") ||
     "run"
   );
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  if (!path) {
+    return false;
+  }
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function tail(value: string): string {

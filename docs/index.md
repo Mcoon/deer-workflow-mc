@@ -343,16 +343,8 @@ the complete Agent Loop to a single model completion.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) records an
   already-running iOS app with `xctrace --attach` for manual interaction
   captures and renders the same HTML timeline.
-- [iOS UI Discovery](../examples/ios-ui-discovery/README.md) captures a
-  deterministic UI map with serialized `mobilecli` routes.
-- [iOS Case Authoring](../examples/ios-case-authoring/README.md) combines
-  recording frames, requirements, the UI map, and schema-backed `agent()` output.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated cases and keeps device execution deterministic.
-- [iOS UI Map Report](../examples/ios-ui-map-report/README.md) builds
-  `graph.json`, `page-index.json`, and an interactive navigation map.
-- [iOS UI Navigate](../examples/ios-ui-navigate/README.md) resolves a page
-  target and plans or executes an active policy-approved route from cold start.
 - [App Graph v2 Plan](../examples/app-graph-plan/README.md) compiles a
   coordinate-optional semantic Plan.
 - [App Graph v2 Exec](../examples/app-graph-exec/README.md) resolves current

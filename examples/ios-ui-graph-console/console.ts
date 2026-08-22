@@ -139,6 +139,9 @@ interface RunManagerOptions {
   readonly execWorkflowPath: string;
   readonly appGraphWorkflowPath: string;
   readonly discoveryWorkflowPath: string;
+  readonly agentCwd?: string;
+  readonly model?: string;
+  readonly agentTimeoutMs?: number;
   readonly udid?: string;
   readonly deviceProfileId?: string;
   readonly deviceScanner?: () => Promise<readonly GraphConsoleDevice[]>;
@@ -288,7 +291,7 @@ export class GraphConsoleRunManager {
         type: "run",
         status: run.status,
         message: successful
-          ? "Workflow completed successfully."
+          ? workflowSuccessMessage(result)
           : workflowFailureMessage(result),
       });
     } catch (error) {
@@ -322,18 +325,83 @@ export class GraphConsoleRunManager {
   }
 }
 
-function workflowFailureMessage(result: unknown): string {
+export function workflowSuccessMessage(result: unknown): string {
+  if (typeof result !== "object" || result === null) {
+    return "Workflow completed successfully.";
+  }
+  const value = result as {
+    mode?: unknown;
+    actionsExecuted?: unknown;
+    visibilityActionsExecuted?: unknown;
+    focusElementTitle?: unknown;
+    expectedSceneId?: unknown;
+    observedSceneIds?: unknown;
+    scenesDiscovered?: unknown;
+    elementsDiscovered?: unknown;
+    graphUpdated?: unknown;
+    graphRevision?: unknown;
+  };
+  if (value.mode === "discovery") {
+    const actions = Number(value.actionsExecuted ?? 0);
+    const visibilityActions = Number(value.visibilityActionsExecuted ?? 0);
+    const scenes = Number(value.scenesDiscovered ?? 0);
+    const elements = Number(value.elementsDiscovered ?? 0);
+    const revision =
+      typeof value.graphRevision === "number"
+        ? ` Graph r${value.graphRevision}.`
+        : "";
+    const target =
+      typeof value.focusElementTitle === "string"
+        ? ` Focus: ${value.focusElementTitle}.`
+        : "";
+    const reached = Array.isArray(value.observedSceneIds)
+      ? value.observedSceneIds.filter(
+          (sceneId): sceneId is string => typeof sceneId === "string",
+        )
+      : [];
+    const destination =
+      reached.length > 0
+        ? ` Reached: ${reached.join(", ")}.`
+        : typeof value.expectedSceneId === "string"
+          ? ` Expected: ${value.expectedSceneId}.`
+          : "";
+    return `Exploration completed: ${actions} target action(s), ${visibilityActions} visibility action(s), ${scenes} target Scene(s), ${elements} new Element(s); Graph ${
+      value.graphUpdated === true ? "updated" : "unchanged"
+    }.${revision}${target}${destination}`;
+  }
+  return "Workflow completed successfully.";
+}
+
+export function workflowFailureMessage(result: unknown): string {
   if (typeof result !== "object" || result === null) {
     return "Workflow returned a failed result.";
   }
-  const failure = result as { code?: unknown; message?: unknown };
+  const failure = result as {
+    code?: unknown;
+    message?: unknown;
+    visibilityActionsExecuted?: unknown;
+    focusElementTitle?: unknown;
+    expectedSceneId?: unknown;
+  };
   const message =
     typeof failure.message === "string" && failure.message.trim()
       ? failure.message.trim()
       : "Workflow returned a failed result.";
-  return typeof failure.code === "string" && failure.code.trim()
-    ? `${failure.code.trim()}: ${message}`
-    : message;
+  const context =
+    typeof failure.focusElementTitle === "string"
+      ? ` Focus: ${failure.focusElementTitle}. Visibility actions: ${Number(
+          failure.visibilityActionsExecuted ?? 0,
+        )}.${
+          typeof failure.expectedSceneId === "string"
+            ? ` Expected: ${failure.expectedSceneId}.`
+            : ""
+        }`
+      : "";
+  const summary =
+    typeof failure.code === "string" && failure.code.trim()
+      ? `${failure.code.trim()}: ${message}`
+      : message;
+  return `${summary}${context}`;
 }
 
 export function workflowInvocation(
@@ -464,6 +532,9 @@ async function executeStaleSceneRecoveryChain(
     allowLearning: false,
     udid: request.udid ?? options.udid,
     deviceProfileId: options.deviceProfileId,
+    agentCwd: options.agentCwd ?? process.cwd(),
+    model: options.model,
+    agentTimeoutMs: options.agentTimeoutMs ?? 60_000,
   });
   const entrySucceeded =
     typeof entryExec === "object" &&
@@ -484,6 +555,9 @@ async function executeStaleSceneRecoveryChain(
     maxActions: 1,
     maxDepth: 0,
     udid: request.udid ?? options.udid,
+    agentCwd: options.agentCwd ?? process.cwd(),
+    model: options.model,
+    agentTimeoutMs: options.agentTimeoutMs ?? 60_000,
   });
 }
 
@@ -555,6 +629,9 @@ async function executeDiscoveryChain(
     allowLearning: false,
     udid: request.udid ?? options.udid,
     deviceProfileId: options.deviceProfileId,
+    agentCwd: options.agentCwd ?? process.cwd(),
+    model: options.model,
+    agentTimeoutMs: options.agentTimeoutMs ?? 60_000,
   });
   const entrySucceeded =
     typeof entryExec === "object" &&
@@ -573,6 +650,9 @@ async function executeDiscoveryChain(
     maxActions: 1,
     maxDepth: 0,
     udid: request.udid ?? options.udid,
+    agentCwd: options.agentCwd ?? process.cwd(),
+    model: options.model,
+    agentTimeoutMs: options.agentTimeoutMs ?? 60_000,
   });
 }
 

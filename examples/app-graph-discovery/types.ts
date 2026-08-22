@@ -1,8 +1,13 @@
+import type { AgentFunction } from "@deerwork-ai/deer-workflow/agents";
+
+import type { UiElement } from "../ios-regression-kit/types";
+
 export interface AppGraphDiscoveryInput {
   readonly graphPath?: string;
   readonly discoveryRequestPath?: string;
   readonly goal?: string;
   readonly projectRoot?: string;
+  readonly agentCwd?: string;
   readonly udid?: string;
   readonly outputDir?: string;
   readonly planOnly?: boolean;
@@ -18,6 +23,10 @@ export interface AppGraphDiscoveryInput {
   readonly maxActions?: number;
   readonly model?: string;
   readonly agentTimeoutMs?: number;
+  readonly maxAgentRecoverySteps?: number;
+  readonly minimumAgentConfidence?: number;
+  /** Test/runtime injection. CLI callers normally omit this. */
+  readonly agentRunner?: AgentFunction;
 }
 
 export interface AppGraphDiscoveryRequest {
@@ -76,7 +85,11 @@ export interface DiscoveryObservation {
   readonly sceneId: string;
   readonly screenshotPath: string;
   readonly uiDumpPath: string;
+  readonly foregroundPath?: string;
+  readonly foregroundBundleId?: string;
   readonly elements: readonly DiscoveryElement[];
+  /** Raw recursive UI dump elements used for stability and bounded Agent recovery. */
+  readonly uiElements?: readonly UiElement[];
   readonly timestamp: string;
 }
 
@@ -93,11 +106,19 @@ export interface AppGraphDiscoveryResult {
   readonly elementsDiscovered: number;
   readonly operatorsDiscovered: number;
   readonly actionsExecuted: number;
+  readonly visibilityActionsExecuted?: number;
+  readonly focusElementId?: string;
+  readonly focusElementTitle?: string;
+  readonly expectedSceneId?: string;
+  readonly observedSceneIds?: readonly string[];
   readonly totalDurationMs: number;
   readonly patchPath?: string;
   readonly graphRevision: number;
   readonly graphUpdated: boolean;
   readonly evidencePaths: readonly string[];
+  readonly stabilityPath?: string;
+  readonly agentUsed?: boolean;
+  readonly agentDiagnosticPath?: string;
   readonly issue?: string;
 }
 
@@ -109,6 +130,13 @@ export interface AppGraphDiscoveryFailure {
   readonly message: string;
   readonly recoverable: boolean;
   readonly evidencePaths: readonly string[];
+  readonly stabilityPath?: string;
+  readonly agentUsed?: boolean;
+  readonly agentDiagnosticPath?: string;
+  readonly visibilityActionsExecuted?: number;
+  readonly focusElementId?: string;
+  readonly focusElementTitle?: string;
+  readonly expectedSceneId?: string;
 }
 
 export type AppGraphDiscoveryOutput =

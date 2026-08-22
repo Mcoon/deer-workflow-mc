@@ -6,10 +6,7 @@ import { tmpdir } from "node:os";
 import graphJson from "../../examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json";
 import { WorkflowRunner } from "@deerwork-ai/deer-workflow/runner";
 
-import {
-  compileFastRecipe,
-  executeFastRecipe,
-} from "../../examples/app-graph-exec/fast-path";
+import { compileFastRecipe } from "../../examples/app-graph-exec/fast-path";
 import {
   persistFastFailureLearning,
   persistSuccessfulExecutionLearning,
@@ -23,13 +20,17 @@ import type {
 import type { AppGraph } from "../../examples/ios-ui-graph-manager/types";
 
 const graph = graphJson as AppGraph;
+const graphPath = join(
+  process.cwd(),
+  "examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
+);
 const planWorkflowPath = join(
   process.cwd(),
   "examples/app-graph-plan/workflow.ts",
 );
 
 describe("App Graph runtime learning", () => {
-  test("promotes a repeated Scene route into a verified fast Task recipe", async () => {
+  test("keeps a repeated route with live viewport search guarded", async () => {
     const root = await mkdtemp(join(tmpdir(), "app-graph-learning-"));
     const graphPath = join(root, "graph.json");
     await writeFile(graphPath, JSON.stringify(graph), "utf8");
@@ -92,10 +93,10 @@ describe("App Graph runtime learning", () => {
         graphUpdated: true,
         taskId,
         taskStatus: "verified",
-        executionTier: "fast",
+        executionTier: "guarded",
       });
       expect(second.graph.tasks[taskId]?.validation).toMatchObject({
-        tier: "fast",
+        tier: "guarded",
         successfulExecutions: 2,
         consecutiveSuccessfulExecutions: 2,
       });
@@ -110,27 +111,14 @@ describe("App Graph runtime learning", () => {
         deviceProfileId: plan.deviceProfileId,
         udid: "device-1",
       });
-      expect(recipe?.steps.map((step) => step.command[2])).toEqual([
-        "tap",
-        "swipe",
-        "tap",
-      ]);
-      const commands: readonly string[][] = [];
-      const mutableCommands = commands as string[][];
-      const executed = await executeFastRecipe({
-        recipe: recipe!,
-        outputDir: join(root, "fast"),
-        commandRunner: async (command) => {
-          mutableCommands.push([...command]);
-          return { stdout: "", stderr: "", exitCode: 0 };
-        },
-      });
-      expect(executed.success).toBeTrue();
-      expect(mutableCommands).toHaveLength(3);
+      expect(recipe).toBeNull();
       expect(JSON.parse(await readFile(graphPath, "utf8"))).toMatchObject({
         revision: graph.revision + 2,
         tasks: {
-          [taskId]: { status: "verified", validation: { tier: "fast" } },
+          [taskId]: {
+            status: "verified",
+            validation: { tier: "guarded" },
+          },
         },
       });
 
@@ -160,6 +148,37 @@ describe("App Graph runtime learning", () => {
       await rm(root, { recursive: true, force: true });
     }
   }, 15_000);
+
+  test("rejects a fast recipe containing a historical same-Scene viewport hint", async () => {
+    const runner = new WorkflowRunner({ logWriter: () => undefined });
+    try {
+      const plan = await runner.run<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "打开帮助与反馈",
+        graphPath,
+        outputDir: join(tmpdir(), "app-graph-fixed-swipe-plan"),
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      expect(
+        plan.resolvedSteps.some(
+          (step) =>
+            step.operation.type === "swipe" &&
+            step.toSceneId === step.fromSceneId,
+        ),
+      ).toBeTrue();
+      expect(
+        compileFastRecipe({
+          graph,
+          plan,
+          deviceProfileId: plan.deviceProfileId,
+          udid: "device-1",
+        }),
+      ).toBeNull();
+    } finally {
+      runner.dispose();
+    }
+  });
 });
 
 function executionRecords(plan: AppGraphPlanResult): ExecStepRecord[] {

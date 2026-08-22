@@ -6,6 +6,7 @@ import type {
 } from "../ios-ui-graph-manager/types";
 import type { AppGraphPlanResult } from "../app-graph-plan/types";
 import type { ExecStepRecord } from "./types";
+import { isHistoricalViewportHintStep } from "./viewport-search";
 
 export interface FastRecipeStep {
   readonly operator: Operator;
@@ -32,6 +33,13 @@ export function compileFastRecipe(options: {
   }
   const profile = options.graph.deviceProfiles[options.deviceProfileId];
   if (!profile) return null;
+  if (
+    options.plan.resolvedSteps.some((_, index) =>
+      isHistoricalViewportHintStep(options.plan.resolvedSteps, index),
+    )
+  ) {
+    return null;
+  }
   const steps: FastRecipeStep[] = [];
   for (const taskStep of task.steps) {
     const operator = options.graph.operators[taskStep.operatorId];

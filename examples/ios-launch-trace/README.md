@@ -7,7 +7,8 @@ needed for the trace capture itself.
 
 ## What it does
 
-1. prepares an output directory under `/tmp/ios_perf-opt/ios-launch-trace/`;
+1. prepares an output directory under
+   `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/`;
 2. runs the existing `flow-ios-trace-collection` `collect_trace.py` script in
    `launch` mode;
 3. reads `summary.json` and `time_profile.xml`;
@@ -48,7 +49,8 @@ collector summary, and the HTML report path.
   lives elsewhere.
 - `timeLimit`: xctrace recording limit, such as `20s`.
 - `skipInstall`: skip installing the `.app` before trace collection.
-- `outputDir`: output directory. Defaults to `/tmp/ios_perf-opt`.
+- `outputDir`: output directory. Defaults to
+  `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/<runId>`.
 - `htmlReportPath`: report destination. Defaults to
   `<outputDir>/launch-trace-report.html`.
 - `targetBinary`: binary highlighted as app code in the HTML timeline. Defaults

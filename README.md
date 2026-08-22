@@ -92,29 +92,9 @@ Want to understand or edit the generated module? Continue with the
 - [iOS Attach Trace](./examples/ios-attach-trace/README.md) attaches Time
   Profiler to a running app for manual interaction capture and renders the same
   HTML timeline.
-- [iOS UI Discovery](./examples/ios-ui-discovery/README.md) uses serialized
-  `mobilecli` routes to collect reusable page, control, coordinate-space, and
-  transition assets.
-- [iOS Case Authoring](./examples/ios-case-authoring/README.md) turns recordings
-  or requirements into validated cases grounded in the collected UI map.
 - [iOS Functional Regression](./examples/ios-functional-regression/README.md)
   executes validated cases serially with `mobilecli` and renders an evidence
   report.
-- [iOS UI Map Report](./examples/ios-ui-map-report/README.md) compiles
-  discovered UI assets into a machine-readable navigation graph and an
-  interactive HTML map.
-- [iOS UI Navigate](./examples/ios-ui-navigate/README.md) resolves page names,
-  plans safe cold-start routes, and optionally executes them without
-  screenshot-by-screenshot Agent reasoning.
-- [iOS Semantic Graph Discovery](./examples/ios-ui-graph-discovery/README.md)
-  recursively crawls Scene, Element, Action, and Effect frontiers with
-  resumable state, safety budgets, and canonical Graph writes.
-- [iOS Executable Semantic Graph](./examples/ios-ui-graph-experiment/README.md)
-  resolves natural-language goals, plans verified or candidate Graph paths,
-  executes them, verifies outcomes, and repairs targeted gaps.
-- [iOS Semantic Map Report](./examples/ios-ui-semantic-map-report/README.md)
-  renders the executable Scene, Element, Operator, Task, Binding, and Verifier
-  Graph as interactive HTML.
 - [iOS UI Graph Console](./examples/ios-ui-graph-console/README.md) serves that
   Map with exact Graph-ID execution, scoped exploration, Agent chat, correction
   proposals, and serialized Workflow event streaming.

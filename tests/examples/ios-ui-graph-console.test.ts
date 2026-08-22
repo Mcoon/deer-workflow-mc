@@ -14,6 +14,8 @@ import {
   runGraphConsoleChat,
   validateActionRequest,
   workflowInvocation,
+  workflowFailureMessage,
+  workflowSuccessMessage,
 } from "../../examples/ios-ui-graph-console/console";
 import { createGraphConsoleServer } from "../../examples/ios-ui-graph-console/server";
 import { parseMobilecliDevicesOutput } from "../../examples/ios-ui-graph-console/devices";
@@ -24,6 +26,40 @@ import type { AppGraph } from "../../examples/ios-ui-graph-manager/types";
 const graph = graphJson as AppGraph;
 
 describe("iOS UI Graph Console", () => {
+  test("summarizes successful exploration with concrete action and Graph counts", () => {
+    expect(
+      workflowSuccessMessage({
+        success: true,
+        mode: "discovery",
+        actionsExecuted: 1,
+        visibilityActionsExecuted: 0,
+        scenesDiscovered: 1,
+        elementsDiscovered: 4,
+        graphUpdated: true,
+        graphRevision: 75,
+        focusElementTitle: "通知设置",
+        observedSceneIds: ["bot.settings.notification_settings"],
+      }),
+    ).toBe(
+      "Exploration completed: 1 target action(s), 0 visibility action(s), 1 target Scene(s), 4 new Element(s); Graph updated. Graph r75. Focus: 通知设置. Reached: bot.settings.notification_settings.",
+    );
+  });
+
+  test("summarizes failed exploration with focus and visibility progress", () => {
+    expect(
+      workflowFailureMessage({
+        success: false,
+        code: "visibility_recovery_failed",
+        message: "UI dump failed after scrolling.",
+        visibilityActionsExecuted: 1,
+        focusElementTitle: "未成年人模式",
+        expectedSceneId: "bot.settings.minor_mode",
+      }),
+    ).toBe(
+      "visibility_recovery_failed: UI dump failed after scrolling. Focus: 未成年人模式. Visibility actions: 1. Expected: bot.settings.minor_mode.",
+    );
+  });
+
   test("routes explicit Plan and scoped exploration without semantic shell commands", () => {
     const options = {
       graphPath: "/tmp/graph.json",

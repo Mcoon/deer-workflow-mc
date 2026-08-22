@@ -1,0 +1,289 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "label": "返回",
+        "name": "返回",
+        "rect": {
+          "x": 8,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "未成年人模式",
+        "name": "未成年人模式",
+        "rect": {
+          "x": 32,
+          "y": 192,
+          "width": 350,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。",
+        "name": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。",
+        "rect": {
+          "x": 32,
+          "y": 218,
+          "width": 350,
+          "height": 40
+        }
+      },
+      {
+        "type": "Image",
+        "name": "icon_minor_setting",
+        "identifier": "icon_minor_setting",
+        "rect": {
+          "x": 179,
+          "y": 124,
+          "width": 56,
+          "height": 56
+        }
+      },
+      {
+        "type": "Image",
+        "name": "icon_minor_lock",
+        "identifier": "icon_minor_lock",
+        "rect": {
+          "x": 32,
+          "y": 295,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "未成年人模式",
+        "name": "未成年人模式",
+        "rect": {
+          "x": 80,
+          "y": 301,
+          "width": 237,
+          "height": 20
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 295,
+          "width": 49,
+          "height": 31
+        }
+      },
+      {
+        "type": "Switch",
+        "label": "未成年人模式",
+        "name": "未成年人模式",
+        "value": "0",
+        "rect": {
+          "x": 333,
+          "y": 295,
+          "width": 51,
+          "height": 31
+        }
+      },
+      {
+        "type": "Image",
+        "name": "icon_minor_bot",
+        "identifier": "icon_minor_bot",
+        "rect": {
+          "x": 32,
+          "y": 367,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "和豆包以外的智能体对话",
+        "name": "和豆包以外的智能体对话",
+        "rect": {
+          "x": 80,
+          "y": 373,
+          "width": 237,
+          "height": 20
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 367,
+          "width": 49,
+          "height": 31
+        }
+      },
+      {
+        "type": "Switch",
+        "label": "和豆包以外的智能体对话",
+        "name": "和豆包以外的智能体对话",
+        "value": "1",
+        "rect": {
+          "x": 333,
+          "y": 367,
+          "width": 51,
+          "height": 31
+        }
+      },
+      {
+        "type": "Image",
+        "name": "icon_minor_video",
+        "identifier": "icon_minor_video",
+        "rect": {
+          "x": 32,
+          "y": 423,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "回答展示相关视频",
+        "name": "回答展示相关视频",
+        "rect": {
+          "x": 80,
+          "y": 429,
+          "width": 237,
+          "height": 20
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 423,
+          "width": 49,
+          "height": 31
+        }
+      },
+      {
+        "type": "Switch",
+        "label": "回答展示相关视频",
+        "name": "回答展示相关视频",
+        "value": "1",
+        "rect": {
+          "x": 333,
+          "y": 423,
+          "width": 51,
+          "height": 31
+        }
+      },
+      {
+        "type": "Image",
+        "name": "icon_minor_webaccess",
+        "identifier": "icon_minor_webaccess",
+        "rect": {
+          "x": 32,
+          "y": 479,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "浏览第三方网页",
+        "name": "浏览第三方网页",
+        "rect": {
+          "x": 80,
+          "y": 485,
+          "width": 237,
+          "height": 20
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 479,
+          "width": 49,
+          "height": 31
+        }
+      },
+      {
+        "type": "Switch",
+        "label": "浏览第三方网页",
+        "name": "浏览第三方网页",
+        "value": "1",
+        "rect": {
+          "x": 333,
+          "y": 479,
+          "width": 51,
+          "height": 31
+        }
+      },
+      {
+        "type": "Image",
+        "name": "icon_minor_creation",
+        "identifier": "icon_minor_creation",
+        "rect": {
+          "x": 32,
+          "y": 535,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 创作",
+        "name": "AI 创作",
+        "rect": {
+          "x": 80,
+          "y": 541,
+          "width": 237,
+          "height": 20
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 333,
+          "y": 535,
+          "width": 49,
+          "height": 31
+        }
+      },
+      {
+        "type": "Switch",
+        "label": "AI 创作",
+        "name": "AI 创作",
+        "value": "1",
+        "rect": {
+          "x": 333,
+          "y": 535,
+          "width": 51,
+          "height": 31
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "17:30",
+        "name": "17:30",
+        "rect": {
+          "x": 22,
+          "y": 15,
+          "width": 42,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 67,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

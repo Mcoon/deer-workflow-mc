@@ -6,11 +6,13 @@ Workflow，在录制阶段操作手机，等 `xctrace` 到达时间上限后自�
 
 ## 功能
 
-1. 在 `/tmp/ios_perf-opt/ios-attach-trace/` 下准备输出目录；
+1. 在 `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/` 下准备输出目录；
 2. 按指定时长运行 `xcrun xctrace record --template "Time Profiler" --attach <target>`；
-3. 导出 `toc.xml` 和 `time_profile.xml`；
-4. 复用 launch trace 的 parser 解析 Time Profiler 行；
-5. 生成 `attach-trace-report.html`，包含同样的可缩放时间线、frame 详情、Top
+3. 从显式输入或最近一次匹配的 `ios-build-install` summary 解析完整 dSYM 目录，
+   执行 `xctrace symbolicate`；
+4. 从符号化后的 trace 导出 `toc.xml` 和 `time_profile.xml`；
+5. 复用 launch trace 的 parser 解析 Time Profiler 行；
+6. 生成 `attach-trace-report.html`，包含同样的可缩放时间线、frame 详情、Top
    sampled frames 和产物路径。
 
 Workflow 不会安装、启动、终止或控制 App。进入 Collect 阶段前，目标 App 进程必须
@@ -47,10 +49,16 @@ Workflow 会导出 XML 并生成 HTML 报告。
 - `template`：xctrace template 名称或路径，默认 `Time Profiler`。
 - `timeLimit`：录制时长，默认 `30s`。
 - `outputDir`：输出目录，默认
-  `/tmp/ios_perf-opt/ios-attach-trace/<runId>`。
+  `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/<runId>`。
 - `htmlReportPath`：HTML 报告目标路径，默认
   `<outputDir>/attach-trace-report.html`。
 - `targetBinary`：HTML 中高亮为业务代码的 binary，默认 `Grace`。
+- `symbolSearchPath`：供 `xctrace symbolicate` 递归搜索的 dSYM 目录。不传时，
+  Workflow 会读取最近一次匹配项目的
+  `/tmp/ios_perf-opt/ios-build-install/*/build-summary.json`，并使用
+  `GraceCore.framework.dSYM` 所在目录。
+- `businessBinary`：用于校验业务源码覆盖率的 framework，默认
+  `<targetBinary>Core`，通常为 `GraceCore`。
 - `maxSamples` / `maxDepth`：大 trace 的渲染上限。
 
 ## 输出
@@ -58,6 +66,7 @@ Workflow 会导出 XML 并生成 HTML 报告。
 一次正常的 attach 采集会在输出目录里生成：
 
 - `attach_target.trace`
+- 有可用符号目录时生成 `symbolicated.trace`
 - `toc.xml`
 - `time_profile.xml`
 - `summary.json`
@@ -71,3 +80,5 @@ HTML viewer 和 launch trace 报告保持一致：打开时默认 fit 到全局�
 `record.observed_recording_finished_at`。如果终端里某个阶段看起来很长，可以用这些
 字段判断耗时是真正的 Time Profiler 录制、`xctrace` attach 前准备，还是录制结束后的
 trace 保存。
+summary 还会记录符号目录、解析来源以及 GraceCore 源码覆盖率。现在只有导出的主线程
+栈中确实出现 GraceCore 源码位置时，`symbolicationStatus` 才会是 `ready`。

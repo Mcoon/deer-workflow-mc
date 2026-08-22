@@ -229,7 +229,7 @@
       "挂断通话",
       "内容由 AI 生成"
     ],
-    "status": "stale"
+    "status": "candidate"
   },
   "bot.settings.smart_devices": {
     "title": "我的智能设备",
@@ -628,7 +628,7 @@
     "title": "AI 写歌",
     "aliases": ["AI 写歌", "歌曲示例列表视口变化"],
     "visualTextAnchors": ["晨光汗水荣光", "流行", "做同款"],
-    "status": "stale"
+    "status": "candidate"
   },
   "chat.ai_song.more_menu": {
     "title": "AI 写歌更多菜单",
@@ -738,7 +738,7 @@
       "语言",
       "图片"
     ],
-    "status": "stale"
+    "status": "candidate"
   },
   "volcengine.ark.console.home": {
     "title": "火山方舟首页",
@@ -907,6 +907,32 @@
       "打电话",
       "朗读已关闭",
       "聊聊新话题"
+    ],
+    "status": "observed"
+  },
+  "runtime.scene.f56149d1c3dc": {
+    "title": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议",
+    "aliases": [],
+    "visualTextAnchors": [
+      "技能 · 连接器",
+      "金融",
+      "法律",
+      "新媒体创作",
+      "办公协作",
+      "电商/营销"
+    ],
+    "status": "observed"
+  },
+  "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用": {
+    "title": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。",
+    "aliases": [],
+    "visualTextAnchors": [
+      "返回",
+      "未成年人模式",
+      "和豆包以外的智能体对话",
+      "回答展示相关视频",
+      "浏览第三方网页",
+      "AI 创作"
     ],
     "status": "observed"
   }

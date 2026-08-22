@@ -130,7 +130,9 @@ describe("App Graph unified workflow", () => {
       });
       expect(commands).toHaveLength(1);
       expect(commands[0]?.[0]).toBe("python3");
-      expect(commands[0]?.[1]).toContain("devicectl_restart.py");
+      expect(commands[0]?.[1]).toContain(
+        "ios-regression-kit/devicectl_restart.py",
+      );
       expect(agentCalls).toBe(0);
       expect(result.rounds).toHaveLength(1);
       expect(result.rounds[0]?.execResult).toMatchObject({

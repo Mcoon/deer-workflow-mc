@@ -58,7 +58,7 @@ describe("iOS Build and Install workflow helpers", () => {
     expect(command).not.toContain("deploy.py");
   });
 
-  test("prefers the exported .vscode-out dSYM path for downstream trace", () => {
+  test("returns the main dSYM and a recursive business symbol search path", () => {
     expect(
       resolveSymbolPaths({
         exported_dsym_path:
@@ -66,7 +66,13 @@ describe("iOS Build and Install workflow helpers", () => {
         dsym_path: "/private/var/tmp/bazel-out/bin/flow_iOS/Grace.app.dSYM",
         dsym_paths: [
           "/private/var/tmp/bazel-out/bin/flow_iOS/Grace.app.dSYM",
-          "/tmp/Other.app.dSYM",
+          "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
+        ],
+        dsym_metadata: [
+          {
+            path: "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
+            binary_name: "GraceCore",
+          },
         ],
       }),
     ).toEqual({
@@ -75,8 +81,10 @@ describe("iOS Build and Install workflow helpers", () => {
       all: [
         "/Users/bytedance/Documents/BDWorkSpace/Dbao/.vscode-out/Grace.app.dSYM",
         "/private/var/tmp/bazel-out/bin/flow_iOS/Grace.app.dSYM",
-        "/tmp/Other.app.dSYM",
+        "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
       ],
+      business: "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
+      searchRoot: "/tmp/Debug-iphoneos",
     });
   });
 });

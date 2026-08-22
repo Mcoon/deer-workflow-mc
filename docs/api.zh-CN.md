@@ -683,30 +683,17 @@ Listener。释放后的 Runner 不能启动新的 Workflow。
   `agent()`、`phase()`、`pipeline()`、`log()` 和 `WorkflowRunner`。
 - [iOS Build and Install](../examples/ios-build-install/README.zh-CN.md)：组合
   确定性 TypeScript 编排、`phase()`、`log()`、flow-ios-dev 构建输出和
-  install-only devicectl 安装。
+  install-only devicectl 安装；同时返回主壳 dSYM 与包含
+  `GraceCore.framework.dSYM` 的递归符号搜索目录。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、本地 xctrace collector 和 HTML 时间线
   renderer。
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md)：组合确定性
-  TypeScript 编排、`phase()`、`log()`、`xctrace record --attach`、Time
-  Profiler XML 导出和共享 HTML 时间线 renderer。
-- [iOS UI Discovery](../examples/ios-ui-discovery/README.zh-CN.md)：组合确定性
-  `mobilecli` 编排和可复用页面、控件、设备及跳转资产。
-- [iOS Case Authoring](../examples/ios-case-authoring/README.zh-CN.md)：组合有限
-  录屏抽帧、受 Schema 约束的 `agent()` 输出和确定性页面/控件引用校验。
+  TypeScript 编排、`phase()`、`log()`、`xctrace record --attach`、自动 dSYM
+  解析、`xctrace symbolicate`、Time Profiler XML 导出和共享 HTML 时间线
+  renderer。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)：
   消费验证通过的 case 资产，串行执行设备动作，并输出逐 case 证据和 HTML 报告。
-- [iOS UI Map Report](../examples/ios-ui-map-report/README.zh-CN.md)：把页面、
-  控件、transition 和 policy 编译为机器图、模型索引和交互式 HTML 投影。
-- [iOS UI Navigate](../examples/ios-ui-navigate/README.zh-CN.md)：解析页面别名、
-  按类别安全规划路径，并记录点击来自实时 UI dump 还是 device binding。
-- [iOS UI Graph Experiment](../examples/ios-ui-graph-experiment/README.zh-CN.md)：
-  将真机事实 `verified` 与 `guarded`、`fast`、`quarantined` 执行可信度拆开；
-  guarded 步骤使用当前 UI dump 重定位，App 版本变化自动触发 guarded 重验证，
-  Task 只是可选路径缓存，不是规划前提。
-- [iOS UI Graph Discovery](../examples/ios-ui-graph-discovery/README.zh-CN.md)：
-  将真实 before/after 写为 verified 知识与 guarded 执行信任，并提供
-  `evidenceMigrationOnly`，可在不运行 Agent 或设备动作时离线迁移 Graph 和刷新 Map。
 - [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md)、
   [Exec](../examples/app-graph-exec/README.zh-CN.md)、
   [Discovery](../examples/app-graph-discovery/README.zh-CN.md) 和

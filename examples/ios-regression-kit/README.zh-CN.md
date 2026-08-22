@@ -1,6 +1,6 @@
 # iOS Regression Kit
 
-`ios-regression-kit` 是 `ios-ui-discovery`、`ios-case-authoring` 和
+`ios-regression-kit` 是 App Graph v2 和 iOS 功能回归 Workflow 使用的
 `ios-functional-regression` 共用的协议与工具层，不是单独运行的 Workflow。
 
 它定义：

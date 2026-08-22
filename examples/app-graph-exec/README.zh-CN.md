@@ -13,25 +13,33 @@
 1. 采集当前 screenshot、UI dump 和 foreground，以 Graph Scene anchors 分类当前页面；
 2. 已知当前 Scene 但不在步骤要求的 Scene 时，优先执行 Graph 中的安全
    navigation/interaction route；
-3. 到达步骤 Scene 后，按 Selector priority 定位目标 Element。如果 exact selector 只在
-   视口外命中，或同名 AX 父/子节点同时给出冲突坐标，执行器会结合 `locationHint` 做最多
-   两次定向滚动、重新采 UI dump，再点击真实可见的 exact match；tap/long-press 坐标必须
-   落在 device profile 视口内；
-4. Selector 和确定性 title/role 都无法唯一命中时，启动只读 Agent。Agent 只能从当前
+3. 到达步骤 Scene 后，按 Selector priority 定位目标 Element。目标不在安全可点击区域时，
+   执行器进入统一 viewport search：当前屏检查一次，每次短距离移动一段，等待稳定后重新采
+   UI dump 并检查；遇到重复/未变化 viewport 才判定边界并换向，找到目标、双边到界或耗尽
+   6 次动作预算时停止。历史目标坐标不参与方向和次数决策；导航栏附近的坐标影子也不能
+   作为可点击目标；
+   Graph 中历史遗留的同 Scene swipe 只视为 viewport 提示，不再原样回放；下一语义目标由
+   实时逐段搜索定位。包含这种固定 swipe 的 recipe 不进入 fast path；
+4. 每次 tap/swipe 后连续采样页面，只有两次连续观测稳定才验证结果或进入恢复。原生页面
+   使用语义 UI 布局指纹；WebView 页面比较去掉系统状态栏后的主体视觉相似度，避免时间、
+   电量和微小渲染抖动造成误判。截图、foreground、UI dump 的瞬时设备通道错误最多重试
+   三次；
+5. Selector 和确定性 title/role 都无法唯一命中时，启动只读 Agent。Agent 只能从当前
    UI dump 的真实 candidate ID 中选择 Element，不能生成坐标；
-5. 元素 Agent 无法高置信定位后，只有 Plan 明确允许的低风险步骤才能使用同 profile
+6. 元素 Agent 无法高置信定位后，只有 Plan 明确允许的低风险步骤才能使用同 profile
    Binding；参数化和高风险步骤直接失败；
-6. 如果当前页面无法用 Graph 分类，或者 Graph 无已知安全 route，页面恢复 Agent 可结合
+7. 如果当前页面无法用 Graph 分类，或者 Graph 无已知安全 route，页面恢复 Agent 可结合
    用户 goal、目标 Scene、下一步动作和当前真实候选，选择一次安全 tap/swipe。同一已识别
    Scene 最多尝试一次，不会换一个控件继续探测。Agent 仍
    不能生成坐标，且发送、支付、授权、删除、账号修改、发布、安装等候选会被过滤；
-7. 每次恢复动作后重新采证、分类 Scene。新 Scene/Element 写为 `observed`，新
+8. 每次恢复动作后重新采证、分类 Scene。新 Scene/Element 写为 `observed`，新
    Operator/Binding 写为 `candidate`，保留 before/after evidence；不会因为 Agent 一次判断
    直接晋级 verified；
-8. Agent 可高置信返回 `at_target`，表示当前证据已是目标 Scene，不需要额外点击；本轮
+9. Agent 可高置信返回 `at_target`，表示当前证据已是目标 Scene，不需要额外点击；本轮
    记录该判断和证据，但不会直接覆盖 verified anchors；
-9. Graph、元素 Agent、页面 Agent 和策略允许的 Binding 都无法完成时，返回结构化错误及
-   `discovery-request.json`。
+10. Graph、元素 Agent、页面 Agent 和策略允许的 Binding 都无法完成时，返回结构化错误及
+    `discovery-request.json`。
+    Agent 明确返回 `blocked` 或候选被安全校验拒绝时，原始决定和拒绝原因都会保留。
 
 页面 Agent 默认最多尝试 4 步，可用 `maxAgentRecoverySteps` 调整；默认最低置信度
 `0.75`，可用 `minimumAgentConfidence` 调整。这个上限是跨不同页面的总预算；重复候选、

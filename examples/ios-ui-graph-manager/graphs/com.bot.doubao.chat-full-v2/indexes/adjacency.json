@@ -187,7 +187,8 @@
     "bot.settings.about_debug",
     "bot.settings.smart_devices",
     "bot.settings.personal_information_collection_list",
-    "bot.settings.third_party_information_sharing_list"
+    "bot.settings.third_party_information_sharing_list",
+    "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用"
   ],
   "bot.settings.personal_information_collection.usage_process_info": [
     "bot.settings.personal_information_collection_list",
@@ -325,5 +326,7 @@
   "runtime.scene.63a1bb961192": [],
   "runtime.scene.c7b90d851f14": ["runtime.scene.fd7e2a9889f0"],
   "runtime.scene.fd7e2a9889f0": [],
-  "runtime.scene.cc8d6ac823df": ["chat.ai_creation.discovery"]
+  "runtime.scene.cc8d6ac823df": ["chat.ai_creation.discovery"],
+  "runtime.scene.f56149d1c3dc": [],
+  "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用": []
 }

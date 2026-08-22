@@ -50,6 +50,7 @@ export interface ExecStepRecord {
     | "unresolved";
   readonly commands: readonly (readonly string[])[];
   readonly visibilityRecoveryCommands?: readonly (readonly string[])[];
+  readonly viewportSearchPath?: string;
   readonly startedAt: string;
   readonly finishedAt: string;
   readonly durationMs: number;

@@ -6,7 +6,7 @@
 
 ## 功能
 
-1. 在 `/tmp/ios_perf-opt/ios-launch-trace/` 下准备输出目录；
+1. 在 `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/` 下准备输出目录；
 2. 以 `launch` 模式运行已有的 `flow-ios-trace-collection`
    `collect_trace.py` 脚本；
 3. 读取 `summary.json` 和 `time_profile.xml`；
@@ -46,7 +46,8 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
   dSYM；如果构建产物在别处，需要显式传绝对路径 `dsymPath`。
 - `timeLimit`：xctrace 采集时长，例如 `20s`。
 - `skipInstall`：采集前跳过安装 `.app`。
-- `outputDir`：输出目录，默认在 `/tmp/ios_perf-opt` 下。
+- `outputDir`：输出目录，默认是
+  `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/<runId>`。
 - `htmlReportPath`：HTML 报告目标路径，默认是
   `<outputDir>/launch-trace-report.html`。
 - `targetBinary`：HTML 中高亮为业务代码的 binary，默认 `Grace`。

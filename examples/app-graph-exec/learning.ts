@@ -16,6 +16,7 @@ import type {
 import type { AppGraphPlanResult } from "../app-graph-plan/types";
 import type { ExecStepRecord } from "./types";
 import type { RuntimeCandidate, RuntimeObservation } from "./runtime-recovery";
+import { isHistoricalViewportHintStep } from "./viewport-search";
 
 export interface RuntimeLearningResult {
   readonly graph: AppGraph;
@@ -196,6 +197,15 @@ export async function persistSuccessfulExecutionLearning(options: {
   for (const record of options.steps) {
     const planStep = options.plan.resolvedSteps[record.stepIndex];
     if (!planStep) continue;
+    if (
+      isHistoricalViewportHintStep(
+        options.plan.resolvedSteps,
+        record.stepIndex,
+      ) &&
+      record.commands.length === 0
+    ) {
+      continue;
+    }
     for (const command of record.visibilityRecoveryCommands ?? []) {
       const scrollOperator = findOrCreateScrollOperator({
         graph,
@@ -248,7 +258,19 @@ export async function persistSuccessfulExecutionLearning(options: {
     : successfulExecutions >= 2
       ? "verified"
       : "candidate";
-  const tier = successfulExecutions >= 2 ? "fast" : "guarded";
+  const hasHistoricalViewportHint = options.plan.resolvedSteps.some(
+    (_, index) =>
+      isHistoricalViewportHintStep(options.plan.resolvedSteps, index),
+  );
+  const usedViewportSearch = options.steps.some(
+    (record) => (record.visibilityRecoveryCommands?.length ?? 0) > 0,
+  );
+  const tier =
+    successfulExecutions >= 2 &&
+    !hasHistoricalViewportHint &&
+    !usedViewportSearch
+      ? "fast"
+      : "guarded";
   const task: Task = {
     ...(existingTask ?? {}),
     taskId,

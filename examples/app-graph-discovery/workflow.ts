@@ -10,6 +10,7 @@ import {
   parseStrictRestartResult,
 } from "../app-graph-exec/workflow";
 import {
+  buildMobilecliForegroundCommand,
   buildMobilecliScreenshotCommand,
   buildMobilecliUiDumpCommand,
   parseUiDump,
@@ -17,7 +18,25 @@ import {
 } from "../ios-regression-kit";
 import type { CommandResult } from "../ios-regression-kit";
 import type { UiElement } from "../ios-regression-kit/types";
-import { buildHorizontalVisibilityRecoveryCommands } from "../app-graph-exec/visibility-recovery";
+import {
+  buildViewportSearchCommand,
+  searchViewports,
+  viewportSearchAxisForTarget,
+} from "../app-graph-exec/viewport-search";
+import {
+  buildRuntimeRecoveryCommand,
+  classifyRuntimeScene,
+  decideSceneRecoveryWithAgent,
+} from "../app-graph-exec/runtime-recovery";
+import type {
+  RuntimeCandidate,
+  RuntimeObservation,
+  RuntimeRecoveryActionType,
+  RuntimeSceneAgentEvaluation,
+  RuntimeSceneAgentDecision,
+} from "../app-graph-exec/runtime-recovery";
+import { waitForStableObservation } from "../app-graph-exec/observation-stability";
+import type { StableObservationResult } from "../app-graph-exec/observation-stability";
 
 import type {
   AppGraph,
@@ -45,6 +64,14 @@ const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const DEFAULT_MAX_DEPTH = 0;
 const DEFAULT_MAX_ACTIONS = 1;
 const SETTLE_MS = 900;
+const STABILITY_POLL_MS = 700;
+const MAX_STABILITY_SAMPLES = 6;
+const REQUIRED_STABLE_SAMPLES = 2;
+const DEFAULT_AGENT_TIMEOUT_MS = 60_000;
+const DEFAULT_MAX_AGENT_RECOVERY_STEPS = 2;
+const DEFAULT_MINIMUM_AGENT_CONFIDENCE = 0.75;
+const MAX_VIEWPORT_SEARCH_MOVES = 6;
+const DEFAULT_AGENT_CWD = resolve(dirname(import.meta.path), "../..");
 const SKIP_LABELS = new Set(["", "system", "statusBar", "navigationBar"]);
 
 export default async function appGraphDiscovery(
@@ -143,6 +170,9 @@ export default async function appGraphDiscovery(
     0,
     Math.min(DEFAULT_MAX_ACTIONS, args.maxActions ?? DEFAULT_MAX_ACTIONS),
   );
+  const expectedSceneId =
+    args.expectedSceneId ??
+    resolveDiscoveryExpectedSceneId(graph, startSceneId, focusElementId, goal);
   const discoveryPlan = buildDiscoveryPlan({
     graph,
     goal,
@@ -151,7 +181,7 @@ export default async function appGraphDiscovery(
     startSceneId,
     focusElementId,
     allowStaleFocus: args.allowStaleFocus,
-    expectedSceneId: args.expectedSceneId,
+    expectedSceneId,
     maxDepth,
     maxActions,
   });
@@ -215,6 +245,17 @@ export default async function appGraphDiscovery(
   let elementsDiscovered = 0;
   let operatorsDiscovered = 0;
   let actionsExecuted = 0;
+  let visibilityActionsExecuted = 0;
+  const stabilityPath = join(outputDir, "ground-stability.json");
+  let agentDiagnosticPath: string | undefined;
+  let agentUsed = false;
+  let agentConfirmedTarget = false;
+  let agentFailureMessage: string | undefined;
+  let visibilityRecoveryFailure: string | undefined;
+  const visibilitySearchPaths: string[] = [];
+  let lastSuccessfulProbe:
+    | Omit<DiscoveredTransition, "targetSceneId" | "revivesStaleTarget">
+    | undefined;
   const visitedScenes = new Set<string>();
   const discoveredTransitions: DiscoveredTransition[] = [];
   const elementQueue: Array<{
@@ -250,46 +291,160 @@ export default async function appGraphDiscovery(
 
   phase("Ground");
   log(`Starting discovery from scene: ${startSceneId}`);
-  let currentObservation = await captureObservation(
-    udid,
-    outputDir,
-    "start",
-    startSceneId,
+  let stability: StableObservationResult<DiscoveryObservation>;
+  try {
+    stability = await waitForStableDiscoveryObservation({
+      udid,
+      outputDir,
+      prefix: "ground",
+      sceneId: startSceneId,
+    });
+  } catch (error) {
+    return discoveryFailure({
+      outputDir,
+      code: "stable_ground_capture_failed",
+      message: `Could not observe the grounded page long enough to determine stability: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      recoverable: true,
+      evidencePaths: [
+        discoveryPlanPath,
+        ...(stabilityPath ? [stabilityPath] : []),
+        ...(agentDiagnosticPath ? [agentDiagnosticPath] : []),
+      ],
+    });
+  }
+  await writeFile(stabilityPath, JSON.stringify(stability, null, 2), "utf8");
+  log(
+    stability.stable
+      ? `Page stable after ${stability.sampleCount} observations (${stability.samples.at(-1)?.strategy ?? "unknown"} fingerprint).`
+      : `Page did not stabilize after ${stability.sampleCount} observations; refusing to interact with a moving UI.`,
   );
+  if (!stability.stable) {
+    return discoveryFailure({
+      outputDir,
+      code: "page_not_stable",
+      message: `The page did not produce ${REQUIRED_STABLE_SAMPLES} consecutive matching observations before the stability budget expired.`,
+      recoverable: true,
+      evidencePaths: [
+        discoveryPlanPath,
+        stabilityPath,
+        ...visibilitySearchPaths,
+      ],
+      stabilityPath,
+    });
+  }
+  let currentObservation = stability.observation;
 
-  for (const candidate of discoveryPlan.candidates) {
-    let element = resolveDiscoveryElement(
+  for (const [
+    candidateIndex,
+    candidate,
+  ] of discoveryPlan.candidates.entries()) {
+    let element = resolveVisibleDiscoveryElement(
       currentObservation.elements,
       candidate.elementId,
       candidate.selectors,
+      deviceProfile.viewportWidth,
+      deviceProfile.viewportHeight,
     );
-    if (!element && args.allowStaleFocus) {
-      const recoveryCommands = buildHorizontalVisibilityRecoveryCommands({
-        graph,
-        sceneId: startSceneId,
-        focusElementId: candidate.elementId,
-        udid,
-        maxAttempts: 3,
+    if (!element) {
+      const axis = viewportSearchAxisForTarget({
+        elementId: candidate.elementId,
+        semanticRole: candidate.semanticRole,
       });
-      for (const [index, command] of recoveryCommands.entries()) {
-        log(
-          `Visibility recovery ${index + 1}/${recoveryCommands.length}: ${command.join(" ")}`,
+      const searchDir = join(
+        outputDir,
+        "visibility-search",
+        `${String(candidateIndex + 1).padStart(2, "0")}-${sanitizeId(candidate.elementId)}`,
+      );
+      try {
+        const search = await searchViewports({
+          axis,
+          initialObservation: currentObservation,
+          maximumMoves: MAX_VIEWPORT_SEARCH_MOVES,
+          resolveVisibleTarget: (observation) =>
+            resolveVisibleDiscoveryElement(
+              observation.elements,
+              candidate.elementId,
+              candidate.selectors,
+              deviceProfile.viewportWidth,
+              deviceProfile.viewportHeight,
+              deviceProfile.viewportHeight * 0.14,
+              deviceProfile.viewportHeight * 0.9,
+            ),
+          moveAndObserve: async (direction, moveIndex, previous) => {
+            log(
+              `Viewport search ${moveIndex}/${MAX_VIEWPORT_SEARCH_MOVES}: swipe ${direction} by one short segment, wait for stability, then re-check ${candidate.title}.`,
+            );
+            const command = buildViewportSearchCommand({
+              udid,
+              axis,
+              direction,
+              viewportWidth: deviceProfile.viewportWidth,
+              viewportHeight: deviceProfile.viewportHeight,
+            });
+            const recovery = await runCommand(command, process.cwd());
+            if (recovery.exitCode !== 0) {
+              throw new Error(
+                recovery.stderr.trim() ||
+                  `Command failed: ${command.join(" ")}`,
+              );
+            }
+            visibilityActionsExecuted += 1;
+            const recovered = await waitForStableDiscoveryObservation({
+              udid,
+              outputDir: searchDir,
+              prefix: `${direction}-${String(moveIndex).padStart(2, "0")}`,
+              sceneId: startSceneId,
+              previousObservation: previous,
+              requireChangeFromPrevious: false,
+            });
+            return {
+              observation: recovered.observation,
+              stable: recovered.stable,
+              changedFromPrevious: recovered.changedFromPrevious,
+              fingerprint:
+                recovered.samples.at(-1)?.fingerprint ??
+                `${direction}-${moveIndex}`,
+            };
+          },
+        });
+        currentObservation = search.observation;
+        element = search.target ?? null;
+        const searchPath = join(searchDir, "viewport-search.json");
+        await mkdir(searchDir, { recursive: true });
+        await writeFile(
+          searchPath,
+          JSON.stringify(
+            {
+              axis,
+              targetElementId: candidate.elementId,
+              targetTitle: candidate.title,
+              stopReason: search.stopReason,
+              moves: search.moves,
+              finalScreenshotPath: search.observation.screenshotPath,
+              finalUiDumpPath: search.observation.uiDumpPath,
+            },
+            null,
+            2,
+          ),
+          "utf8",
         );
-        const recovery = await runCommand(command, process.cwd());
-        if (recovery.exitCode !== 0) break;
-        await Bun.sleep(SETTLE_MS);
-        currentObservation = await captureObservation(
-          udid,
-          outputDir,
-          `visibility-${String(index + 1).padStart(2, "0")}`,
-          startSceneId,
-        );
-        element = resolveDiscoveryElement(
-          currentObservation.elements,
-          candidate.elementId,
-          candidate.selectors,
-        );
-        if (element) break;
+        visibilitySearchPaths.push(searchPath);
+        if (element) {
+          log(
+            `Focus Element ${candidate.elementId} became visible after ${search.moves.length} short viewport move(s).`,
+          );
+        } else {
+          log(
+            `Viewport search stopped with ${search.stopReason}; ${candidate.title} was not visible in any inspected screen.`,
+          );
+        }
+      } catch (error) {
+        visibilityRecoveryFailure = `Viewport search failed while looking for ${candidate.title}: ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+        log(visibilityRecoveryFailure);
       }
     }
     if (!element) {
@@ -304,6 +459,91 @@ export default async function appGraphDiscovery(
       sceneId: startSceneId,
       depth: 0,
       allowedActions: candidate.allowedActions,
+    });
+  }
+
+  if (elementQueue.length === 0 && args.allowStaleFocus && expectedSceneId) {
+    const agentRecovery = await diagnoseAndRecoverStableDiscovery({
+      graph,
+      goal,
+      expectedSceneId,
+      startSceneId,
+      focusElementId,
+      observation: currentObservation,
+      udid,
+      outputDir,
+      deviceProfile: {
+        viewportWidth: deviceProfile.viewportWidth,
+        viewportHeight: deviceProfile.viewportHeight,
+      },
+      agentCwd: resolve(args.agentCwd?.trim() || DEFAULT_AGENT_CWD),
+      model: args.model,
+      agentTimeoutMs: Math.max(
+        1_000,
+        args.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS,
+      ),
+      maximumSteps: Math.max(
+        0,
+        Math.min(
+          4,
+          args.maxAgentRecoverySteps ?? DEFAULT_MAX_AGENT_RECOVERY_STEPS,
+        ),
+      ),
+      minimumConfidence: Math.min(
+        1,
+        Math.max(
+          0,
+          args.minimumAgentConfidence ?? DEFAULT_MINIMUM_AGENT_CONFIDENCE,
+        ),
+      ),
+      agentRunner: args.agentRunner,
+    });
+    agentUsed = agentRecovery.agentUsed;
+    agentDiagnosticPath = agentRecovery.diagnosticPath;
+    currentObservation = agentRecovery.observation;
+    actionsExecuted += agentRecovery.actionsExecuted;
+    if (agentRecovery.atTarget) {
+      agentConfirmedTarget = true;
+      const transition = agentRecovery.transition ?? {
+        sourceSceneId: startSceneId,
+        sourceElementId: "agent.scene_recognition",
+        actionType: "none",
+        targetSceneId: expectedSceneId,
+        before: stability.observation,
+        after: currentObservation,
+        observationPath: agentDiagnosticPath,
+        revivesStaleTarget: true,
+      };
+      discoveredTransitions.push(transition);
+      visitedScenes.add(expectedSceneId);
+      scenesDiscovered += 1;
+      elementsDiscovered += countNewDiscoveryElements({
+        graph,
+        sceneId: expectedSceneId,
+        observation: currentObservation,
+        viewportWidth: deviceProfile.viewportWidth,
+        viewportHeight: deviceProfile.viewportHeight,
+      });
+      if (transition.actionType !== "none") operatorsDiscovered += 1;
+    } else {
+      agentFailureMessage = agentRecovery.message;
+      log(
+        `Agent inspected the stable page but could not safely recover ${expectedSceneId}: ${agentRecovery.message}`,
+      );
+    }
+  }
+  if (visibilityRecoveryFailure) {
+    return discoveryFailure({
+      outputDir,
+      code: "visibility_recovery_failed",
+      message: visibilityRecoveryFailure,
+      recoverable: true,
+      evidencePaths: [discoveryPlanPath, stabilityPath],
+      stabilityPath,
+      visibilityActionsExecuted,
+      focusElementId,
+      focusElementTitle: discoveryPlan.candidates[0]?.title,
+      expectedSceneId,
     });
   }
 
@@ -337,26 +577,48 @@ export default async function appGraphDiscovery(
 
       const execSuccess = await executeAction(udid, actionType, element);
       actionsExecuted++;
-      await Bun.sleep(SETTLE_MS);
+      const stableAfterAction = execSuccess
+        ? await waitForStableDiscoveryObservation({
+            udid,
+            outputDir: actionDir,
+            prefix: "after",
+            sceneId: next.sceneId,
+            previousObservation: beforeObs,
+          })
+        : undefined;
+      const afterObs = stableAfterAction?.observation ?? beforeObs;
+      currentObservation = afterObs;
+      if (stableAfterAction) {
+        await writeFile(
+          join(actionDir, "stability.json"),
+          JSON.stringify(stableAfterAction, null, 2),
+          "utf8",
+        );
+      }
 
-      const afterObs = await captureObservation(
-        udid,
-        actionDir,
-        "after",
-        next.sceneId,
-      );
-
-      const sceneChanged = detectSceneChange(beforeObs, afterObs);
+      const sceneChanged =
+        stableAfterAction?.stable === true &&
+        detectSceneChange(beforeObs, afterObs);
+      if (execSuccess && stableAfterAction?.stable) {
+        lastSuccessfulProbe = {
+          sourceSceneId: next.sceneId,
+          sourceElementId: next.graphElementId,
+          actionType,
+          before: beforeObs,
+          after: afterObs,
+          observationPath: join(actionDir, "observation.json"),
+        };
+      }
 
       if (execSuccess && sceneChanged) {
-        const expectedScene = args.expectedSceneId
-          ? graph.scenes[args.expectedSceneId]
+        const expectedScene = expectedSceneId
+          ? graph.scenes[expectedSceneId]
           : undefined;
-        const newSceneId =
-          expectedScene &&
-          discoveryObservationMatchesScene(afterObs, expectedScene)
+        const newSceneId = expectedScene
+          ? discoveryObservationMatchesScene(afterObs, expectedScene)
             ? expectedScene.sceneId
-            : findNewSceneId(beforeObs, afterObs);
+            : null
+          : findNewSceneId(beforeObs, afterObs);
         if (newSceneId && !visitedScenes.has(newSceneId)) {
           visitedScenes.add(newSceneId);
           scenesDiscovered++;
@@ -371,15 +633,21 @@ export default async function appGraphDiscovery(
             after: afterObs,
             observationPath,
             revivesStaleTarget:
-              Boolean(args.expectedSceneId) &&
-              newSceneId === args.expectedSceneId,
+              graph.scenes[newSceneId]?.status === "stale" &&
+              newSceneId === expectedSceneId,
           });
           operatorsDiscovered++;
 
           // Capture every visible Element on the newly observed page, but do
           // not click any of them automatically. A later goal/Plan may select
           // one explicit Element for another targeted probe.
-          elementsDiscovered += afterObs.elements.length;
+          elementsDiscovered += countNewDiscoveryElements({
+            graph,
+            sceneId: newSceneId,
+            observation: afterObs,
+            viewportWidth: deviceProfile.viewportWidth,
+            viewportHeight: deviceProfile.viewportHeight,
+          });
         }
       }
 
@@ -398,23 +666,115 @@ export default async function appGraphDiscovery(
     }
   }
 
+  if (
+    expectedSceneId &&
+    !agentUsed &&
+    !discoveredTransitions.some(
+      (transition) => transition.targetSceneId === expectedSceneId,
+    )
+  ) {
+    const agentRecovery = await diagnoseAndRecoverStableDiscovery({
+      graph,
+      goal,
+      expectedSceneId,
+      startSceneId,
+      focusElementId,
+      observation: currentObservation,
+      udid,
+      outputDir,
+      deviceProfile: {
+        viewportWidth: deviceProfile.viewportWidth,
+        viewportHeight: deviceProfile.viewportHeight,
+      },
+      agentCwd: resolve(args.agentCwd?.trim() || DEFAULT_AGENT_CWD),
+      model: args.model,
+      agentTimeoutMs: Math.max(
+        1_000,
+        args.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS,
+      ),
+      maximumSteps: Math.max(
+        0,
+        Math.min(
+          4,
+          args.maxAgentRecoverySteps ?? DEFAULT_MAX_AGENT_RECOVERY_STEPS,
+        ),
+      ),
+      minimumConfidence: Math.min(
+        1,
+        Math.max(
+          0,
+          args.minimumAgentConfidence ?? DEFAULT_MINIMUM_AGENT_CONFIDENCE,
+        ),
+      ),
+      agentRunner: args.agentRunner,
+    });
+    agentUsed = agentRecovery.agentUsed;
+    agentDiagnosticPath = agentRecovery.diagnosticPath;
+    agentFailureMessage = agentRecovery.atTarget
+      ? undefined
+      : agentRecovery.message;
+    currentObservation = agentRecovery.observation;
+    actionsExecuted += agentRecovery.actionsExecuted;
+    agentConfirmedTarget = agentRecovery.atTarget;
+    if (agentRecovery.atTarget) {
+      discoveredTransitions.push(
+        agentRecovery.transition ?? {
+          ...(lastSuccessfulProbe ?? {
+            sourceSceneId: startSceneId,
+            sourceElementId: "agent.scene_recognition",
+            actionType: "none",
+            before: stability.observation,
+            after: currentObservation,
+            observationPath: agentDiagnosticPath,
+          }),
+          targetSceneId: expectedSceneId,
+          revivesStaleTarget: true,
+        },
+      );
+      scenesDiscovered += 1;
+      elementsDiscovered += countNewDiscoveryElements({
+        graph,
+        sceneId: expectedSceneId,
+        observation: currentObservation,
+        viewportWidth: deviceProfile.viewportWidth,
+        viewportHeight: deviceProfile.viewportHeight,
+      });
+      if (agentRecovery.transition?.actionType !== "none") {
+        operatorsDiscovered += 1;
+      }
+    }
+  }
+
   phase("Synthesize");
   log(
     `Synthesizing: ${scenesDiscovered} scenes, ${elementsDiscovered} elements, ${operatorsDiscovered} operators`,
   );
   log(`Total actions: ${actionsExecuted}`);
-  if (
-    args.expectedSceneId &&
-    !discoveredTransitions.some(
-      (transition) => transition.targetSceneId === args.expectedSceneId,
-    )
-  ) {
+  const completionIssue = discoveryCompletionIssue({
+    focusElementId,
+    expectedSceneId,
+    actionsExecuted,
+    agentConfirmedTarget,
+    observedSceneIds: discoveredTransitions.map(
+      (transition) => transition.targetSceneId,
+    ),
+    agentFailureMessage,
+    explicitStaleRecovery: Boolean(args.expectedSceneId),
+  });
+  if (completionIssue) {
     return discoveryFailure({
       outputDir,
-      code: "stale_scene_not_observed",
-      message: `The historical entry did not reproduce stale Scene ${args.expectedSceneId}.`,
+      code: completionIssue.code,
+      message: completionIssue.message,
       recoverable: true,
-      evidencePaths: [discoveryPlanPath],
+      evidencePaths: [
+        discoveryPlanPath,
+        ...(stabilityPath ? [stabilityPath] : []),
+        ...(agentDiagnosticPath ? [agentDiagnosticPath] : []),
+      ],
+      stabilityPath,
+      agentUsed,
+      agentDiagnosticPath,
     });
   }
 
@@ -473,6 +833,7 @@ export default async function appGraphDiscovery(
     elementsDiscovered,
     operatorsDiscovered,
     actionsExecuted,
+    visibilityActionsExecuted,
     totalDurationMs,
     patchPath,
     graphRevision: graph.revision + (graphUpdated ? 1 : 0),
@@ -481,7 +842,19 @@ export default async function appGraphDiscovery(
       ...discoveryPlan.evidencePaths,
       discoveryPlanPath,
       ...(patchPath ? [patchPath] : []),
+      ...(stabilityPath ? [stabilityPath] : []),
+      ...(agentDiagnosticPath ? [agentDiagnosticPath] : []),
+      ...visibilitySearchPaths,
     ],
+    stabilityPath,
+    agentUsed,
+    agentDiagnosticPath,
+    focusElementId,
+    focusElementTitle: discoveryPlan.candidates[0]?.title,
+    expectedSceneId,
+    observedSceneIds: discoveredTransitions.map(
+      (transition) => transition.targetSceneId,
+    ),
   };
 
   const resultPath = join(outputDir, "result.json");
@@ -521,6 +894,7 @@ async function captureObservation(
 
   const screenshotPath = join(outputDir, `${prefix}-screenshot.png`);
   const uiDumpPath = join(outputDir, `${prefix}-ui-dump.json`);
+  const foregroundPath = join(outputDir, `${prefix}-foreground.json`);
 
   const screenshotCmd = buildMobilecliScreenshotCommand(udid, screenshotPath);
   await runDiscoveryCaptureCommand(screenshotCmd);
@@ -528,6 +902,18 @@ async function captureObservation(
   const uiDumpCmd = buildMobilecliUiDumpCommand(udid);
   const dumpResult = await runDiscoveryCaptureCommand(uiDumpCmd);
   await writeFile(uiDumpPath, dumpResult.stdout, "utf8");
+  const foregroundResult = await runDiscoveryCaptureCommand(
+    buildMobilecliForegroundCommand(udid),
+    runCommand,
+    3,
+    true,
+  );
+  const foregroundBundleId = foregroundResult.stdout.trim();
+  await writeFile(
+    foregroundPath,
+    JSON.stringify({ foregroundBundleId }, null, 2),
+    "utf8",
+  );
 
   let uiElements: UiElement[] = [];
   try {
@@ -565,9 +951,381 @@ async function captureObservation(
     sceneId,
     screenshotPath,
     uiDumpPath,
+    foregroundPath,
+    foregroundBundleId,
     elements,
+    uiElements,
     timestamp: new Date().toISOString(),
   };
+}
+
+export async function waitForStableDiscoveryObservation(options: {
+  readonly udid: string;
+  readonly outputDir: string;
+  readonly prefix: string;
+  readonly sceneId: string;
+  readonly previousObservation?: DiscoveryObservation;
+  readonly requireChangeFromPrevious?: boolean;
+  readonly maximumSamples?: number;
+  readonly requiredConsecutiveMatches?: number;
+  readonly pollMs?: number;
+  readonly capture?: (sampleIndex: number) => Promise<DiscoveryObservation>;
+  readonly sleep?: (durationMs: number) => Promise<void>;
+}): Promise<StableObservationResult<DiscoveryObservation>> {
+  return waitForStableObservation({
+    previousObservation: options.previousObservation,
+    requireChangeFromPrevious:
+      options.requireChangeFromPrevious ?? Boolean(options.previousObservation),
+    capture:
+      options.capture ??
+      ((sampleIndex) =>
+        captureObservation(
+          options.udid,
+          options.outputDir,
+          `${options.prefix}-${String(sampleIndex).padStart(2, "0")}`,
+          options.sceneId,
+        )),
+    describe: discoveryStabilityObservation,
+    acceptStable: discoveryObservationReady,
+    maximumSamples: options.maximumSamples ?? MAX_STABILITY_SAMPLES,
+    requiredConsecutiveMatches:
+      options.requiredConsecutiveMatches ?? REQUIRED_STABLE_SAMPLES,
+    pollMs: options.pollMs ?? STABILITY_POLL_MS,
+    sleep: options.sleep,
+  });
+}
+
+interface DiscoveryAgentDiagnosticEntry {
+  readonly attempt: number;
+  readonly currentSceneId?: string;
+  readonly decision?: RuntimeSceneAgentDecision;
+  readonly evaluation?: RuntimeSceneAgentEvaluation;
+  readonly command?: readonly string[];
+  readonly stableAfterAction?: boolean;
+  readonly error?: string;
+}
+
+interface DiscoveryAgentRecoveryResult {
+  readonly agentUsed: boolean;
+  readonly atTarget: boolean;
+  readonly actionsExecuted: number;
+  readonly observation: DiscoveryObservation;
+  readonly diagnosticPath: string;
+  readonly finalDecision?: RuntimeSceneAgentDecision;
+  readonly message: string;
+  readonly transition?: DiscoveredTransition;
+}
+
+export async function diagnoseAndRecoverStableDiscovery(options: {
+  readonly graph: AppGraph;
+  readonly goal: string;
+  readonly expectedSceneId: string;
+  readonly startSceneId: string;
+  readonly focusElementId: string;
+  readonly observation: DiscoveryObservation;
+  readonly udid: string;
+  readonly outputDir: string;
+  readonly deviceProfile: {
+    readonly viewportWidth: number;
+    readonly viewportHeight: number;
+  };
+  readonly agentCwd: string;
+  readonly model?: string;
+  readonly agentTimeoutMs: number;
+  readonly maximumSteps: number;
+  readonly minimumConfidence: number;
+  readonly agentRunner?: AppGraphDiscoveryInput["agentRunner"];
+}): Promise<DiscoveryAgentRecoveryResult> {
+  const diagnosticPath = join(options.outputDir, "agent-scene-recovery.json");
+  const expectedScene = options.graph.scenes[options.expectedSceneId];
+  const historicalTarget = Object.values(
+    options.graph.scenes[options.startSceneId]?.elements ?? {},
+  ).find((element) => element.elementId === options.focusElementId);
+  if (!expectedScene || options.maximumSteps === 0) {
+    const message = !expectedScene
+      ? `Expected Scene does not exist: ${options.expectedSceneId}.`
+      : "Agent recovery is disabled by the current step budget.";
+    await writeFile(
+      diagnosticPath,
+      JSON.stringify({ agentUsed: false, message, attempts: [] }, null, 2),
+      "utf8",
+    );
+    return {
+      agentUsed: false,
+      atTarget: false,
+      actionsExecuted: 0,
+      observation: options.observation,
+      diagnosticPath,
+      message,
+    };
+  }
+
+  let observation = options.observation;
+  let actionsExecuted = 0;
+  let finalDecision: RuntimeSceneAgentDecision | undefined;
+  let message = "Agent found no safe high-confidence recovery action.";
+  let transition: DiscoveredTransition | undefined;
+  const diagnostics: DiscoveryAgentDiagnosticEntry[] = [];
+  const previousActions: Array<{
+    candidateId: string;
+    actionType: RuntimeRecoveryActionType;
+  }> = [];
+  for (let attempt = 1; attempt <= options.maximumSteps; attempt += 1) {
+    const runtimeObservation = discoveryRuntimeObservation(observation);
+    const currentMatch = classifyRuntimeScene(
+      options.graph,
+      runtimeObservation,
+    );
+    try {
+      log(
+        `Agent recovery ${attempt}/${options.maximumSteps}: inspecting the stable page for ${options.expectedSceneId}.`,
+      );
+      let evaluation: RuntimeSceneAgentEvaluation | undefined;
+      const choice = await decideSceneRecoveryWithAgent({
+        goal: options.goal,
+        expectedScene,
+        currentSceneId: currentMatch?.sceneId ?? options.startSceneId,
+        observation: runtimeObservation,
+        viewportWidth: options.deviceProfile.viewportWidth,
+        viewportHeight: options.deviceProfile.viewportHeight,
+        previousActions,
+        cwd: options.agentCwd,
+        model: options.model,
+        timeoutMs: options.agentTimeoutMs,
+        minimumConfidence: options.minimumConfidence,
+        agentRunner: options.agentRunner,
+        historicalTarget,
+        onEvaluation: (value) => {
+          evaluation = value;
+        },
+      });
+      if (!choice) {
+        finalDecision = evaluation?.decision;
+        message =
+          evaluation?.rejectionReason ?? evaluation?.decision.reason ?? message;
+        diagnostics.push({
+          attempt,
+          currentSceneId: currentMatch?.sceneId,
+          decision: evaluation?.decision,
+          evaluation,
+          error: message,
+        });
+        break;
+      }
+      finalDecision = choice.decision;
+      if (choice.decision.status === "at_target") {
+        message = choice.decision.reason;
+        diagnostics.push({
+          attempt,
+          currentSceneId: currentMatch?.sceneId,
+          decision: choice.decision,
+          evaluation,
+        });
+        break;
+      }
+      if (
+        choice.decision.status === "blocked" ||
+        !choice.candidate ||
+        choice.decision.actionType === "none"
+      ) {
+        message = choice.decision.reason;
+        diagnostics.push({
+          attempt,
+          currentSceneId: currentMatch?.sceneId,
+          decision: choice.decision,
+          evaluation,
+        });
+        break;
+      }
+
+      const before = observation;
+      const actionType = choice.decision.actionType;
+      const command = buildRuntimeRecoveryCommand(
+        options.udid,
+        choice.candidate,
+        actionType,
+      );
+      const result = await runCommand(command, process.cwd());
+      if (result.exitCode !== 0) {
+        message =
+          result.stderr.slice(0, 500) || "Agent recovery action failed.";
+        diagnostics.push({
+          attempt,
+          currentSceneId: currentMatch?.sceneId,
+          decision: choice.decision,
+          evaluation,
+          command,
+          error: message,
+        });
+        break;
+      }
+      actionsExecuted += 1;
+      previousActions.push({
+        candidateId: choice.candidate.candidateId,
+        actionType,
+      });
+      const stable = await waitForStableDiscoveryObservation({
+        udid: options.udid,
+        outputDir: join(options.outputDir, "agent-scene-recovery"),
+        prefix: `attempt-${String(attempt).padStart(2, "0")}`,
+        sceneId: options.startSceneId,
+        previousObservation: before,
+      });
+      observation = stable.observation;
+      diagnostics.push({
+        attempt,
+        currentSceneId: currentMatch?.sceneId,
+        decision: choice.decision,
+        evaluation,
+        command,
+        stableAfterAction: stable.stable,
+        error: stable.stable
+          ? undefined
+          : "The page did not stabilize after the Agent recovery action.",
+      });
+      if (!stable.stable) {
+        message = "The page did not stabilize after the Agent recovery action.";
+        break;
+      }
+      transition = {
+        sourceSceneId: currentMatch?.sceneId ?? options.startSceneId,
+        sourceElementId:
+          resolveGraphElementIdForRuntimeCandidate(
+            options.graph,
+            currentMatch?.sceneId ?? options.startSceneId,
+            choice.candidate,
+          ) ?? "agent.scene_recovery",
+        actionType,
+        targetSceneId: options.expectedSceneId,
+        before,
+        after: observation,
+        observationPath: diagnosticPath,
+        revivesStaleTarget: true,
+      };
+      if (discoveryObservationMatchesScene(observation, expectedScene)) {
+        finalDecision = {
+          status: "at_target",
+          candidateId: "",
+          actionType: "none",
+          confidence: 1,
+          reason: `The Agent action exposed anchors for ${options.expectedSceneId}.`,
+        };
+        message = finalDecision.reason;
+        break;
+      }
+      message = `Agent action completed but ${options.expectedSceneId} is not yet verified.`;
+    } catch (error) {
+      message = `Agent Scene recovery failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`;
+      diagnostics.push({ attempt, error: message });
+      break;
+    }
+  }
+
+  const atTarget = finalDecision?.status === "at_target";
+  await writeFile(
+    diagnosticPath,
+    JSON.stringify(
+      {
+        agentUsed: true,
+        expectedSceneId: options.expectedSceneId,
+        atTarget,
+        actionsExecuted,
+        finalDecision,
+        message,
+        attempts: diagnostics,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  return {
+    agentUsed: true,
+    atTarget,
+    actionsExecuted,
+    observation,
+    diagnosticPath,
+    finalDecision,
+    message,
+    transition: atTarget ? transition : undefined,
+  };
+}
+
+function discoveryRuntimeObservation(
+  observation: DiscoveryObservation,
+): RuntimeObservation {
+  return {
+    screenshotPath: observation.screenshotPath,
+    uiDumpPath: observation.uiDumpPath,
+    foregroundPath: observation.foregroundPath ?? observation.uiDumpPath,
+    foregroundBundleId: observation.foregroundBundleId ?? DEFAULT_BUNDLE_ID,
+    uiElements: observation.uiElements ?? discoveryElementsAsUi(observation),
+  };
+}
+
+function resolveGraphElementIdForRuntimeCandidate(
+  graph: AppGraph,
+  sceneId: string,
+  candidate: RuntimeCandidate,
+): string | undefined {
+  const scene = graph.scenes[sceneId];
+  if (!scene) return undefined;
+  const candidateValues = [
+    candidate.accessibilityId,
+    candidate.label,
+    candidate.text,
+    candidate.value,
+    candidate.title,
+  ]
+    .map(normalizeDiscoveryText)
+    .filter(Boolean);
+  const matches = Object.values(scene.elements).filter((element) => {
+    const elementValues = [
+      element.title,
+      ...element.selectors
+        .filter((selector) => selector.type !== "role")
+        .map((selector) => selector.value),
+    ]
+      .map(normalizeDiscoveryText)
+      .filter(Boolean);
+    return elementValues.some((value) => candidateValues.includes(value));
+  });
+  return matches.length === 1 ? matches[0]?.elementId : undefined;
+}
+
+function discoveryStabilityObservation(observation: DiscoveryObservation) {
+  return {
+    screenshotPath: observation.screenshotPath,
+    uiDumpPath: observation.uiDumpPath,
+    uiElements: observation.uiElements ?? discoveryElementsAsUi(observation),
+  };
+}
+
+function discoveryObservationReady(observation: DiscoveryObservation): boolean {
+  const text = observation.elements
+    .flatMap((element) => [element.label, element.text, element.value])
+    .join(" ");
+  return !/加载中|正在加载|loading|请稍候|please wait/i.test(text);
+}
+
+function discoveryElementsAsUi(
+  observation: DiscoveryObservation,
+): readonly UiElement[] {
+  return observation.elements.map((element) => ({
+    role: element.role,
+    accessibilityId: element.accessibilityId,
+    label: element.label,
+    text: element.text,
+    value: element.value,
+    bounds: {
+      x: element.x,
+      y: element.y,
+      width: element.width,
+      height: element.height,
+    },
+  }));
 }
 
 export async function runDiscoveryCaptureCommand(
@@ -577,11 +1335,17 @@ export async function runDiscoveryCaptureCommand(
     cwd?: string,
   ) => Promise<CommandResult> = runCommand,
   maximumAttempts = 3,
+  requireOutput = false,
 ): Promise<CommandResult> {
   let lastResult: CommandResult | undefined;
   for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
     lastResult = await commandRunner(command, process.cwd());
-    if (lastResult.exitCode === 0) return lastResult;
+    if (
+      lastResult.exitCode === 0 &&
+      (!requireOutput || Boolean(lastResult.stdout.trim()))
+    ) {
+      return lastResult;
+    }
     if (attempt < maximumAttempts) await Bun.sleep(250);
   }
   throw new Error(
@@ -698,9 +1462,102 @@ export function resolveDiscoveryElement(
         ),
       );
       if (matches.length === 1) return matches[0]!;
+      const preferred = selectOverlappingDiscoveryTarget(matches);
+      if (preferred) return preferred;
     }
   }
   return null;
+}
+
+export function resolveVisibleDiscoveryElement(
+  elements: readonly DiscoveryElement[],
+  graphElementId: string,
+  selectors: readonly { readonly type: string; readonly value: string }[],
+  viewportWidth: number,
+  viewportHeight: number,
+  minimumCenterY = 0,
+  maximumCenterY = viewportHeight,
+): DiscoveryElement | null {
+  const matches = discoverySelectorMatches(elements, graphElementId, selectors);
+  const visible = matches.filter((element) =>
+    discoveryElementWithinViewport(
+      element,
+      viewportWidth,
+      viewportHeight,
+      minimumCenterY,
+      maximumCenterY,
+    ),
+  );
+  const onlyTopCoordinateShadows =
+    visible.length > 0 &&
+    visible.every(
+      (element) => element.y + element.height / 2 < viewportHeight * 0.2,
+    ) &&
+    matches.some((element) => element.y + element.height / 2 >= viewportHeight);
+  if (onlyTopCoordinateShadows) return null;
+  if (visible.length === 1) return visible[0]!;
+  return selectOverlappingDiscoveryTarget(visible);
+}
+
+function discoverySelectorMatches(
+  elements: readonly DiscoveryElement[],
+  graphElementId: string,
+  selectors: readonly { readonly type: string; readonly value: string }[],
+): DiscoveryElement[] {
+  const direct = elements.filter(
+    (element) => element.elementId === graphElementId,
+  );
+  if (direct.length > 0) return direct;
+  const priority = [
+    "accessibilityIdentifier",
+    "label",
+    "text",
+    "value",
+    "role",
+  ];
+  for (const type of priority) {
+    for (const selector of selectors.filter((entry) => entry.type === type)) {
+      const expected = normalizeDiscoveryText(selector.value);
+      const matches = elements.filter((element) =>
+        discoveryElementValues(element, type).some(
+          (value) => normalizeDiscoveryText(value) === expected,
+        ),
+      );
+      if (matches.length > 0) return matches;
+    }
+  }
+  return [];
+}
+
+function selectOverlappingDiscoveryTarget(
+  matches: readonly DiscoveryElement[],
+): DiscoveryElement | null {
+  if (matches.length < 2) return null;
+  const sorted = [...matches].sort(
+    (left, right) => right.width * right.height - left.width * left.height,
+  );
+  const container = sorted[0]!;
+  const overlapping = sorted.every((candidate) =>
+    discoveryBoundsOverlap(container, candidate),
+  );
+  return overlapping ? container : null;
+}
+
+function discoveryBoundsOverlap(
+  left: DiscoveryElement,
+  right: DiscoveryElement,
+): boolean {
+  const overlapWidth = Math.max(
+    0,
+    Math.min(left.x + left.width, right.x + right.width) -
+      Math.max(left.x, right.x),
+  );
+  const overlapHeight = Math.max(
+    0,
+    Math.min(left.y + left.height, right.y + right.height) -
+      Math.max(left.y, right.y),
+  );
+  return overlapWidth * overlapHeight > 0;
 }
 
 function discoveryElementValues(
@@ -748,6 +1605,8 @@ export function buildDiscoveryPatch(options: {
     evidencePaths.add(transition.after.screenshotPath);
     evidencePaths.add(transition.after.uiDumpPath);
     const existingTargetScene = options.graph.scenes[transition.targetSceneId];
+    const sourceScene = options.graph.scenes[transition.sourceSceneId];
+    const sourceElement = sourceScene?.elements[transition.sourceElementId];
     if (!existingTargetScene) {
       scenes[transition.targetSceneId] = {
         sceneId: transition.targetSceneId,
@@ -819,8 +1678,6 @@ export function buildDiscoveryPatch(options: {
           },
         ],
       };
-      const sourceScene = options.graph.scenes[transition.sourceSceneId];
-      const sourceElement = sourceScene?.elements[transition.sourceElementId];
       if (sourceScene && sourceElement?.status === "stale") {
         scenes[sourceScene.sceneId] = {
           ...sourceScene,
@@ -835,7 +1692,47 @@ export function buildDiscoveryPatch(options: {
           },
         };
       }
+    } else {
+      const mergedElements = { ...existingTargetScene.elements };
+      let addedElement = false;
+      for (const element of newDiscoveryElements({
+        graph: options.graph,
+        sceneId: transition.targetSceneId,
+        observation: transition.after,
+        viewportWidth: options.viewportWidth,
+        viewportHeight: options.viewportHeight,
+      })) {
+        const elementId = uniqueDiscoveredElementId(
+          transition.targetSceneId,
+          element,
+          mergedElements,
+        );
+        mergedElements[elementId] = discoveryGraphElement(
+          elementId,
+          element,
+          options.deviceProfileId,
+          options.viewportWidth,
+          options.viewportHeight,
+          transition.after.timestamp,
+        );
+        addedElement = true;
+      }
+      if (addedElement) {
+        scenes[transition.targetSceneId] = {
+          ...existingTargetScene,
+          sceneId: existingTargetScene.sceneId,
+          elements: mergedElements,
+          referenceAssets: [
+            ...existingTargetScene.referenceAssets,
+            {
+              screenshot: transition.after.screenshotPath,
+              uiDump: transition.after.uiDumpPath,
+            },
+          ],
+        };
+      }
     }
+    if (transition.actionType === "none" || !sourceElement) continue;
     const existingEquivalent = Object.values(options.graph.operators).find(
       (operator) =>
         operator.fromSceneId === transition.sourceSceneId &&
@@ -886,6 +1783,161 @@ export function buildDiscoveryPatch(options: {
     operators: Object.keys(operators).length ? operators : undefined,
     evidencePaths: [...evidencePaths],
   };
+}
+
+function discoveryGraphElement(
+  elementId: string,
+  element: DiscoveryElement,
+  deviceProfileId: string,
+  viewportWidth: number,
+  viewportHeight: number,
+  observedAt: string,
+) {
+  return {
+    elementId,
+    title:
+      element.label || element.text || element.accessibilityId || elementId,
+    semanticRole: element.role || "Unknown",
+    status: "candidate" as const,
+    selectors: discoverySelectors(element),
+    bindings: {
+      [deviceProfileId]: {
+        deviceProfileId,
+        normalizedPoint: {
+          x: clamp01((element.x + element.width / 2) / viewportWidth),
+          y: clamp01((element.y + element.height / 2) / viewportHeight),
+        },
+        source: "ui_dump" as const,
+        status: "candidate" as const,
+        observedAt,
+      },
+    },
+  };
+}
+
+function countNewDiscoveryElements(options: {
+  readonly graph: AppGraph;
+  readonly sceneId: string;
+  readonly observation: DiscoveryObservation;
+  readonly viewportWidth: number;
+  readonly viewportHeight: number;
+}): number {
+  return newDiscoveryElements(options).length;
+}
+
+function newDiscoveryElements(options: {
+  readonly graph: AppGraph;
+  readonly sceneId: string;
+  readonly observation: DiscoveryObservation;
+  readonly viewportWidth: number;
+  readonly viewportHeight: number;
+}): DiscoveryElement[] {
+  const candidates = dedupeDiscoveryElementsForGraph(
+    options.observation.elements.filter(
+      (element) =>
+        discoveryElementWithinViewport(
+          element,
+          options.viewportWidth,
+          options.viewportHeight,
+        ) && !isSystemOrSceneChromeElement(element, options.viewportHeight),
+    ),
+  );
+  const scene = options.graph.scenes[options.sceneId];
+  if (!scene) return candidates;
+  return candidates.filter(
+    (element) =>
+      !Object.values(scene.elements).some((existing) =>
+        graphElementMatchesDiscoveryElement(existing, element),
+      ),
+  );
+}
+
+function discoveryElementWithinViewport(
+  element: DiscoveryElement,
+  viewportWidth: number,
+  viewportHeight: number,
+  minimumCenterY = 0,
+  maximumCenterY = viewportHeight,
+): boolean {
+  const centerX = element.x + element.width / 2;
+  const centerY = element.y + element.height / 2;
+  return (
+    centerX >= 0 &&
+    centerX < viewportWidth &&
+    centerY >= minimumCenterY &&
+    centerY < maximumCenterY
+  );
+}
+
+function isSystemOrSceneChromeElement(
+  element: DiscoveryElement,
+  viewportHeight: number,
+): boolean {
+  if (element.y < Math.min(44, viewportHeight * 0.06)) return true;
+  if (/^(\d{1,2}:\d{2}|勿扰模式|moon\.fill)$/i.test(element.label)) {
+    return true;
+  }
+  return element.role === "StaticText" && element.y < viewportHeight * 0.12;
+}
+
+function dedupeDiscoveryElementsForGraph(
+  elements: readonly DiscoveryElement[],
+): DiscoveryElement[] {
+  const grouped = new Map<string, DiscoveryElement>();
+  for (const element of elements) {
+    const key = [
+      element.role,
+      element.accessibilityId,
+      element.label,
+      element.text,
+      element.value,
+    ]
+      .map(normalizeDiscoveryText)
+      .join("|");
+    const existing = grouped.get(key);
+    if (
+      !existing ||
+      element.width * element.height > existing.width * existing.height
+    ) {
+      grouped.set(key, element);
+    }
+  }
+  return [...grouped.values()];
+}
+
+function graphElementMatchesDiscoveryElement(
+  existing: Scene["elements"][string],
+  observed: DiscoveryElement,
+): boolean {
+  const existingValues = [
+    existing.title,
+    ...existing.selectors
+      .filter((selector) => selector.type !== "role")
+      .map((selector) => selector.value),
+  ]
+    .map(normalizeDiscoveryText)
+    .filter(Boolean);
+  const observedValues = [
+    observed.accessibilityId,
+    observed.label,
+    observed.text,
+    observed.value,
+  ]
+    .map(normalizeDiscoveryText)
+    .filter(Boolean);
+  return existingValues.some((value) => observedValues.includes(value));
+}
+
+function uniqueDiscoveredElementId(
+  sceneId: string,
+  element: DiscoveryElement,
+  existing: Scene["elements"],
+): string {
+  const base = discoveredElementId(sceneId, element);
+  if (!existing[base]) return base;
+  let suffix = 2;
+  while (existing[`${base}-${suffix}`]) suffix += 1;
+  return `${base}-${suffix}`;
 }
 
 function discoveryOperation(transition: DiscoveredTransition) {
@@ -1118,6 +2170,76 @@ function discoveryActionForGoal(goal: string): "tap" | "long_press" | "swipe" {
   return "tap";
 }
 
+export function resolveDiscoveryExpectedSceneId(
+  graph: AppGraph,
+  startSceneId: string,
+  focusElementId: string,
+  goal: string,
+): string | undefined {
+  const candidates = Object.values(graph.operators)
+    .filter(
+      (operator) =>
+        operator.fromSceneId === startSceneId &&
+        operator.operation.elementId === focusElementId &&
+        Boolean(operator.toSceneId) &&
+        !["stale", "blocked", "disabled"].includes(operator.status),
+    )
+    .sort((left, right) => {
+      const preferredAction = discoveryActionForGoal(goal);
+      const leftPreferred =
+        discoveryOperationType(preferredAction) === left.operation.type ? 1 : 0;
+      const rightPreferred =
+        discoveryOperationType(preferredAction) === right.operation.type
+          ? 1
+          : 0;
+      return (
+        rightPreferred - leftPreferred ||
+        right.executionStats.pass - left.executionStats.pass ||
+        left.operatorId.localeCompare(right.operatorId)
+      );
+    });
+  const targetSceneIds = [
+    ...new Set(
+      candidates
+        .map((operator) => operator.toSceneId)
+        .filter((sceneId): sceneId is string => Boolean(sceneId)),
+    ),
+  ];
+  return targetSceneIds.length === 1 ? targetSceneIds[0] : undefined;
+}
+
+export function discoveryCompletionIssue(options: {
+  readonly focusElementId: string;
+  readonly expectedSceneId?: string;
+  readonly actionsExecuted: number;
+  readonly agentConfirmedTarget: boolean;
+  readonly observedSceneIds: readonly string[];
+  readonly agentFailureMessage?: string;
+  readonly explicitStaleRecovery: boolean;
+}): { readonly code: string; readonly message: string } | null {
+  if (options.actionsExecuted === 0 && !options.agentConfirmedTarget) {
+    return {
+      code: "focus_element_unresolved",
+      message: `Focus Element ${options.focusElementId} was not resolved and no exploration action was executed.`,
+    };
+  }
+  if (
+    options.expectedSceneId &&
+    !options.agentConfirmedTarget &&
+    !options.observedSceneIds.includes(options.expectedSceneId)
+  ) {
+    return {
+      code: options.explicitStaleRecovery
+        ? "stale_scene_not_observed"
+        : "target_scene_not_observed",
+      message: options.agentFailureMessage
+        ? `The page stabilized, but the selected Element did not reach expected Scene ${options.expectedSceneId}. Agent diagnosis: ${options.agentFailureMessage}`
+        : `The page stabilized, but the selected Element did not reach expected Scene ${options.expectedSceneId}.`,
+    };
+  }
+  return null;
+}
+
 export function validateDiscoveryRequest(
   request: AppGraphDiscoveryRequest,
   graph: AppGraph,
@@ -1168,6 +2290,13 @@ function discoveryFailure(options: {
   message: string;
   recoverable: boolean;
   evidencePaths: readonly string[];
+  stabilityPath?: string;
+  agentUsed?: boolean;
+  agentDiagnosticPath?: string;
+  visibilityActionsExecuted?: number;
+  focusElementId?: string;
+  focusElementTitle?: string;
+  expectedSceneId?: string;
 }): AppGraphDiscoveryOutput {
   return {
     success: false,
@@ -1177,5 +2306,12 @@ function discoveryFailure(options: {
     message: options.message,
     recoverable: options.recoverable,
     evidencePaths: options.evidencePaths,
+    stabilityPath: options.stabilityPath,
+    agentUsed: options.agentUsed,
+    agentDiagnosticPath: options.agentDiagnosticPath,
+    visibilityActionsExecuted: options.visibilityActionsExecuted,
+    focusElementId: options.focusElementId,
+    focusElementTitle: options.focusElementTitle,
+    expectedSceneId: options.expectedSceneId,
   };
 }

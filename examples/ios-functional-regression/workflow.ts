@@ -916,7 +916,7 @@ function chooseDeviceProfile(
   const profile = profiles[0];
   if (!profile) {
     throw new Error(
-      "No device profile is available. Run ios-ui-discovery first or provide deviceProfileId.",
+      "No device profile is available. Add one to the canonical App Graph or provide deviceProfileId.",
     );
   }
   return profile;

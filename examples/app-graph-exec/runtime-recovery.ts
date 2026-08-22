@@ -68,6 +68,12 @@ export interface RuntimeSceneMatch {
   readonly matchedAnchors: readonly string[];
 }
 
+export interface RuntimeSceneAgentEvaluation {
+  readonly decision: RuntimeSceneAgentDecision;
+  readonly accepted: boolean;
+  readonly rejectionReason?: string;
+}
+
 export interface RuntimeGraphUpdate {
   readonly graph: AppGraph;
   readonly graphUpdated: boolean;
@@ -174,7 +180,7 @@ export function buildRuntimeCandidates(
         element.accessibilityId ??
         element.value ??
         `candidate-${index + 1}`;
-      const scrollable = /scroll/i.test(element.role ?? "");
+      const scrollable = /scroll|webview/i.test(element.role ?? "");
       const allowedActions: RuntimeRecoveryActionType[] = scrollable
         ? ["swipe_up", "swipe_down", "swipe_left", "swipe_right"]
         : ["tap"];
@@ -203,7 +209,8 @@ export function buildRuntimeCandidates(
     .filter(
       (candidate) =>
         !options?.safeNavigationOnly ||
-        !BLOCKED_RECOVERY_TEXT.test(candidateComparableText(candidate)),
+        (isSafeNavigationCandidate(candidate) &&
+          !BLOCKED_RECOVERY_TEXT.test(candidateComparableText(candidate))),
     );
   return candidates.slice(0, 80);
 }
@@ -311,6 +318,8 @@ export async function decideSceneRecoveryWithAgent(options: {
   timeoutMs: number;
   minimumConfidence: number;
   agentRunner?: AgentFunction;
+  historicalTarget?: Pick<Element, "title" | "semanticRole" | "selectors">;
+  onEvaluation?: (evaluation: RuntimeSceneAgentEvaluation) => void;
 }): Promise<{
   candidate?: RuntimeCandidate;
   decision: RuntimeSceneAgentDecision;
@@ -336,6 +345,7 @@ export async function decideSceneRecoveryWithAgent(options: {
     `Expected Scene: ${JSON.stringify({ sceneId: options.expectedScene.sceneId, title: options.expectedScene.title, aliases: options.expectedScene.aliases, anchors: options.expectedScene.visualTextAnchors })}`,
     `Current Scene: ${options.currentSceneId ?? "unknown"}`,
     `Next planned action: ${options.nextStep?.action.description ?? "none"}`,
+    `Historical target Element: ${JSON.stringify(options.historicalTarget ?? null)}`,
     `Previous recovery actions: ${JSON.stringify(options.previousActions)}`,
     `Screenshot path: ${options.observation.screenshotPath}`,
     `Current candidates: ${JSON.stringify(candidates.map(candidateCard))}`,
@@ -350,18 +360,44 @@ export async function decideSceneRecoveryWithAgent(options: {
     agentRunner: options.agentRunner,
   });
   if (decision.confidence < options.minimumConfidence) {
+    options.onEvaluation?.({
+      decision,
+      accepted: false,
+      rejectionReason: `Agent confidence ${decision.confidence} is below ${options.minimumConfidence}.`,
+    });
     return null;
   }
+  if (
+    decision.status === "blocked" &&
+    decision.candidateId === "" &&
+    decision.actionType === "none"
+  ) {
+    options.onEvaluation?.({ decision, accepted: true });
+    return { decision };
+  }
   if (decision.status === "at_target" && decision.actionType === "none") {
+    options.onEvaluation?.({ decision, accepted: true });
     return { decision };
   }
   if (decision.status !== "action" || decision.actionType === "none") {
+    options.onEvaluation?.({
+      decision,
+      accepted: false,
+      rejectionReason: "Agent did not return an executable action.",
+    });
     return null;
   }
   const candidate = candidates.find(
     (item) => item.candidateId === decision.candidateId,
   );
   if (!candidate || !candidate.allowedActions.includes(decision.actionType)) {
+    options.onEvaluation?.({
+      decision,
+      accepted: false,
+      rejectionReason: candidate
+        ? `Action ${decision.actionType} is not allowed for ${decision.candidateId}.`
+        : `Candidate ${decision.candidateId || "<empty>"} is not present in the stable observation.`,
+    });
     return null;
   }
   if (
@@ -371,8 +407,14 @@ export async function decideSceneRecoveryWithAgent(options: {
         previous.actionType === decision.actionType,
     )
   ) {
+    options.onEvaluation?.({
+      decision,
+      accepted: false,
+      rejectionReason: "The same candidate action was already attempted.",
+    });
     return null;
   }
+  options.onEvaluation?.({ decision, accepted: true });
   return { candidate, decision };
 }
 
@@ -897,6 +939,12 @@ function candidateComparableText(candidate: RuntimeCandidate): string {
     candidate.text,
     candidate.value,
   ].join(" ");
+}
+
+function isSafeNavigationCandidate(candidate: RuntimeCandidate): boolean {
+  return /button|link|cell|menu|tab|navigation|scroll|webview/i.test(
+    candidate.role,
+  );
 }
 
 function runtimeSwipePoints(

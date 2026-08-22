@@ -4,8 +4,8 @@
   "bundleId": "com.bot.doubao",
   "appName": "豆包",
   "appVersion": "14.7.0",
-  "revision": 65,
-  "updatedAt": "2026-08-21T16:19:41.765Z",
+  "revision": 78,
+  "updatedAt": "2026-08-22T09:43:35.853Z",
   "deviceProfiles": {
     "iphone-414x896-portrait": {
       "profileId": "iphone-414x896-portrait",
@@ -287,7 +287,12 @@
       "title": "通知设置",
       "aliases": ["通知设置"],
       "visualTextAnchors": ["通知设置", "返回"],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/bot.settings.notification_settings/52509119ed12b5b4/screenshot.png",
+          "uiDump": "reference-assets/bot.settings.notification_settings/52509119ed12b5b4/ui-dump.json"
+        }
+      ],
       "elements": {
         "notification_settings.back": {
           "elementId": "notification_settings.back",
@@ -2692,7 +2697,7 @@
     "chat.museum_guide.call": {
       "sceneId": "chat.museum_guide.call",
       "parentSceneId": null,
-      "status": "stale",
+      "status": "candidate",
       "title": "博物馆讲解通话页",
       "aliases": ["博物馆讲解通话页"],
       "visualTextAnchors": [
@@ -2702,7 +2707,12 @@
         "挂断通话",
         "内容由 AI 生成"
       ],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/chat.museum_guide.call/ddaa879489402cce/screenshot.png",
+          "uiDump": "reference-assets/chat.museum_guide.call/ddaa879489402cce/ui-dump.json"
+        }
+      ],
       "elements": {
         "readonly.chat.museum_guide.call.11ed2fe725": {
           "elementId": "readonly.chat.museum_guide.call.11ed2fe725",
@@ -2956,8 +2966,7 @@
           ],
           "bindings": {}
         }
-      },
-      "expiredVersion": "14.7.0"
+      }
     },
     "bot.settings.smart_devices": {
       "sceneId": "bot.settings.smart_devices",
@@ -3051,12 +3060,16 @@
       "visualTextAnchors": ["按预算挑", "七夕送礼", "商品对比"],
       "referenceAssets": [
         {
-          "screenshot": "reference-assets/chat.buy_before_ask/a7369608ea15963a/screenshot.png",
-          "uiDump": "reference-assets/chat.buy_before_ask/a7369608ea15963a/ui-dump.json"
+          "screenshot": "reference-assets/chat.buy_before_ask/814be3efd823db97/screenshot.png",
+          "uiDump": "reference-assets/chat.buy_before_ask/814be3efd823db97/ui-dump.json"
         },
         {
-          "screenshot": "reference-assets/chat.buy_before_ask/b482efca08bb4f22/screenshot.png",
-          "uiDump": "reference-assets/chat.buy_before_ask/b482efca08bb4f22/ui-dump.json"
+          "screenshot": "reference-assets/chat.buy_before_ask/b5c4a4e74ac03f8c/screenshot.png",
+          "uiDump": "reference-assets/chat.buy_before_ask/b5c4a4e74ac03f8c/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/chat.buy_before_ask/edebf8ce4bb72e43/screenshot.png",
+          "uiDump": "reference-assets/chat.buy_before_ask/edebf8ce4bb72e43/ui-dump.json"
         }
       ],
       "elements": {
@@ -18594,6 +18607,10 @@
         {
           "screenshot": "reference-assets/bot.settings/bec0ce7125c8fa5c/screenshot.png",
           "uiDump": "reference-assets/bot.settings/bec0ce7125c8fa5c/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/bot.settings/15635ad1219d6949/screenshot.png",
+          "uiDump": "reference-assets/bot.settings/15635ad1219d6949/ui-dump.json"
         }
       ],
       "elements": {
@@ -21716,12 +21733,16 @@
     "chat.ai_song": {
       "sceneId": "chat.ai_song",
       "parentSceneId": null,
-      "status": "stale",
+      "status": "candidate",
       "title": "AI 写歌",
       "aliases": ["AI 写歌", "歌曲示例列表视口变化"],
       "visualTextAnchors": ["晨光汗水荣光", "流行", "做同款"],
-      "expiredVersion": "14.7.0",
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/chat.ai_song/ca395888facbbbd2/screenshot.png",
+          "uiDump": "reference-assets/chat.ai_song/ca395888facbbbd2/ui-dump.json"
+        }
+      ],
       "elements": {
         "ai_song.start_writing": {
           "elementId": "ai_song.start_writing",
@@ -22479,13 +22500,13 @@
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-21T14:39:32.218Z",
+              "observedAt": "2026-08-22T04:54:13.161Z",
               "appVersion": "14.7.0",
               "execution": {
                 "tier": "fast",
-                "successfulExecutions": 10,
+                "successfulExecutions": 11,
                 "failedExecutions": 0,
-                "consecutiveSuccessfulExecutions": 10,
+                "consecutiveSuccessfulExecutions": 11,
                 "consecutiveFailedExecutions": 0,
                 "evidencePaths": [
                   "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
@@ -22497,9 +22518,10 @@
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141536-0f7d7362/2026-08-21T14-15-37-243Z/round-01/exec/2026-08-21T14-15-37-261Z/step-02/post-step-ui-dump.json",
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json",
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json",
-                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json"
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json"
                 ],
-                "lastValidatedAt": "2026-08-21T14:39:32.218Z",
+                "lastValidatedAt": "2026-08-22T04:54:13.161Z",
                 "lastValidatedAppVersion": "14.7.0",
                 "lastDeviceProfileId": "iphone-414x896-portrait"
               }
@@ -22995,24 +23017,27 @@
             "iphone-414x896-portrait": {
               "deviceProfileId": "iphone-414x896-portrait",
               "normalizedPoint": {
-                "x": 0.14371980676328502,
+                "x": 0.2572463768115942,
                 "y": 0.8510044642857143
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-21T16:19:41.756Z",
+              "observedAt": "2026-08-22T05:28:50.500Z",
               "appVersion": "14.7.0",
               "execution": {
                 "tier": "fast",
-                "successfulExecutions": 2,
+                "successfulExecutions": 5,
                 "failedExecutions": 0,
-                "consecutiveSuccessfulExecutions": 2,
+                "consecutiveSuccessfulExecutions": 5,
                 "consecutiveFailedExecutions": 0,
                 "evidencePaths": [
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161204-8dcef2bd/2026-08-21T16-12-05-278Z/round-01/exec/2026-08-21T16-12-05-292Z/step-01/post-step-ui-dump.json",
-                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json"
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822041619-2d4b20bd/2026-08-22T04-16-19-670Z/round-01/exec/2026-08-22T04-16-19-695Z/step-01/post-step-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045218-9236dd8a/2026-08-22T04-52-18-817Z/round-01/exec/2026-08-22T04-52-18-871Z/step-01/post-step-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822052818-355fa09e/2026-08-22T05-28-19-462Z/round-01/exec/2026-08-22T05-28-19-477Z/step-01/post-step-ui-dump.json"
                 ],
-                "lastValidatedAt": "2026-08-21T16:19:41.756Z",
+                "lastValidatedAt": "2026-08-22T05:28:50.500Z",
                 "lastValidatedAppVersion": "14.7.0",
                 "lastDeviceProfileId": "iphone-414x896-portrait"
               }
@@ -23076,8 +23101,7 @@
           "elementId": "chat.detail.actionbar.ai-ebb3db42",
           "title": "AI写歌",
           "semanticRole": "actionbar_navigation_entry",
-          "status": "stale",
-          "expiredVersion": "14.7.0",
+          "status": "candidate",
           "selectors": [
             {
               "type": "accessibilityIdentifier",
@@ -23177,7 +23201,7 @@
           "elementId": "chat.detail.actionbar.item-1fcb1c82",
           "title": "博物馆讲解",
           "semanticRole": "actionbar_navigation_entry",
-          "status": "stale",
+          "status": "candidate",
           "selectors": [
             {
               "type": "accessibilityIdentifier",
@@ -23203,8 +23227,7 @@
               "status": "stale",
               "observedAt": "2026-08-16T02:40:03.234Z"
             }
-          },
-          "expiredVersion": "14.7.0"
+          }
         },
         "chat.detail.actionbar.item-766fda8d": {
           "elementId": "chat.detail.actionbar.item-766fda8d",
@@ -26575,7 +26598,7 @@
     "volcengine.ark.console.experience": {
       "sceneId": "volcengine.ark.console.experience",
       "parentSceneId": null,
-      "status": "stale",
+      "status": "candidate",
       "title": "火山方舟体验页",
       "aliases": [
         "火山方舟体验页",
@@ -26589,7 +26612,12 @@
         "语言",
         "图片"
       ],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/volcengine.ark.console.experience/5ce66ed3e18d6f79/screenshot.png",
+          "uiDump": "reference-assets/volcengine.ark.console.experience/5ce66ed3e18d6f79/ui-dump.json"
+        }
+      ],
       "elements": {
         "top_back_button": {
           "elementId": "top_back_button",
@@ -26943,8 +26971,7 @@
             }
           }
         }
-      },
-      "expiredVersion": "14.7.0"
+      }
     },
     "volcengine.ark.console.home": {
       "sceneId": "volcengine.ark.console.home",
@@ -27799,7 +27826,7 @@
           "elementId": "volcengine.ark.console.home.experience_entry",
           "title": "体验",
           "semanticRole": "navigation_entry",
-          "status": "stale",
+          "status": "candidate",
           "selectors": [
             {
               "type": "accessibilityIdentifier",
@@ -27825,8 +27852,7 @@
               "status": "stale",
               "observedAt": "2026-08-16T08:58:02.979Z"
             }
-          },
-          "expiredVersion": "14.7.0"
+          }
         },
         "volcengine.ark.console.home.nav.back": {
           "elementId": "volcengine.ark.console.home.nav.back",
@@ -27881,16 +27907,16 @@
       "effectiveVersion": "14.7.0",
       "referenceAssets": [
         {
-          "screenshot": "reference-assets/bot.settings.customer_service/d2be5bb0f470ae6b/screenshot.png",
-          "uiDump": "reference-assets/bot.settings.customer_service/d2be5bb0f470ae6b/ui-dump.json"
-        },
-        {
           "screenshot": "reference-assets/bot.settings.customer_service/02b86375c352e9f0/screenshot.png",
           "uiDump": "reference-assets/bot.settings.customer_service/02b86375c352e9f0/ui-dump.json"
         },
         {
           "screenshot": "reference-assets/bot.settings.customer_service/0685459d58ad14a0/screenshot.png",
           "uiDump": "reference-assets/bot.settings.customer_service/0685459d58ad14a0/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/bot.settings.customer_service/722ed817fcf2c48e/screenshot.png",
+          "uiDump": "reference-assets/bot.settings.customer_service/722ed817fcf2c48e/ui-dump.json"
         }
       ],
       "elements": {
@@ -37308,6 +37334,2061 @@
           }
         }
       }
+    },
+    "runtime.scene.f56149d1c3dc": {
+      "sceneId": "runtime.scene.f56149d1c3dc",
+      "parentSceneId": null,
+      "foregroundBundleId": "{\n  \"status\": \"ok\",\n  \"data\": {\n    \"packageName\": \"com.bot.doubao\",\n    \"appName\": \"豆包 Debug\",\n    \"version\": \"14.7.0\"\n  }\n}",
+      "status": "observed",
+      "title": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议",
+      "aliases": [],
+      "visualTextAnchors": [
+        "技能 · 连接器",
+        "金融",
+        "法律",
+        "新媒体创作",
+        "办公协作",
+        "电商/营销"
+      ],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/runtime.scene.f56149d1c3dc/af9b90984d91e4e2/screenshot.png",
+          "uiDump": "reference-assets/runtime.scene.f56149d1c3dc/af9b90984d91e4e2/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/runtime.scene.f56149d1c3dc/2f543887a8f3614f/screenshot.png",
+          "uiDump": "reference-assets/runtime.scene.f56149d1c3dc/2f543887a8f3614f/ui-dump.json"
+        }
+      ],
+      "elements": {
+        "runtime.scene.f56149d1c3dc.element.443d9cf6c55e": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.443d9cf6c55e",
+          "title": "技能 · 连接器",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "技能 · 连接器"
+            },
+            {
+              "type": "label",
+              "value": "技能 · 连接器"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.49879227053140096,
+                "y": 0.078125
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.6cdfb38e9a14": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.6cdfb38e9a14",
+          "title": "金融",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "金融"
+            },
+            {
+              "type": "label",
+              "value": "金融"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.10386473429951691,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.3cea129247f3": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.3cea129247f3",
+          "title": "法律",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "法律"
+            },
+            {
+              "type": "label",
+              "value": "法律"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.2536231884057971,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.4da8cdaa6b43": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.4da8cdaa6b43",
+          "title": "新媒体创作",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "新媒体创作"
+            },
+            {
+              "type": "label",
+              "value": "新媒体创作"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.45410628019323673,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.aff125768c3b": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.aff125768c3b",
+          "title": "办公协作",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "办公协作"
+            },
+            {
+              "type": "label",
+              "value": "办公协作"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.6884057971014492,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.ea74793dbc5a": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.ea74793dbc5a",
+          "title": "电商/营销",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "电商/营销"
+            },
+            {
+              "type": "label",
+              "value": "电商/营销"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.9142512077294686,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.211cc0ef13b4": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.211cc0ef13b4",
+          "title": "出行生活",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "出行生活"
+            },
+            {
+              "type": "label",
+              "value": "出行生活"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.b98ed6f12bb0": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.b98ed6f12bb0",
+          "title": "医疗",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "医疗"
+            },
+            {
+              "type": "label",
+              "value": "医疗"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.9a0a70e8feeb": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.9a0a70e8feeb",
+          "title": "互联网",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "互联网"
+            },
+            {
+              "type": "label",
+              "value": "互联网"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.7aac84ebf52a": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.7aac84ebf52a",
+          "title": "编程",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "编程"
+            },
+            {
+              "type": "label",
+              "value": "编程"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.6a82474dc040": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.6a82474dc040",
+          "title": "学术",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "学术"
+            },
+            {
+              "type": "label",
+              "value": "学术"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.e5fd5192ab1d": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.e5fd5192ab1d",
+          "title": "新鲜玩法",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "新鲜玩法"
+            },
+            {
+              "type": "label",
+              "value": "新鲜玩法"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.1bc9fe01d086": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.1bc9fe01d086",
+          "title": "开学季",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "开学季"
+            },
+            {
+              "type": "label",
+              "value": "开学季"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.13616071428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.79408c208d77": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.79408c208d77",
+          "title": "技能包",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "技能包"
+            },
+            {
+              "type": "label",
+              "value": "技能包"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.19084821428571427
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.f7b7e01458be": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.f7b7e01458be",
+          "title": "同花顺 iFinD",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "同花顺 iFinD"
+            },
+            {
+              "type": "label",
+              "value": "同花顺 iFinD"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.3357487922705314,
+                "y": 0.24720982142857142
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.a5f34904e768": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.a5f34904e768",
+          "title": "连接器",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "连接器"
+            },
+            {
+              "type": "label",
+              "value": "连接器"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.4341517857142857
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.f386aa755497": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.f386aa755497",
+          "title": "查询股票、基金、债券及宏观金融数据",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "查询股票、基金、债券及宏观金融数据"
+            },
+            {
+              "type": "label",
+              "value": "查询股票、基金、债券及宏观金融数据"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.27511160714285715
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.705de72b5274": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.705de72b5274",
+          "title": "通达信",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "通达信"
+            },
+            {
+              "type": "label",
+              "value": "通达信"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.28381642512077293,
+                "y": 0.34095982142857145
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.7d41b1224da3": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.7d41b1224da3",
+          "title": "面向金融投资领域的智能技能包",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "面向金融投资领域的智能技能包"
+            },
+            {
+              "type": "label",
+              "value": "面向金融投资领域的智能技能包"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.36886160714285715
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.6873f6adad67": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.6873f6adad67",
+          "title": "新浪财经",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "新浪财经"
+            },
+            {
+              "type": "label",
+              "value": "新浪财经"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.3031400966183575,
+                "y": 0.43470982142857145
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.aa8ddbcd3f11": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.aa8ddbcd3f11",
+          "title": "24小时金融助手，实时汇率报价信息",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "24小时金融助手，实时汇率报价信息"
+            },
+            {
+              "type": "label",
+              "value": "24小时金融助手，实时汇率报价信息"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.46261160714285715
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.930579f02649": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.930579f02649",
+          "title": "证券之星",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "证券之星"
+            },
+            {
+              "type": "label",
+              "value": "证券之星"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.3031400966183575,
+                "y": 0.5284598214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.cf7dfcc60062": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.cf7dfcc60062",
+          "title": "上市公司信息查询技能包",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "上市公司信息查询技能包"
+            },
+            {
+              "type": "label",
+              "value": "上市公司信息查询技能包"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.5563616071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.91802e3d916f": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.91802e3d916f",
+          "title": "ETF榜单",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "ETF榜单"
+            },
+            {
+              "type": "label",
+              "value": "ETF榜单"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.30193236714975846,
+                "y": 0.6222098214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.9d8a006b8091": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.9d8a006b8091",
+          "title": "沪深ETF涨跌、资金与特色榜单查询",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "沪深ETF涨跌、资金与特色榜单查询"
+            },
+            {
+              "type": "label",
+              "value": "沪深ETF涨跌、资金与特色榜单查询"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.6501116071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.d8477cb5375c": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.d8477cb5375c",
+          "title": "指数估值",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "指数估值"
+            },
+            {
+              "type": "label",
+              "value": "指数估值"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.3031400966183575,
+                "y": 0.7159598214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.05cff241c7fd": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.05cff241c7fd",
+          "title": "沪深指数估值分析技能包",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "沪深指数估值分析技能包"
+            },
+            {
+              "type": "label",
+              "value": "沪深指数估值分析技能包"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.7438616071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.e72075203a59": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.e72075203a59",
+          "title": "盈米",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "盈米"
+            },
+            {
+              "type": "label",
+              "value": "盈米"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.2632850241545894,
+                "y": 0.8097098214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.b0c799124d74": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.b0c799124d74",
+          "title": "提供基金数据、投顾策略、市场资讯、投研分析等能力",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "提供基金数据、投顾策略、市场资讯、投研分析等能力"
+            },
+            {
+              "type": "label",
+              "value": "提供基金数据、投顾策略、市场资讯、投研分析等能力"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.8376116071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.8fcf5b4de7e3": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.8fcf5b4de7e3",
+          "title": "Financial Datasets",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "Financial Datasets"
+            },
+            {
+              "type": "label",
+              "value": "Financial Datasets"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.39371980676328505,
+                "y": 0.9034598214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.953e55e95ef0": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.953e55e95ef0",
+          "title": "查询股票财报、价格和新闻，以及加密货币行情",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "查询股票财报、价格和新闻，以及加密货币行情"
+            },
+            {
+              "type": "label",
+              "value": "查询股票财报、价格和新闻，以及加密货币行情"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 0.9313616071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.3e959f339005": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.3e959f339005",
+          "title": "博众财报",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "博众财报"
+            },
+            {
+              "type": "label",
+              "value": "博众财报"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.3031400966183575,
+                "y": 0.9972098214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.3623e87c311f": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.3623e87c311f",
+          "title": "上市公司财报、历史指标与业绩预告查询",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "上市公司财报、历史指标与业绩预告查询"
+            },
+            {
+              "type": "label",
+              "value": "上市公司财报、历史指标与业绩预告查询"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5193236714975845,
+                "y": 1
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.b6cfdc18874e": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.b6cfdc18874e",
+          "title": "法研·法律法规检索",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "法研·法律法规检索"
+            },
+            {
+              "type": "label",
+              "value": "法研·法律法规检索"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.24720982142857142
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.aa4475da84ec": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.aa4475da84ec",
+          "title": "现行有效法律法规条文的自然语言检索",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "现行有效法律法规条文的自然语言检索"
+            },
+            {
+              "type": "label",
+              "value": "现行有效法律法规条文的自然语言检索"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.27511160714285715
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.5e2c12c717c5": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.5e2c12c717c5",
+          "title": "元典",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "元典"
+            },
+            {
+              "type": "label",
+              "value": "元典"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.34095982142857145
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.05f28eedb91b": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.05f28eedb91b",
+          "title": "检索法律法规、案例文书及企业信息",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "检索法律法规、案例文书及企业信息"
+            },
+            {
+              "type": "label",
+              "value": "检索法律法规、案例文书及企业信息"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.36886160714285715
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.bdf5c2dd4461": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.bdf5c2dd4461",
+          "title": "旷湖-专利大数据",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "旷湖-专利大数据"
+            },
+            {
+              "type": "label",
+              "value": "旷湖-专利大数据"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.43470982142857145
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.08c9e536cfe3": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.08c9e536cfe3",
+          "title": "专利搜索、统计、趋势分析",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "专利搜索、统计、趋势分析"
+            },
+            {
+              "type": "label",
+              "value": "专利搜索、统计、趋势分析"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.46261160714285715
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.12550608660b": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.12550608660b",
+          "title": "技能",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "技能"
+            },
+            {
+              "type": "label",
+              "value": "技能"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.5245535714285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.e1eb6b78937d": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.e1eb6b78937d",
+          "title": "合同起草",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "合同起草"
+            },
+            {
+              "type": "label",
+              "value": "合同起草"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.5809151785714286
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.828d1e7774ff": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.828d1e7774ff",
+          "title": "生成结构化、可编辑的商业合同 Word 文档",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "生成结构化、可编辑的商业合同 Word 文档"
+            },
+            {
+              "type": "label",
+              "value": "生成结构化、可编辑的商业合同 Word 文档"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.6099330357142857
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.caa452956000": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.caa452956000",
+          "title": "合同审查",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "合同审查"
+            },
+            {
+              "type": "label",
+              "value": "合同审查"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.6768973214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.27c737f1bbcf": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.27c737f1bbcf",
+          "title": "专业审查合同风险并逐条批注，输出带修订痕迹的修改建议。",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "专业审查合同风险并逐条批注，输出带修订痕迹的修改建议。"
+            },
+            {
+              "type": "label",
+              "value": "专业审查合同风险并逐条批注，输出带修订痕迹的修改建议。"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.7059151785714286
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.76d8c9028999": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.76d8c9028999",
+          "title": "法律合规评估",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "法律合规评估"
+            },
+            {
+              "type": "label",
+              "value": "法律合规评估"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.7728794642857143
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.6b4aa9e14b97": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.6b4aa9e14b97",
+          "title": "评估法律合规风险，并基于公开法律来源生成可审阅报告。",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "评估法律合规风险，并基于公开法律来源生成可审阅报告。"
+            },
+            {
+              "type": "label",
+              "value": "评估法律合规风险，并基于公开法律来源生成可审阅报告。"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.8018973214285714
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.761Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.81ab50fd1eb9": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.81ab50fd1eb9",
+          "title": "营销素材审核",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "营销素材审核"
+            },
+            {
+              "type": "label",
+              "value": "营销素材审核"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.8688616071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.762Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.02a06572f0fc": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.02a06572f0fc",
+          "title": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议"
+            },
+            {
+              "type": "label",
+              "value": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.8978794642857143
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.762Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.cf90069aa818": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.cf90069aa818",
+          "title": "补充协议起草",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "补充协议起草"
+            },
+            {
+              "type": "label",
+              "value": "补充协议起草"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.96484375
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.762Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.8d1d9794c6e2": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.8d1d9794c6e2",
+          "title": "基于变更需求，起草补充协议、变更协议或终止协议",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "基于变更需求，起草补充协议、变更协议或终止协议"
+            },
+            {
+              "type": "label",
+              "value": "基于变更需求，起草补充协议、变更协议或终止协议"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 1,
+                "y": 0.9938616071428571
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.762Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.2351f3b19d97": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.2351f3b19d97",
+          "title": "13:48",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "13:48"
+            },
+            {
+              "type": "label",
+              "value": "13:48"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.10386473429951691,
+                "y": 0.02734375
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.762Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.b3f203f4c792": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.b3f203f4c792",
+          "title": "勿扰模式",
+          "semanticRole": "Image",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "moon.fill"
+            },
+            {
+              "type": "label",
+              "value": "勿扰模式"
+            },
+            {
+              "type": "role",
+              "value": "Image"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.18115942028985507,
+                "y": 0.026785714285714284
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.762Z"
+            }
+          }
+        },
+        "runtime.scene.f56149d1c3dc.element.9d2c97d8818d": {
+          "elementId": "runtime.scene.f56149d1c3dc.element.9d2c97d8818d",
+          "title": "13:49",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "13:49"
+            },
+            {
+              "type": "label",
+              "value": "13:49"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.10265700483091787,
+                "y": 0.02734375
+              },
+              "source": "agent_inferred",
+              "status": "candidate",
+              "observedAt": "2026-08-22T05:49:10.881Z"
+            }
+          }
+        }
+      }
+    },
+    "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用": {
+      "sceneId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用",
+      "parentSceneId": null,
+      "status": "observed",
+      "title": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。",
+      "aliases": [],
+      "visualTextAnchors": [
+        "返回",
+        "未成年人模式",
+        "和豆包以外的智能体对话",
+        "回答展示相关视频",
+        "浏览第三方网页",
+        "AI 创作"
+      ],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/_______________-_________-__________________/88829936349384bb/screenshot.png",
+          "uiDump": "reference-assets/_______________-_________-__________________/88829936349384bb/ui-dump.json"
+        }
+      ],
+      "elements": {
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.返回": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.返回",
+          "title": "返回",
+          "semanticRole": "Button",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "返回"
+            },
+            {
+              "type": "label",
+              "value": "返回"
+            },
+            {
+              "type": "role",
+              "value": "Button"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.07246376811594203,
+                "y": 0.078125
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.未成年人模式": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.未成年人模式",
+          "title": "未成年人模式",
+          "semanticRole": "Switch",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "未成年人模式"
+            },
+            {
+              "type": "label",
+              "value": "未成年人模式"
+            },
+            {
+              "type": "value",
+              "value": "0"
+            },
+            {
+              "type": "role",
+              "value": "Switch"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.8659420289855072,
+                "y": 0.34654017857142855
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用",
+          "title": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。"
+            },
+            {
+              "type": "label",
+              "value": "未成年人模式是为家长提供的工具，以方便关闭部分功能，防止小朋友拿到设备后可能的不适当使用。"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.5,
+                "y": 0.265625
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.和豆包以外的智能体对话": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.和豆包以外的智能体对话",
+          "title": "和豆包以外的智能体对话",
+          "semanticRole": "Switch",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "和豆包以外的智能体对话"
+            },
+            {
+              "type": "label",
+              "value": "和豆包以外的智能体对话"
+            },
+            {
+              "type": "value",
+              "value": "1"
+            },
+            {
+              "type": "role",
+              "value": "Switch"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.8659420289855072,
+                "y": 0.42689732142857145
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.回答展示相关视频": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.回答展示相关视频",
+          "title": "回答展示相关视频",
+          "semanticRole": "Switch",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "回答展示相关视频"
+            },
+            {
+              "type": "label",
+              "value": "回答展示相关视频"
+            },
+            {
+              "type": "value",
+              "value": "1"
+            },
+            {
+              "type": "role",
+              "value": "Switch"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.8659420289855072,
+                "y": 0.48939732142857145
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.浏览第三方网页": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.浏览第三方网页",
+          "title": "浏览第三方网页",
+          "semanticRole": "Switch",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "浏览第三方网页"
+            },
+            {
+              "type": "label",
+              "value": "浏览第三方网页"
+            },
+            {
+              "type": "value",
+              "value": "1"
+            },
+            {
+              "type": "role",
+              "value": "Switch"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.8659420289855072,
+                "y": 0.5518973214285714
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.ai-创作": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.ai-创作",
+          "title": "AI 创作",
+          "semanticRole": "Switch",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "AI 创作"
+            },
+            {
+              "type": "label",
+              "value": "AI 创作"
+            },
+            {
+              "type": "value",
+              "value": "1"
+            },
+            {
+              "type": "role",
+              "value": "Switch"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.8659420289855072,
+                "y": 0.6143973214285714
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.17-30": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.17-30",
+          "title": "17:30",
+          "semanticRole": "StaticText",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "17:30"
+            },
+            {
+              "type": "label",
+              "value": "17:30"
+            },
+            {
+              "type": "role",
+              "value": "StaticText"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.10386473429951691,
+                "y": 0.02734375
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        },
+        "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.moon-fill": {
+          "elementId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用.moon-fill",
+          "title": "勿扰模式",
+          "semanticRole": "Image",
+          "status": "observed",
+          "selectors": [
+            {
+              "type": "accessibilityIdentifier",
+              "value": "moon.fill"
+            },
+            {
+              "type": "label",
+              "value": "勿扰模式"
+            },
+            {
+              "type": "role",
+              "value": "Image"
+            }
+          ],
+          "bindings": {
+            "iphone-414x896-portrait": {
+              "deviceProfileId": "iphone-414x896-portrait",
+              "normalizedPoint": {
+                "x": 0.178743961352657,
+                "y": 0.026785714285714284
+              },
+              "source": "ui_dump",
+              "status": "candidate",
+              "observedAt": "2026-08-22T09:30:33.665Z"
+            }
+          }
+        }
+      }
     }
   },
   "operators": {
@@ -37779,17 +39860,17 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 12,
+        "pass": 13,
         "fail": 0,
-        "lastExecutedAt": "2026-08-21T14:39:32.218Z"
+        "lastExecutedAt": "2026-08-22T04:54:13.161Z"
       },
       "risk": "navigation",
       "settleMs": 900,
       "execution": {
         "tier": "fast",
-        "successfulExecutions": 10,
+        "successfulExecutions": 11,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 10,
+        "consecutiveSuccessfulExecutions": 11,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
@@ -37801,9 +39882,10 @@
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141536-0f7d7362/2026-08-21T14-15-37-243Z/round-01/exec/2026-08-21T14-15-37-261Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T14:39:32.218Z",
+        "lastValidatedAt": "2026-08-22T04:54:13.161Z",
         "lastValidatedAppVersion": "14.7.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
@@ -40326,23 +42408,26 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 4,
+        "pass": 7,
         "fail": 0,
-        "lastExecutedAt": "2026-08-21T16:19:41.756Z"
+        "lastExecutedAt": "2026-08-22T05:28:50.500Z"
       },
       "risk": "navigation",
       "settleMs": 900,
       "execution": {
         "tier": "fast",
-        "successfulExecutions": 2,
+        "successfulExecutions": 5,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveSuccessfulExecutions": 5,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161204-8dcef2bd/2026-08-21T16-12-05-278Z/round-01/exec/2026-08-21T16-12-05-292Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822041619-2d4b20bd/2026-08-22T04-16-19-670Z/round-01/exec/2026-08-22T04-16-19-695Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045218-9236dd8a/2026-08-22T04-52-18-817Z/round-01/exec/2026-08-22T04-52-18-871Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822052818-355fa09e/2026-08-22T05-28-19-462Z/round-01/exec/2026-08-22T05-28-19-477Z/step-01/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T16:19:41.756Z",
+        "lastValidatedAt": "2026-08-22T05:28:50.500Z",
         "lastValidatedAppVersion": "14.7.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
@@ -40391,11 +42476,11 @@
           "value": true
         }
       ],
-      "status": "stale",
+      "status": "candidate",
       "executionStats": {
-        "pass": 1,
+        "pass": 2,
         "fail": 0,
-        "lastExecutedAt": "2026-08-16T02:20:40.783Z"
+        "lastExecutedAt": "2026-08-22T05:05:19.873Z"
       },
       "risk": "navigation",
       "settleMs": 900
@@ -40482,11 +42567,11 @@
           "value": true
         }
       ],
-      "status": "stale",
+      "status": "candidate",
       "executionStats": {
-        "pass": 1,
+        "pass": 2,
         "fail": 1,
-        "lastExecutedAt": "2026-08-19T04:24:00.000+08:00"
+        "lastExecutedAt": "2026-08-22T05:03:04.751Z"
       },
       "risk": "navigation",
       "settleMs": 900
@@ -41362,23 +43447,26 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 2,
+        "pass": 5,
         "fail": 0,
-        "lastExecutedAt": "2026-08-21T16:19:41.756Z"
+        "lastExecutedAt": "2026-08-22T05:28:50.500Z"
       },
       "risk": "navigation",
       "settleMs": 900,
       "execution": {
         "tier": "fast",
-        "successfulExecutions": 2,
+        "successfulExecutions": 5,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveSuccessfulExecutions": 5,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161204-8dcef2bd/2026-08-21T16-12-05-278Z/round-01/exec/2026-08-21T16-12-05-292Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822041619-2d4b20bd/2026-08-22T04-16-19-670Z/round-01/exec/2026-08-22T04-16-19-695Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045218-9236dd8a/2026-08-22T04-52-18-817Z/round-01/exec/2026-08-22T04-52-18-871Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822052818-355fa09e/2026-08-22T05-28-19-462Z/round-01/exec/2026-08-22T05-28-19-477Z/step-01/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T16:19:41.756Z",
+        "lastValidatedAt": "2026-08-22T05:28:50.500Z",
         "lastValidatedAppVersion": "14.7.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
@@ -43242,25 +45330,28 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 6,
+        "pass": 9,
         "fail": 1,
-        "lastExecutedAt": "2026-08-21T16:19:41.756Z"
+        "lastExecutedAt": "2026-08-22T05:28:50.500Z"
       },
       "risk": "navigation",
       "settleMs": 900,
       "execution": {
         "tier": "fast",
-        "successfulExecutions": 4,
+        "successfulExecutions": 7,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 4,
+        "consecutiveSuccessfulExecutions": 7,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161050-173de165/2026-08-21T16-10-50-534Z/round-01/exec/2026-08-21T16-10-50-544Z/step-01/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161204-8dcef2bd/2026-08-21T16-12-05-278Z/round-01/exec/2026-08-21T16-12-05-292Z/step-01/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161810-215aedc7/2026-08-21T16-18-11-239Z/round-01/exec/2026-08-21T16-18-11-251Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822041619-2d4b20bd/2026-08-22T04-16-19-670Z/round-01/exec/2026-08-22T04-16-19-695Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045218-9236dd8a/2026-08-22T04-52-18-817Z/round-01/exec/2026-08-22T04-52-18-871Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822052818-355fa09e/2026-08-22T05-28-19-462Z/round-01/exec/2026-08-22T05-28-19-477Z/step-01/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T16:19:41.756Z",
+        "lastValidatedAt": "2026-08-22T05:28:50.500Z",
         "lastValidatedAppVersion": "14.7.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
@@ -48343,11 +50434,11 @@
           "value": "volcengine.ark.console.experience"
         }
       ],
-      "status": "stale",
+      "status": "candidate",
       "executionStats": {
-        "pass": 1,
+        "pass": 2,
         "fail": 1,
-        "lastExecutedAt": "2026-08-19T04:37:00.000+08:00"
+        "lastExecutedAt": "2026-08-22T06:35:52.900Z"
       },
       "risk": "navigation",
       "settleMs": 900
@@ -49696,6 +51787,29 @@
       },
       "risk": "navigation",
       "settleMs": 900
+    },
+    "discovery.bot-settings.bot-settings-row-item-207b4043.tap.未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用": {
+      "operatorId": "discovery.bot-settings.bot-settings-row-item-207b4043.tap.未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用",
+      "fromSceneId": "bot.settings",
+      "toSceneId": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用",
+      "operation": {
+        "type": "tap",
+        "elementId": "bot.settings.row.item-207b4043"
+      },
+      "effects": [
+        {
+          "type": "scene_change",
+          "key": "scene.current",
+          "value": "未成年人模式是为家长提供的工具-以方便关闭部分功能-防止小朋友拿到设备后可能的不适当使用"
+        }
+      ],
+      "status": "candidate",
+      "executionStats": {
+        "pass": 0,
+        "fail": 0
+      },
+      "risk": "navigation",
+      "settleMs": 900
     }
   },
   "tasks": {
@@ -50409,20 +52523,21 @@
           "bundleId": "com.bot.doubao"
         }
       ],
-      "status": "candidate",
+      "status": "verified",
       "parameters": {},
       "validation": {
         "source": "runtime_composition",
         "sourceGoals": ["bot.settings"],
-        "tier": "guarded",
-        "successfulExecutions": 1,
+        "tier": "fast",
+        "successfulExecutions": 2,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveSuccessfulExecutions": 2,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141346-61f953e8/2026-08-21T14-13-46-685Z/round-01/exec/2026-08-21T14-13-46-695Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141346-61f953e8/2026-08-21T14-13-46-685Z/round-01/exec/2026-08-21T14-13-46-695Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T14:14:06.582Z",
+        "lastValidatedAt": "2026-08-22T04:54:13.161Z",
         "lastValidatedAppVersion": "14.7.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
@@ -50669,15 +52784,18 @@
         "source": "runtime_composition",
         "sourceGoals": ["chat.buy_before_ask"],
         "tier": "fast",
-        "successfulExecutions": 2,
+        "successfulExecutions": 5,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveSuccessfulExecutions": 5,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161204-8dcef2bd/2026-08-21T16-12-05-278Z/round-01/exec/2026-08-21T16-12-05-292Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822041619-2d4b20bd/2026-08-22T04-16-19-670Z/round-01/exec/2026-08-22T04-16-19-695Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045218-9236dd8a/2026-08-22T04-52-18-817Z/round-01/exec/2026-08-22T04-52-18-871Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822052818-355fa09e/2026-08-22T05-28-19-462Z/round-01/exec/2026-08-22T05-28-19-477Z/step-01/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T16:19:41.756Z",
+        "lastValidatedAt": "2026-08-22T05:28:50.500Z",
         "lastValidatedAppVersion": "14.7.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }

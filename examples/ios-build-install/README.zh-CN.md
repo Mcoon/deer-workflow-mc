@@ -9,7 +9,8 @@
 1. 运行 `flow-ios-dev/scripts/build_app.py --symbols-required`；
 2. 校验构建返回了 `.app`、`.app.dSYM`，且 `symbolication_status` 为 `ready`；
 3. 用 `xcrun devicectl device install app` 安装 App；
-4. 返回可以直接传给 launch trace Workflow 的 `appPath` 和 `dsymPath`。
+4. 返回 launch trace 使用的 `appPath`、主壳 `dsymPath`，以及 attach trace
+   递归符号化 GraceCore 所需的 `businessDsymPath` 和 `symbolSearchPath`。
 
 它不会调用 `flow-ios-dev deploy.py`、`ios-deploy` 或任何 install-and-run 包装。
 安装阶段只安装不启动，后续 Time Profiler 采集仍然可以作为第一次启动。
@@ -29,10 +30,16 @@ deer-workflow run ./examples/ios-build-install/workflow.ts \
 
 - `appPath`
 - `dsymPath`
+- `businessDsymPath`
+- `symbolSearchPath`
 - `symbolicationStatus`
 - `buildSummaryPath`
 - `installJsonPath`
 - `installLogPath`
+
+`dsymPath` 继续表示主壳 `Grace.app.dSYM`，用于兼容 launch collector 的主可执行
+文件 UUID 校验。显式调用 `ios-attach-trace` 时可以传 `symbolSearchPath`；不传时，
+该 Workflow 会自动读取最近一次匹配项目的 `ios-build-install` summary。
 
 然后把返回路径传给 launch trace：
 

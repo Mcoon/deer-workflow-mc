@@ -54,7 +54,14 @@ import {
   promoteSceneReferenceAssets,
 } from "./learning";
 import { compileFastRecipe, executeFastRecipe } from "./fast-path";
-import { buildHorizontalVisibilityRecoveryCommands } from "./visibility-recovery";
+import { waitForStableObservation } from "./observation-stability";
+import type { StableObservationResult } from "./observation-stability";
+import {
+  buildViewportSearchCommand,
+  isHistoricalViewportHintStep,
+  searchViewports,
+  viewportSearchAxisForTarget,
+} from "./viewport-search";
 
 export { meta } from "./types";
 
@@ -66,14 +73,15 @@ const DEFAULT_OUTPUT_ROOT = "/tmp/ios_perf-opt/app-graph-exec";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const STRICT_RESTART_SOURCE_PATH = resolve(
   dirname(import.meta.path),
-  "../ios-ui-graph-experiment/devicectl_restart.py",
+  "../ios-regression-kit/devicectl_restart.py",
 );
 const DEFAULT_AGENT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAXIMUM_AGENT_RECOVERY_STEPS = 4;
 const DEFAULT_MINIMUM_AGENT_CONFIDENCE = 0.75;
-const MAX_VISIBILITY_SCROLL_ATTEMPTS = 2;
-const MAX_SCENE_SETTLE_CHECKS = 4;
+const MAX_VIEWPORT_SEARCH_MOVES = 6;
 const SCENE_SETTLE_POLL_MS = 700;
+const MAX_SCENE_SETTLE_SAMPLES = 6;
+const REQUIRED_STABLE_SAMPLES = 2;
 const DEFAULT_AGENT_CWD = resolve(dirname(import.meta.path), "../..");
 
 export default async function appGraphExec(
@@ -272,7 +280,7 @@ export default async function appGraphExec(
           (oracle) => oracle.type === "scene_current" && oracle.sceneId,
         )?.sceneId;
         let fastGraphUpdated = false;
-        if (targetSceneId && graph.scenes[targetSceneId]) {
+        if (allowLearning && targetSceneId && graph.scenes[targetSceneId]) {
           log(`Promoting final scene reference assets for ${targetSceneId}.`);
           const promotion = await promoteSceneReferenceAssets({
             graphPath,
@@ -446,6 +454,13 @@ export default async function appGraphExec(
       }
     | undefined;
   for (const [index, step] of plan.resolvedSteps.entries()) {
+    if (isHistoricalViewportHintStep(plan.resolvedSteps, index)) {
+      log(
+        `Step ${index + 1}/${plan.resolvedSteps.length}: skipping historical same-Scene viewport gesture; the next semantic target will be located by live viewport search.`,
+      );
+      steps.push(skippedViewportStepRecord(step, index));
+      continue;
+    }
     const evidenceBeforeStep = evidence;
     const stepEntry =
       verifiedCurrentSceneId === step.fromSceneId
@@ -539,6 +554,9 @@ export default async function appGraphExec(
     if (executed.patchPath) graphPatchPaths.push(executed.patchPath);
     steps.push(record);
     evidencePaths.push(join(stepDir, "record.json"));
+    if (record.viewportSearchPath) {
+      evidencePaths.push(record.viewportSearchPath);
+    }
     if (!record.success) {
       discoveryRequestPath = await writeDiscoveryRequest({
         outputDir,
@@ -560,9 +578,29 @@ export default async function appGraphExec(
       };
       break;
     }
-    await Bun.sleep(step.action.settleMs);
+    if (step.action.settleMs > 0) await Bun.sleep(step.action.settleMs);
+    let stableAfterStep: StableObservationResult<GroundEvidence>;
     try {
-      evidence = await captureGround(udid, stepDir, "post-step", commandRunner);
+      stableAfterStep = await waitForStableGround({
+        udid,
+        outputDir: stepDir,
+        prefix: "post-step",
+        previousEvidence: evidenceBeforeStep,
+        commandRunner,
+      });
+      evidence = stableAfterStep.observation;
+      await writeFile(
+        join(stepDir, "stability.json"),
+        JSON.stringify(stableAfterStep, null, 2),
+        "utf8",
+      );
+      log(
+        `Step ${index + 1} page ${
+          stableAfterStep.stable ? "stabilized" : "did not stabilize"
+        } after ${stableAfterStep.sampleCount} observations (${
+          stableAfterStep.samples.at(-1)?.strategy ?? "unknown"
+        }).`,
+      );
     } catch (error) {
       const failedRecord: ExecStepRecord = {
         ...record,
@@ -595,37 +633,42 @@ export default async function appGraphExec(
       };
       break;
     }
+    if (!stableAfterStep.stable) {
+      const failedRecord: ExecStepRecord = {
+        ...record,
+        success: false,
+        outcomeVerified: false,
+        error: `Page did not stabilize after ${stableAfterStep.sampleCount} post-step observations.`,
+      };
+      steps[steps.length - 1] = failedRecord;
+      await writeFile(
+        join(stepDir, "record.json"),
+        JSON.stringify(failedRecord, null, 2),
+        "utf8",
+      );
+      discoveryRequestPath = await writeDiscoveryRequest({
+        outputDir,
+        goal,
+        plan,
+        graph,
+        step,
+        record: failedRecord,
+        evidence,
+      });
+      evidencePaths.push(discoveryRequestPath, join(stepDir, "stability.json"));
+      runtimeFailure = {
+        code: "page_not_stable",
+        message: failedRecord.error ?? "Page did not stabilize.",
+        recoverable: true,
+      };
+      break;
+    }
     let outcomeVerified = verifyExpectedScene(
       step,
       evidence,
       graph,
       evidenceBeforeStep,
     );
-    for (
-      let settleCheck = 1;
-      !outcomeVerified &&
-      step.expectedOutcome.scene &&
-      settleCheck < MAX_SCENE_SETTLE_CHECKS;
-      settleCheck += 1
-    ) {
-      await Bun.sleep(SCENE_SETTLE_POLL_MS);
-      try {
-        evidence = await captureGround(
-          udid,
-          stepDir,
-          `post-step-wait-${settleCheck}`,
-          commandRunner,
-        );
-      } catch {
-        continue;
-      }
-      outcomeVerified = verifyExpectedScene(
-        step,
-        evidence,
-        graph,
-        evidenceBeforeStep,
-      );
-    }
     if (!outcomeVerified && step.expectedOutcome.scene) {
       const recovery = await ensureRuntimeScene({
         goal,
@@ -825,6 +868,33 @@ export default async function appGraphExec(
   return result;
 }
 
+function skippedViewportStepRecord(
+  step: ResolvedStep,
+  stepIndex: number,
+): ExecStepRecord {
+  const timestamp = new Date().toISOString();
+  return {
+    stepIndex,
+    operatorId: step.operatorId,
+    action: step.operation.type,
+    actionDescription:
+      "Historical viewport hint skipped; live viewport search resolves the following semantic target.",
+    targetElementId: step.operation.elementId,
+    resolutionSource: "operation",
+    commands: [],
+    visibilityRecoveryCommands: [],
+    startedAt: timestamp,
+    finishedAt: timestamp,
+    durationMs: 0,
+    exitCode: 0,
+    success: true,
+    agentUsed: false,
+    bindingUsed: "operation",
+    expectedSceneId: step.toSceneId ?? undefined,
+    outcomeVerified: true,
+  };
+}
+
 export function validatePlanAgainstGraph(
   plan: AppGraphPlanResult,
   graph: AppGraph,
@@ -903,6 +973,8 @@ export function resolveSemanticStepTarget(options: {
   viewportWidth: number;
   viewportHeight: number;
   deferBindingFallback?: boolean;
+  minimumTargetY?: number;
+  maximumTargetY?: number;
 }): StepResolution {
   const { step } = options;
   if (step.operation.type === "swipe" || step.operation.type === "input_text") {
@@ -913,26 +985,20 @@ export function resolveSemanticStepTarget(options: {
     step.targetElement?.selectors ?? [],
     step.resolutionPolicy.selectorPriority,
   );
-  const offscreenDirection = resolveOffscreenScrollDirection({
+  const matched = selectPreferredTargetMatch(
+    selectorMatches,
     step,
-    uiElements: options.uiElements,
-    viewportWidth: options.viewportWidth,
-    viewportHeight: options.viewportHeight,
-  });
-  const matched = offscreenDirection
-    ? null
-    : selectPreferredTargetMatch(
-        selectorMatches,
-        step,
-        options.viewportWidth,
-        options.viewportHeight,
-      );
+    options.viewportWidth,
+    options.viewportHeight,
+  );
   if (
     matched?.bounds &&
     pointWithinViewport(
       centerOfBounds(matched.bounds),
       options.viewportWidth,
       options.viewportHeight,
+      options.minimumTargetY,
+      options.maximumTargetY,
     )
   ) {
     return {
@@ -942,11 +1008,7 @@ export function resolveSemanticStepTarget(options: {
       matchedElement: matched,
     };
   }
-  if (
-    !offscreenDirection &&
-    step.resolutionPolicy.allowAgentVisualResolution &&
-    step.targetElement
-  ) {
+  if (step.resolutionPolicy.allowAgentVisualResolution && step.targetElement) {
     const visualMatches = options.uiElements.filter(
       (element) =>
         visuallyMatches(element, step) &&
@@ -956,6 +1018,8 @@ export function resolveSemanticStepTarget(options: {
             centerOfBounds(element.bounds),
             options.viewportWidth,
             options.viewportHeight,
+            options.minimumTargetY,
+            options.maximumTargetY,
           ),
         ),
     );
@@ -1001,12 +1065,14 @@ function pointWithinViewport(
   point: { readonly x: number; readonly y: number },
   viewportWidth: number,
   viewportHeight: number,
+  minimumY = 0,
+  maximumY = viewportHeight,
 ): boolean {
   return (
     point.x >= 0 &&
     point.x < viewportWidth &&
-    point.y >= 0 &&
-    point.y < viewportHeight
+    point.y >= minimumY &&
+    point.y < maximumY
   );
 }
 
@@ -1114,6 +1180,7 @@ async function executeSemanticStep(options: {
   const graphUpdated = false;
   let currentEvidence = options.evidence;
   const visibilityRecoveryCommands: string[][] = [];
+  let viewportSearchPath: string | undefined;
   let resolution = resolveSemanticStepTarget({
     step: options.step,
     uiElements: currentEvidence.uiElements,
@@ -1122,74 +1189,110 @@ async function executeSemanticStep(options: {
     viewportHeight: options.viewportHeight,
     deferBindingFallback: true,
   });
-  const horizontalRecoveryCommands =
-    resolution.source === "unresolved" && options.step.targetElement
-      ? buildHorizontalVisibilityRecoveryCommands({
-          graph,
-          sceneId: options.step.fromSceneId,
-          focusElementId: options.step.targetElement.elementId,
-          udid: options.udid,
-          maxAttempts: 3,
-        })
-      : [];
-  for (const [index, command] of horizontalRecoveryCommands.entries()) {
-    const result = await options.commandRunner(command, process.cwd());
-    visibilityRecoveryCommands.push([...command]);
-    if (result.exitCode !== 0) break;
-    await Bun.sleep(700);
-    currentEvidence = await captureGround(
-      options.udid,
-      join(options.stepDir, "visibility-recovery"),
-      `horizontal-${index + 1}`,
-      options.commandRunner,
-    );
-    resolution = resolveSemanticStepTarget({
-      step: options.step,
-      uiElements: currentEvidence.uiElements,
-      deviceProfileId: options.deviceProfileId,
-      viewportWidth: options.viewportWidth,
-      viewportHeight: options.viewportHeight,
-      deferBindingFallback: true,
-    });
-    if (resolution.source !== "unresolved") break;
-  }
-  for (
-    let visibilityAttempt = 0;
+  if (
     resolution.source === "unresolved" &&
-    visibilityAttempt < MAX_VISIBILITY_SCROLL_ATTEMPTS;
-    visibilityAttempt += 1
+    options.step.targetElement &&
+    (options.step.operation.type === "tap" ||
+      options.step.operation.type === "long_press")
   ) {
-    const scrollDirection = resolveOffscreenScrollDirection({
-      step: options.step,
-      uiElements: currentEvidence.uiElements,
-      viewportWidth: options.viewportWidth,
-      viewportHeight: options.viewportHeight,
+    const axis = viewportSearchAxisForTarget({
+      elementId: options.step.targetElement.elementId,
+      semanticRole: options.step.targetElement.semanticRole,
     });
-    if (!scrollDirection) break;
-    const command = buildVisibilityScrollCommand(
-      options.udid,
-      options.viewportWidth,
-      options.viewportHeight,
-      scrollDirection,
-    );
-    const result = await options.commandRunner(command, process.cwd());
-    visibilityRecoveryCommands.push(command);
-    if (result.exitCode !== 0) break;
-    await Bun.sleep(700);
-    currentEvidence = await captureGround(
-      options.udid,
-      join(options.stepDir, "visibility-recovery"),
-      `scroll-${visibilityAttempt + 1}`,
-      options.commandRunner,
-    );
-    resolution = resolveSemanticStepTarget({
-      step: options.step,
-      uiElements: currentEvidence.uiElements,
-      deviceProfileId: options.deviceProfileId,
-      viewportWidth: options.viewportWidth,
-      viewportHeight: options.viewportHeight,
-      deferBindingFallback: true,
-    });
+    const searchDir = join(options.stepDir, "visibility-recovery");
+    try {
+      const search = await searchViewports({
+        axis,
+        initialObservation: currentEvidence,
+        maximumMoves: MAX_VIEWPORT_SEARCH_MOVES,
+        resolveVisibleTarget: (evidence) => {
+          const candidate = resolveSemanticStepTarget({
+            step: options.step,
+            uiElements: evidence.uiElements,
+            deviceProfileId: options.deviceProfileId,
+            viewportWidth: options.viewportWidth,
+            viewportHeight: options.viewportHeight,
+            deferBindingFallback: true,
+            minimumTargetY: options.viewportHeight * 0.14,
+            maximumTargetY: options.viewportHeight * 0.9,
+          });
+          return candidate.source === "unresolved" ? null : candidate;
+        },
+        moveAndObserve: async (direction, moveIndex, previous) => {
+          log(
+            `Step ${options.stepIndex + 1} viewport search ${moveIndex}/${MAX_VIEWPORT_SEARCH_MOVES}: swipe ${direction} by one short segment, wait for stability, then re-check ${options.step.targetElement?.title ?? options.step.operatorId}.`,
+          );
+          const command = buildViewportSearchCommand({
+            udid: options.udid,
+            axis,
+            direction,
+            viewportWidth: options.viewportWidth,
+            viewportHeight: options.viewportHeight,
+          });
+          const commandResult = await options.commandRunner(
+            command,
+            process.cwd(),
+          );
+          visibilityRecoveryCommands.push(command);
+          if (commandResult.exitCode !== 0) {
+            throw new Error(
+              commandResult.stderr.trim() ||
+                `Command failed: ${command.join(" ")}`,
+            );
+          }
+          const stable = await waitForStableGround({
+            udid: options.udid,
+            outputDir: searchDir,
+            prefix: `${direction}-${String(moveIndex).padStart(2, "0")}`,
+            previousEvidence: previous,
+            requireChangeFromPrevious: false,
+            commandRunner: options.commandRunner,
+          });
+          return {
+            observation: stable.observation,
+            stable: stable.stable,
+            changedFromPrevious: stable.changedFromPrevious,
+            fingerprint:
+              stable.samples.at(-1)?.fingerprint ?? `${direction}-${moveIndex}`,
+          };
+        },
+      });
+      currentEvidence = search.observation;
+      resolution = search.target ?? {
+        source: "unresolved",
+        bindingUsed: "missing",
+        error: `Viewport search stopped with ${search.stopReason}; ${options.step.targetElement.title} was not visible in the inspected screens.`,
+      };
+      await mkdir(searchDir, { recursive: true });
+      viewportSearchPath = join(searchDir, "viewport-search.json");
+      await writeFile(
+        viewportSearchPath,
+        JSON.stringify(
+          {
+            axis,
+            targetElementId: options.step.targetElement.elementId,
+            targetTitle: options.step.targetElement.title,
+            stopReason: search.stopReason,
+            moves: search.moves,
+            finalScreenshotPath: search.observation.screenshotPath,
+            finalUiDumpPath: search.observation.uiDumpPath,
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+    } catch (searchError) {
+      resolution = {
+        source: "unresolved",
+        bindingUsed: "missing",
+        error: `Viewport search failed: ${
+          searchError instanceof Error
+            ? searchError.message
+            : String(searchError)
+        }`,
+      };
+    }
   }
   let agentDecision: RuntimeElementAgentDecision | undefined;
   let pendingAgentResolution:
@@ -1201,13 +1304,7 @@ async function executeSemanticStep(options: {
   if (
     resolution.source === "unresolved" &&
     options.step.targetElement &&
-    options.step.resolutionPolicy.allowAgentVisualResolution &&
-    !hasOffscreenExactTarget({
-      step: options.step,
-      uiElements: currentEvidence.uiElements,
-      viewportWidth: options.viewportWidth,
-      viewportHeight: options.viewportHeight,
-    })
+    options.step.resolutionPolicy.allowAgentVisualResolution
   ) {
     try {
       const agentResolution = await resolveElementWithAgent({
@@ -1263,10 +1360,10 @@ async function executeSemanticStep(options: {
     });
     if (
       bindingResolution.source === "binding_fallback" &&
-      horizontalRecoveryCommands.length === 0
+      visibilityRecoveryCommands.length === 0
     ) {
       resolution = bindingResolution;
-    } else if (horizontalRecoveryCommands.length > 0) {
+    } else if (visibilityRecoveryCommands.length > 0) {
       resolution = {
         source: "unresolved",
         bindingUsed: "missing",
@@ -1309,6 +1406,7 @@ async function executeSemanticStep(options: {
     resolutionSource: resolution.source,
     commands,
     visibilityRecoveryCommands,
+    viewportSearchPath,
     startedAt,
     finishedAt: new Date().toISOString(),
     durationMs: Date.now() - started,
@@ -1392,6 +1490,47 @@ async function ensureRuntimeScene(options: {
     return { success: true, graph, evidence, graphUpdated };
   }
 
+  try {
+    const stable = await waitForStableGround({
+      udid: options.udid,
+      outputDir: join(options.outputDir, "runtime-scene-ground"),
+      prefix: String(options.recoveryActions.length + 1).padStart(2, "0"),
+      commandRunner: options.commandRunner,
+    });
+    evidence = stable.observation;
+    await writeFile(
+      join(
+        options.outputDir,
+        "runtime-scene-ground",
+        `${String(options.recoveryActions.length + 1).padStart(2, "0")}-stability.json`,
+      ),
+      JSON.stringify(stable, null, 2),
+      "utf8",
+    );
+    if (!stable.stable) {
+      return {
+        success: false,
+        graph,
+        evidence,
+        graphUpdated,
+        error: `Page did not stabilize before recovery toward ${options.expectedSceneId}.`,
+      };
+    }
+    if (runtimeSceneMatches(graph, options.expectedSceneId, evidence)) {
+      return { success: true, graph, evidence, graphUpdated };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      graph,
+      evidence,
+      graphUpdated,
+      error: `Stable Scene observation failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    };
+  }
+
   let currentMatch = classifyRuntimeScene(graph, evidence);
   if (currentMatch && currentMatch.sceneId !== options.expectedSceneId) {
     const route = planRoute(
@@ -1452,14 +1591,24 @@ async function ensureRuntimeScene(options: {
         if (!executed.record.success) {
           break;
         }
-        await Bun.sleep(routeStep.action.settleMs);
-        evidence = await captureGround(
-          options.udid,
-          routeDir,
-          "post-route",
-          options.commandRunner,
+        if (routeStep.action.settleMs > 0) {
+          await Bun.sleep(routeStep.action.settleMs);
+        }
+        const stableRoute = await waitForStableGround({
+          udid: options.udid,
+          outputDir: routeDir,
+          prefix: "post-route",
+          previousEvidence: evidence,
+          commandRunner: options.commandRunner,
+        });
+        evidence = stableRoute.observation;
+        await writeFile(
+          join(routeDir, "stability.json"),
+          JSON.stringify(stableRoute, null, 2),
+          "utf8",
         );
         const routeOutcomeVerified = Boolean(
+          stableRoute.stable &&
           routeStep.toSceneId &&
           runtimeSceneMatches(graph, routeStep.toSceneId, evidence),
         );
@@ -1540,9 +1689,38 @@ async function ensureRuntimeScene(options: {
       });
       if (!choice) {
         lastError = "Agent found no safe high-confidence recovery action.";
+        log(lastError);
+        break;
+      }
+      if (choice.decision.status === "blocked") {
+        lastError = `Agent inspected the stable page but found no safe recovery action: ${choice.decision.reason}`;
+        log(lastError);
+        options.recoveryActions.push({
+          recoveryIndex: options.recoveryActions.length,
+          reason: sourceSceneId ? options.reason : "scene_unknown",
+          goal: options.goal,
+          expectedSceneId: options.expectedSceneId,
+          sourceSceneId: sourceSceneId ?? "unknown",
+          targetSceneId: sourceSceneId ?? "unknown",
+          candidateId: "",
+          candidateTitle: "",
+          actionType: "none",
+          command: [],
+          agentReason: choice.decision.reason,
+          confidence: choice.decision.confidence,
+          beforeScreenshotPath: before.screenshotPath,
+          beforeUiDumpPath: before.uiDumpPath,
+          afterScreenshotPath: evidence.screenshotPath,
+          afterUiDumpPath: evidence.uiDumpPath,
+          success: false,
+          error: lastError,
+        });
         break;
       }
       if (choice.decision.status === "at_target") {
+        log(
+          `Agent recognized ${options.expectedSceneId} at confidence ${choice.decision.confidence.toFixed(2)}: ${choice.decision.reason}`,
+        );
         const recognized = await persistAgentSceneRecognition({
           graphPath: options.graphPath,
           graph,
@@ -1588,24 +1766,57 @@ async function ensureRuntimeScene(options: {
         choice.candidate,
         choice.decision.actionType,
       );
+      log(
+        `Agent selected ${choice.decision.actionType} on ${choice.candidate.title} at confidence ${choice.decision.confidence.toFixed(2)}.`,
+      );
       const result = await options.commandRunner(command, process.cwd());
       if (result.exitCode !== 0) {
         lastError =
           result.stderr.slice(0, 500) || "Agent recovery command failed.";
       }
-      await Bun.sleep(900);
       const actionDir = join(
         options.outputDir,
         "runtime-agent-recovery",
         String(options.recoveryActions.length + 1).padStart(2, "0"),
       );
-      evidence = await captureGround(
-        options.udid,
-        actionDir,
-        "after",
-        options.commandRunner,
+      const stableAfterAgent = await waitForStableGround({
+        udid: options.udid,
+        outputDir: actionDir,
+        prefix: "after",
+        previousEvidence: before,
+        commandRunner: options.commandRunner,
+      });
+      evidence = stableAfterAgent.observation;
+      await writeFile(
+        join(actionDir, "stability.json"),
+        JSON.stringify(stableAfterAgent, null, 2),
+        "utf8",
       );
       if (result.exitCode !== 0) {
+        options.recoveryActions.push({
+          recoveryIndex: options.recoveryActions.length,
+          reason: sourceSceneId ? options.reason : "scene_unknown",
+          goal: options.goal,
+          expectedSceneId: options.expectedSceneId,
+          sourceSceneId: sourceSceneId ?? "unknown",
+          targetSceneId: sourceSceneId ?? "unknown",
+          candidateId: choice.candidate.candidateId,
+          candidateTitle: choice.candidate.title,
+          actionType: choice.decision.actionType,
+          command,
+          agentReason: choice.decision.reason,
+          confidence: choice.decision.confidence,
+          beforeScreenshotPath: before.screenshotPath,
+          beforeUiDumpPath: before.uiDumpPath,
+          afterScreenshotPath: evidence.screenshotPath,
+          afterUiDumpPath: evidence.uiDumpPath,
+          success: false,
+          error: lastError,
+        });
+        break;
+      }
+      if (!stableAfterAgent.stable) {
+        lastError = "Page did not stabilize after the Agent recovery action.";
         options.recoveryActions.push({
           recoveryIndex: options.recoveryActions.length,
           reason: sourceSceneId ? options.reason : "scene_unknown",
@@ -1810,22 +2021,26 @@ async function captureGround(
   const screenshotPath = join(outputDir, `${prefix}-screenshot.png`);
   const uiDumpPath = join(outputDir, `${prefix}-ui-dump.json`);
   const foregroundPath = join(outputDir, `${prefix}-foreground.json`);
-  const screenshot = await commandRunner(
+  const screenshot = await runGroundCaptureCommand(
     buildMobilecliScreenshotCommand(udid, screenshotPath),
-    process.cwd(),
+    commandRunner,
   );
   if (screenshot.exitCode !== 0) {
     throw new Error(
       `Screenshot capture failed: ${screenshot.stderr.slice(0, 500)}`,
     );
   }
-  const foreground = await commandRunner(
+  const foreground = await runGroundCaptureCommand(
     buildMobilecliForegroundCommand(udid),
-    process.cwd(),
+    commandRunner,
+    3,
+    true,
   );
-  const dump = await commandRunner(
+  const dump = await runGroundCaptureCommand(
     buildMobilecliUiDumpCommand(udid),
-    process.cwd(),
+    commandRunner,
+    3,
+    true,
   );
   if (foreground.exitCode !== 0 || !foreground.stdout.trim()) {
     throw new Error(
@@ -1851,6 +2066,71 @@ async function captureGround(
     foregroundBundleId,
     uiElements: parseUiDump(dump.stdout),
   };
+}
+
+export async function runGroundCaptureCommand(
+  command: readonly string[],
+  commandRunner: NonNullable<AppGraphExecInput["commandRunner"]>,
+  maximumAttempts = 3,
+  requireOutput = false,
+): Promise<
+  Awaited<ReturnType<NonNullable<AppGraphExecInput["commandRunner"]>>>
+> {
+  let lastResult: Awaited<
+    ReturnType<NonNullable<AppGraphExecInput["commandRunner"]>>
+  > | null = null;
+  for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+    lastResult = await commandRunner(command, process.cwd());
+    if (
+      lastResult.exitCode === 0 &&
+      (!requireOutput || Boolean(lastResult.stdout.trim()))
+    ) {
+      return lastResult;
+    }
+    if (attempt < maximumAttempts) await Bun.sleep(250);
+  }
+  return (
+    lastResult ?? {
+      stdout: "",
+      stderr: `Capture command did not run: ${command.join(" ")}`,
+      exitCode: 1,
+    }
+  );
+}
+
+async function waitForStableGround(options: {
+  readonly udid: string;
+  readonly outputDir: string;
+  readonly prefix: string;
+  readonly previousEvidence?: GroundEvidence;
+  readonly requireChangeFromPrevious?: boolean;
+  readonly commandRunner: NonNullable<AppGraphExecInput["commandRunner"]>;
+}): Promise<StableObservationResult<GroundEvidence>> {
+  return waitForStableObservation({
+    previousObservation: options.previousEvidence,
+    requireChangeFromPrevious:
+      options.requireChangeFromPrevious ?? Boolean(options.previousEvidence),
+    capture: (sampleIndex) =>
+      captureGround(
+        options.udid,
+        options.outputDir,
+        `${options.prefix}-${String(sampleIndex).padStart(2, "0")}`,
+        options.commandRunner,
+      ),
+    describe: (observation) => observation,
+    acceptStable: groundObservationReady,
+    maximumSamples: MAX_SCENE_SETTLE_SAMPLES,
+    requiredConsecutiveMatches: REQUIRED_STABLE_SAMPLES,
+    pollMs: SCENE_SETTLE_POLL_MS,
+  });
+}
+
+function groundObservationReady(observation: GroundEvidence): boolean {
+  const text = observation.uiElements
+    .flatMap((element) => [element.label, element.text, element.value])
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
+  return !/加载中|正在加载|loading|请稍候|please wait/i.test(text);
 }
 
 function resolveSelectorMatchesByPriority(
@@ -1921,6 +2201,31 @@ function selectPreferredTargetMatch(
     ),
   );
   if (visible.length === 0) return null;
+  const onlyTopCoordinateShadows =
+    visible.every((element) => {
+      const center = centerOfBounds(element.bounds!);
+      return center.y < viewportHeight * 0.2;
+    }) &&
+    matches.some((element) => {
+      if (!element.bounds) return false;
+      return centerOfBounds(element.bounds).y >= viewportHeight;
+    });
+  if (onlyTopCoordinateShadows) return null;
+  const byArea = [...visible].sort((left, right) => {
+    const leftArea = left.bounds ? left.bounds.width * left.bounds.height : 0;
+    const rightArea = right.bounds
+      ? right.bounds.width * right.bounds.height
+      : 0;
+    return rightArea - leftArea;
+  });
+  if (
+    byArea.length > 1 &&
+    byArea.every((candidate) =>
+      uiBoundsOverlap(byArea[0]!.bounds!, candidate.bounds!),
+    )
+  ) {
+    return byArea[0]!;
+  }
   const band = expectedTargetBand(step);
   const scored = visible
     .map((element) => ({
@@ -1932,6 +2237,23 @@ function selectPreferredTargetMatch(
   const second = scored[1];
   if (!first || (second && second.score === first.score)) return null;
   return first.element;
+}
+
+function uiBoundsOverlap(
+  left: NonNullable<UiElement["bounds"]>,
+  right: NonNullable<UiElement["bounds"]>,
+): boolean {
+  const overlapWidth = Math.max(
+    0,
+    Math.min(left.x + left.width, right.x + right.width) -
+      Math.max(left.x, right.x),
+  );
+  const overlapHeight = Math.max(
+    0,
+    Math.min(left.y + left.height, right.y + right.height) -
+      Math.max(left.y, right.y),
+  );
+  return overlapWidth * overlapHeight > 0;
 }
 
 function expectedTargetBand(
@@ -1961,31 +2283,6 @@ function locationBandScore(
   return horizontalCenter;
 }
 
-function hasOffscreenExactTarget(options: {
-  step: ResolvedStep;
-  uiElements: readonly UiElement[];
-  viewportWidth: number;
-  viewportHeight: number;
-}): boolean {
-  return Boolean(
-    resolveOffscreenScrollDirection(options) ||
-    resolveSelectorMatchesByPriority(
-      options.uiElements,
-      options.step.targetElement?.selectors ?? [],
-      options.step.resolutionPolicy.selectorPriority,
-    ).some((element) => {
-      if (!element.bounds) return false;
-      const center = centerOfBounds(element.bounds);
-      return (
-        center.x < 0 ||
-        center.x >= options.viewportWidth ||
-        center.y < 0 ||
-        center.y >= options.viewportHeight
-      );
-    }),
-  );
-}
-
 function selectorEntryToUiSelector(selector: SelectorEntry): UiSelector {
   if (selector.type === "accessibilityIdentifier") {
     return { accessibilityId: selector.value };
@@ -2008,93 +2305,6 @@ function visuallyMatches(element: UiElement, step: ResolvedStep): boolean {
     Boolean(title) && values.some((value) => value === title);
   const roleMatched = !role || normalizeText(element.role ?? "") === role;
   return titleMatched && roleMatched;
-}
-
-export function resolveOffscreenScrollDirection(options: {
-  step: ResolvedStep;
-  uiElements: readonly UiElement[];
-  viewportWidth: number;
-  viewportHeight: number;
-}): "up" | "down" | null {
-  if (
-    options.step.operation.type !== "tap" &&
-    options.step.operation.type !== "long_press"
-  ) {
-    return null;
-  }
-  const matches = resolveSelectorMatchesByPriority(
-    options.uiElements,
-    options.step.targetElement?.selectors ?? [],
-    options.step.resolutionPolicy.selectorPriority,
-  );
-  const horizontalMatches = matches.filter((match) => {
-    if (!match.bounds) return false;
-    const centerX = match.bounds.x + match.bounds.width / 2;
-    return centerX >= 0 && centerX < options.viewportWidth;
-  });
-  if (horizontalMatches.length === 0) return null;
-  const expected = expectedTargetBand(options.step);
-  const centers = horizontalMatches.map(
-    (match) => match.bounds!.y + match.bounds!.height / 2,
-  );
-  const hasBelowViewportMatch = centers.some(
-    (centerY) => centerY >= options.viewportHeight,
-  );
-  const hasAboveViewportMatch = centers.some((centerY) => centerY < 0);
-  const visibleMatches = horizontalMatches.filter((match) => {
-    const centerY = match.bounds!.y + match.bounds!.height / 2;
-    return centerY >= 0 && centerY < options.viewportHeight;
-  });
-  const hasLocalCoordinateShadow = visibleMatches.some((visible) => {
-    const visibleCenterY = visible.bounds!.y + visible.bounds!.height / 2;
-    return (
-      visibleCenterY < options.viewportHeight * 0.2 &&
-      horizontalMatches.some((offscreen) => {
-        const offscreenCenterY =
-          offscreen.bounds!.y + offscreen.bounds!.height / 2;
-        const sameSemanticTarget =
-          normalizeText(visible.accessibilityId ?? visible.label ?? "") ===
-          normalizeText(offscreen.accessibilityId ?? offscreen.label ?? "");
-        return sameSemanticTarget && offscreenCenterY >= options.viewportHeight;
-      })
-    );
-  });
-  if (
-    hasBelowViewportMatch &&
-    (expected === "bottom" ||
-      visibleMatches.length === 0 ||
-      hasLocalCoordinateShadow)
-  ) {
-    return "up";
-  }
-  if (
-    hasAboveViewportMatch &&
-    (expected === "top" || visibleMatches.length === 0)
-  ) {
-    return "down";
-  }
-  return null;
-}
-
-export function buildVisibilityScrollCommand(
-  udid: string,
-  viewportWidth: number,
-  viewportHeight: number,
-  direction: "up" | "down",
-): string[] {
-  const x = Math.round(viewportWidth / 2);
-  const lowerY = Math.round(viewportHeight * 0.78);
-  const upperY = Math.round(viewportHeight * 0.28);
-  const fromY = direction === "up" ? lowerY : upperY;
-  const toY = direction === "up" ? upperY : lowerY;
-  return [
-    "mobilecli",
-    "io",
-    "swipe",
-    "--device",
-    udid,
-    `${x},${fromY},${x},${toY}`,
-  ];
 }
 
 function verifyExpectedScene(

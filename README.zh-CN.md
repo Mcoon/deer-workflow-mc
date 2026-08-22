@@ -89,23 +89,8 @@ deer-workflow run ./workflow.ts \
   启动 Time Profiler 采集，并生成接近 Instruments 的 HTML 时间线。
 - [iOS Attach Trace](./examples/ios-attach-trace/README.zh-CN.md) 会 attach 到
   已运行的 App，采集手动操作阶段的 Time Profiler，并生成同款 HTML 时间线。
-- [iOS UI Discovery](./examples/ios-ui-discovery/README.zh-CN.md) 使用串行
-  `mobilecli` route 沉淀页面、控件、坐标空间和页面跳转资产。
-- [iOS Case Authoring](./examples/ios-case-authoring/README.zh-CN.md) 把录屏或
-  需求转换为经过 UI map 引用校验的结构化 case。
 - [iOS Functional Regression](./examples/ios-functional-regression/README.zh-CN.md)
   使用 `mobilecli` 串行执行已验证 case，并生成证据报告。
-- [iOS UI Map Report](./examples/ios-ui-map-report/README.zh-CN.md) 把 UI
-  discovery 资产编译为机器可读导航图和交互式 HTML 地图。
-- [iOS UI Navigate](./examples/ios-ui-navigate/README.zh-CN.md) 解析页面名称、
-  从冷启动规划安全路径，并可在不逐屏调用模型的情况下执行。
-- [iOS Semantic Graph Discovery](./examples/ios-ui-graph-discovery/README.zh-CN.md)
-  以 `Scene → Element → Action → Effect` 递归探索 App，并维护可恢复状态、安全预算、
-  覆盖率和 canonical Graph 写回。
-- [iOS Executable Semantic Graph](./examples/ios-ui-graph-experiment/README.zh-CN.md)
-  解析自然语言目标、规划 verified/candidate Graph 路径、执行验证并定向修复缺口。
-- [iOS Semantic Map Report](./examples/ios-ui-semantic-map-report/README.zh-CN.md)
-  将 Scene、Element、Operator、Task、Binding 和 Verifier Graph 渲染成交互式 HTML。
 - [iOS UI Graph 控制台](./examples/ios-ui-graph-console/README.zh-CN.md)
   为该 Map 提供按 Graph ID 精确执行、定向探索、Agent 对话、纠错提案和串行
   Workflow 事件流。
