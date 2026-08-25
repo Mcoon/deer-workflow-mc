@@ -36,9 +36,9 @@ export function planRoute(
     unvisited.delete(current);
 
     const neighbors = adjacency.get(current) ?? [];
-    for (const { neighbor, operatorId } of neighbors) {
+    for (const { neighbor, operatorId, cost } of neighbors) {
       if (!unvisited.has(neighbor)) continue;
-      const alt = minDist + 1;
+      const alt = minDist + cost;
       if (alt < (distances.get(neighbor) ?? Infinity)) {
         distances.set(neighbor, alt);
         previous.set(neighbor, current);
@@ -79,10 +79,10 @@ export function planRoute(
 
 function buildAdjacency(
   graph: AppGraph,
-): Map<string, Array<{ neighbor: string; operatorId: string }>> {
+): Map<string, Array<{ neighbor: string; operatorId: string; cost: number }>> {
   const adj = new Map<
     string,
-    Array<{ neighbor: string; operatorId: string }>
+    Array<{ neighbor: string; operatorId: string; cost: number }>
   >();
   for (const [id] of Object.entries(graph.scenes)) {
     adj.set(id, []);
@@ -92,13 +92,45 @@ function buildAdjacency(
       op.toSceneId &&
       op.status !== "stale" &&
       op.status !== "blocked" &&
-      op.status !== "disabled"
+      op.status !== "disabled" &&
+      !["stale", "blocked", "disabled"].includes(
+        graph.scenes[op.fromSceneId]?.status ?? "disabled",
+      ) &&
+      !["stale", "blocked", "disabled"].includes(
+        graph.scenes[op.toSceneId]?.status ?? "disabled",
+      ) &&
+      ["navigation", "interaction"].includes(op.risk ?? "interaction")
     ) {
       const list = adj.get(op.fromSceneId);
       if (list) {
-        list.push({ neighbor: op.toSceneId, operatorId: op.operatorId });
+        list.push({
+          neighbor: op.toSceneId,
+          operatorId: op.operatorId,
+          cost: operatorTraversalCost(op),
+        });
       }
     }
   }
   return adj;
+}
+
+function operatorTraversalCost(
+  operator: AppGraph["operators"][string],
+): number {
+  const statusCost =
+    operator.status === "verified"
+      ? 1
+      : operator.status === "candidate"
+        ? 3
+        : 5;
+  const trustCost =
+    operator.execution?.tier === "fast"
+      ? -0.25
+      : operator.execution?.tier === "guarded"
+        ? 0.5
+        : 0;
+  const attempts = operator.executionStats.pass + operator.executionStats.fail;
+  const failureCost =
+    attempts > 0 ? (operator.executionStats.fail / attempts) * 2 : 0.5;
+  return Math.max(0.25, statusCost + trustCost + failureCost);
 }

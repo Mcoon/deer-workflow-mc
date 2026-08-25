@@ -42,6 +42,9 @@ export function applyPatch(
   }
 
   const updated = JSON.parse(JSON.stringify(graph)) as Record<string, unknown>;
+  if (patch.appVersion !== undefined) {
+    updated.appVersion = patch.appVersion;
+  }
 
   if (patch.scenes) {
     for (const [sceneId, patchScene] of Object.entries(patch.scenes)) {

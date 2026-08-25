@@ -675,6 +675,19 @@ Listener。释放后的 Runner 不能启动新的 Workflow。
 
 ## 示例
 
+App Graph 示例 Workflow 还有一层版本化执行契约。`app-graph` 和
+`app-graph-accept` 会在真机 Plan 前按 Graph `bundleId` 查询已安装 App 版本。Plan 结果
+包含 `taskCandidates`、`taskResolution` 和 `runtimeAppVersion`；Exec 结果包含 Graph/真机
+版本与 Task 健康度。坐标 Binding fallback 要求 runtime、Graph、Binding 证据三方版本
+一致。Task recipe 分为 `fresh`、`guarded`、`stale`、`invalid`；只有 fresh 可进入 fast
+path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
+`app-graph-accept` 的 case 可通过 `verify`（推荐）或 `oracles` 提供机器校验条件；
+`verify` 支持单个条件、数组及 `oracles/conditions/assertions/checks` 包装，并兼容
+`all_text_visible`、`any_text_visible`、文本不可见、当前 Scene、前台 Bundle 和视觉变化。
+无法识别的条件会阻断该 case，验收专用 Oracle 仅决定本轮结果，不会写回可复用 Task。
+未显式提供 `verify/oracles` 时，Accept 会尝试从 `expected` 编译验证条件；简单文本走
+确定性解析，复杂条件交给只读 Agent，无法完整编译时不会继续并误报通过。
+
 - [Deep Research](../examples/deep-research/README.zh-CN.md)：在规划前先执行
   探索搜索，再组合使用 `agent()`、`phase()`、`parallel()`、`log()` 和
   `WorkflowRunner`；Planner 会提出文件名，原子编号后缀会保护已有报告，最后的

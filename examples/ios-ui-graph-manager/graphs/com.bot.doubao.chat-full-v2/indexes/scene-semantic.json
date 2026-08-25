@@ -447,8 +447,8 @@
   },
   "skills.home": {
     "title": "技能页面",
-    "aliases": ["技能", "技能页面", "技能列表视口变化"],
-    "visualTextAnchors": ["技能", "个股研究", "估值建模"],
+    "aliases": ["技能", "技能页面", "技能列表视口变化", "技能 · 连接器"],
+    "visualTextAnchors": ["技能 · 连接器", "技能包", "同花顺 iFinD"],
     "status": "verified"
   },
   "chat.sidebar": {

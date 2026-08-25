@@ -1,0 +1,320 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "label": "对话列表",
+        "name": "对话列表",
+        "rect": {
+          "x": 8,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包，打开设置页",
+        "name": "豆包，打开设置页",
+        "rect": {
+          "x": 185,
+          "y": 51,
+          "width": 30,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 生成可能有误 注意核实",
+        "name": "AI 生成可能有误 注意核实",
+        "rect": {
+          "x": 142,
+          "y": 72,
+          "width": 126,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "label": "打电话",
+        "name": "打电话",
+        "rect": {
+          "x": 318,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "Button",
+        "label": "朗读已关闭",
+        "name": "朗读已关闭",
+        "rect": {
+          "x": 362,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "Button",
+        "label": "复制",
+        "name": "复制",
+        "rect": {
+          "x": 28,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "朗读",
+        "name": "朗读",
+        "rect": {
+          "x": 70,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "点赞",
+        "name": "点赞",
+        "rect": {
+          "x": 112,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "点踩",
+        "name": "点踩",
+        "rect": {
+          "x": 154,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "分享",
+        "name": "分享",
+        "rect": {
+          "x": 196,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "重新生成",
+        "name": "重新生成",
+        "rect": {
+          "x": 349,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 12,
+          "y": 744,
+          "width": 72,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "快速",
+        "name": "快速",
+        "rect": {
+          "x": 40,
+          "y": 754,
+          "width": 28,
+          "height": 17
+        }
+      },
+      {
+        "type": "Image",
+        "name": "action_bar_deep_thinking_menu",
+        "identifier": "action_bar_deep_thinking_menu",
+        "rect": {
+          "x": 72,
+          "y": 757,
+          "width": 4,
+          "height": 11
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 92,
+          "y": 744,
+          "width": 100,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "录音转写",
+        "name": "录音转写",
+        "rect": {
+          "x": 124,
+          "y": 754,
+          "width": 56,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 200,
+          "y": 744,
+          "width": 100,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "帮我写作",
+        "name": "帮我写作",
+        "rect": {
+          "x": 232,
+          "y": 754,
+          "width": 56,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 308,
+          "y": 744,
+          "width": 89,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 创作",
+        "name": "AI 创作",
+        "rect": {
+          "x": 340,
+          "y": 754,
+          "width": 45,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 405,
+          "y": 744,
+          "width": 113,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "博物馆讲解",
+        "name": "博物馆讲解",
+        "rect": {
+          "x": 437,
+          "y": 754,
+          "width": 69,
+          "height": 17
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "发消息或按住说话...",
+        "name": "发消息或按住说话...",
+        "rect": {
+          "x": 66,
+          "y": 810,
+          "width": 236,
+          "height": 24
+        }
+      },
+      {
+        "type": "Button",
+        "label": "相机",
+        "name": "btn:ic_camera",
+        "identifier": "btn:ic_camera",
+        "rect": {
+          "x": 24,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "语音输入",
+        "name": "语音输入",
+        "rect": {
+          "x": 314,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "更多",
+        "name": "btn:ic_plus_circle",
+        "identifier": "btn:ic_plus_circle",
+        "rect": {
+          "x": 358,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "17:16",
+        "name": "17:16",
+        "rect": {
+          "x": 23,
+          "y": 8,
+          "width": 39,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 65,
+          "y": 10,
+          "width": 14,
+          "height": 14
+        }
+      },
+      {
+        "type": "Button",
+        "label": "返回“豆包开发版”",
+        "name": "breadcrumb",
+        "identifier": "breadcrumb",
+        "rect": {
+          "x": 12,
+          "y": 31,
+          "width": 67,
+          "height": 13
+        }
+      }
+    ]
+  }
+}

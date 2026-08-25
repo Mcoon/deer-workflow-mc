@@ -3,6 +3,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { applyAndSave, loadGraph } from "../ios-ui-graph-manager";
+import {
+  findEquivalentTaskId,
+  taskDependencyDigest,
+  taskIntentIsReusable,
+  taskValidityDeadline,
+} from "../ios-ui-graph-manager/task-health";
 import type {
   AppGraph,
   Binding,
@@ -32,6 +38,7 @@ export async function persistFastFailureLearning(options: {
   graph: AppGraph;
   taskId: string;
   deviceProfileId: string;
+  runtimeAppVersion?: string;
   outputDir: string;
   evidencePath: string;
   failure: string;
@@ -123,6 +130,7 @@ export async function persistFastFailureLearning(options: {
     graphId: options.graph.graphId,
     baseRevision: options.graph.revision,
     source: "navigator",
+    appVersion: options.runtimeAppVersion ?? options.graph.appVersion,
     scenes: Object.keys(scenes).length ? scenes : undefined,
     operators,
     tasks: {
@@ -175,6 +183,7 @@ export async function persistSuccessfulExecutionLearning(options: {
   goal: string;
   steps: readonly ExecStepRecord[];
   deviceProfileId: string;
+  runtimeAppVersion?: string;
   outputDir: string;
   evidencePath: string;
   finalSceneEvidence?: {
@@ -206,31 +215,12 @@ export async function persistSuccessfulExecutionLearning(options: {
     ) {
       continue;
     }
-    for (const command of record.visibilityRecoveryCommands ?? []) {
-      const scrollOperator = findOrCreateScrollOperator({
-        graph,
-        pendingOperators: operators,
-        fromSceneId: planStep.fromSceneId,
-        command,
-      });
-      if (!scrollOperator) continue;
-      const updated = applyOperatorSuccess(
-        scrollOperator,
-        graph.appVersion,
-        options.deviceProfileId,
-        evidencePaths,
-        now,
-      );
-      operators[updated.operatorId] = updated;
-      recipe.push({ operatorId: updated.operatorId });
-    }
-
     const operator =
       operators[record.operatorId] ?? graph.operators[record.operatorId];
     if (!operator) continue;
     const updated = applyOperatorSuccess(
       operator as Operator,
-      graph.appVersion,
+      options.runtimeAppVersion ?? graph.appVersion,
       options.deviceProfileId,
       evidencePaths,
       now,
@@ -239,9 +229,19 @@ export async function persistSuccessfulExecutionLearning(options: {
     recipe.push({ operatorId: updated.operatorId });
   }
 
-  const taskId =
+  const proposedTaskId =
     options.plan.matchedTaskId ??
     runtimeTaskId(options.goal, options.plan.targetSceneId);
+  const proposedTask: Task = {
+    taskId: proposedTaskId,
+    intents: [],
+    entrySceneId: options.plan.entrySceneId,
+    steps: recipe,
+    finalOracles: options.plan.finalOracles,
+    status: "candidate",
+    parameters: {},
+  };
+  const taskId = findEquivalentTaskId(graph, proposedTask) ?? proposedTaskId;
   const existingTask = graph.tasks[taskId];
   const previousValidation = existingTask?.validation;
   const evidenceIsNew = !(previousValidation?.evidencePaths ?? []).includes(
@@ -265,48 +265,71 @@ export async function persistSuccessfulExecutionLearning(options: {
   const usedViewportSearch = options.steps.some(
     (record) => (record.visibilityRecoveryCommands?.length ?? 0) > 0,
   );
+  const hasHighRiskStep = options.plan.resolvedSteps.some((step) =>
+    ["selection", "permission", "mutation", "destructive"].includes(step.risk),
+  );
   const tier =
     successfulExecutions >= 2 &&
     !hasHistoricalViewportHint &&
-    !usedViewportSearch
+    !usedViewportSearch &&
+    !hasHighRiskStep
       ? "fast"
       : "guarded";
-  const task: Task = {
+  const reusableGoal = taskIntentIsReusable(options.goal);
+  const taskWithoutValidation: Task = {
     ...(existingTask ?? {}),
     taskId,
-    intents: unique([...(existingTask?.intents ?? []), options.goal]),
+    intents: unique([
+      ...(existingTask?.intents ?? []),
+      ...(reusableGoal ? [options.goal] : []),
+    ]),
     entrySceneId: options.plan.entrySceneId,
     steps: recipe,
     finalOracles: options.plan.finalOracles,
     status,
     parameters: existingTask?.parameters ?? {},
-    validation: {
-      source:
-        existingTask?.validation?.source ??
-        (existingTask ? "declared" : "runtime_composition"),
-      sourceGoals: unique([
-        ...(previousValidation?.sourceGoals ?? existingTask?.intents ?? []),
-        options.goal,
-      ]),
-      tier,
-      successfulExecutions,
-      failedExecutions: previousValidation?.failedExecutions ?? 0,
-      consecutiveSuccessfulExecutions:
-        (previousValidation?.consecutiveSuccessfulExecutions ?? 0) +
-        (evidenceIsNew ? 1 : 0),
-      consecutiveFailedExecutions: 0,
-      evidencePaths: unique([
-        ...(previousValidation?.evidencePaths ?? []),
-        ...evidencePaths,
-      ]),
-      lastValidatedAt: now,
-      lastFailedAt: previousValidation?.lastFailedAt,
-      lastValidatedAppVersion: graph.appVersion,
-      lastDeviceProfileId: options.deviceProfileId,
-      lastFailure: undefined,
-      requiresFixtureReplay: previousValidation?.requiresFixtureReplay,
-    },
   };
+  let task: Task | undefined =
+    taskWithoutValidation.intents.length > 0
+      ? {
+          ...taskWithoutValidation,
+          validation: {
+            source:
+              existingTask?.validation?.source ??
+              (existingTask ? "declared" : "runtime_composition"),
+            sourceGoals: unique([
+              ...(previousValidation?.sourceGoals ??
+                existingTask?.intents ??
+                []),
+              ...(reusableGoal ? [options.goal] : []),
+            ]),
+            tier,
+            successfulExecutions,
+            failedExecutions: previousValidation?.failedExecutions ?? 0,
+            consecutiveSuccessfulExecutions:
+              (previousValidation?.consecutiveSuccessfulExecutions ?? 0) +
+              (evidenceIsNew ? 1 : 0),
+            consecutiveFailedExecutions: 0,
+            evidencePaths: unique([
+              ...(previousValidation?.evidencePaths ?? []),
+              ...evidencePaths,
+            ]),
+            lastValidatedAt: now,
+            lastFailedAt: previousValidation?.lastFailedAt,
+            lastValidatedAppVersion:
+              options.runtimeAppVersion ?? graph.appVersion,
+            lastDeviceProfileId: options.deviceProfileId,
+            validatedGraphRevision: graph.revision + 1,
+            dependencyDigest: taskDependencyDigest(
+              graph,
+              taskWithoutValidation,
+            ),
+            validUntil: taskValidityDeadline(now, tier),
+            lastFailure: undefined,
+            requiresFixtureReplay: previousValidation?.requiresFixtureReplay,
+          },
+        }
+      : undefined;
 
   const scenes: NonNullable<GraphPatch["scenes"]> = {};
   for (const record of options.steps) {
@@ -323,7 +346,7 @@ export async function persistSuccessfulExecutionLearning(options: {
       previous,
       options.deviceProfileId,
       record.normalizedPoint,
-      graph.appVersion,
+      options.runtimeAppVersion ?? graph.appVersion,
       evidencePaths,
       now,
     );
@@ -370,15 +393,44 @@ export async function persistSuccessfulExecutionLearning(options: {
       ],
     };
   }
+  const dependencyGraph = {
+    ...graph,
+    scenes: Object.fromEntries(
+      Object.entries(graph.scenes).map(([sceneId, scene]) => [
+        sceneId,
+        scenes[sceneId] ? { ...scene, ...scenes[sceneId] } : scene,
+      ]),
+    ),
+    operators: Object.fromEntries(
+      Object.entries(graph.operators).map(([operatorId, operator]) => [
+        operatorId,
+        operators[operatorId]
+          ? { ...operator, ...operators[operatorId] }
+          : operator,
+      ]),
+    ),
+  } as AppGraph;
+  if (task) {
+    task = {
+      ...task,
+      validation: task.validation
+        ? {
+            ...task.validation,
+            dependencyDigest: taskDependencyDigest(dependencyGraph, task),
+          }
+        : undefined,
+    };
+  }
 
   const patch: GraphPatch = {
     schemaVersion: "ios-ui-graph-patch/v2",
     graphId: graph.graphId,
     baseRevision: graph.revision,
     source: "navigator",
+    appVersion: options.runtimeAppVersion ?? graph.appVersion,
     scenes: Object.keys(scenes).length ? scenes : undefined,
     operators,
-    tasks: { [task.taskId]: task },
+    tasks: task ? { [task.taskId]: task } : undefined,
     evidencePaths,
   };
   const directory = join(options.outputDir, "runtime-graph-patches");
@@ -390,18 +442,18 @@ export async function persistSuccessfulExecutionLearning(options: {
     return {
       graph,
       graphUpdated: false,
-      taskId,
-      taskStatus: status,
-      executionTier: tier,
+      taskId: task?.taskId,
+      taskStatus: task?.status,
+      executionTier: task ? tier : undefined,
     };
   }
   return {
     graph: await loadGraph(options.graphPath),
     graphUpdated: true,
     patchPath,
-    taskId,
-    taskStatus: status,
-    executionTier: tier,
+    taskId: task?.taskId,
+    taskStatus: task?.status,
+    executionTier: task ? tier : undefined,
   };
 }
 
@@ -529,77 +581,6 @@ function applyBindingSuccess(
       lastDeviceProfileId: deviceProfileId,
       lastFailure: undefined,
     },
-  };
-}
-
-function findOrCreateScrollOperator(options: {
-  graph: AppGraph;
-  pendingOperators: NonNullable<GraphPatch["operators"]>;
-  fromSceneId: string;
-  command: readonly string[];
-}): Operator | null {
-  const coordinates = options.command.at(-1)?.split(",").map(Number);
-  if (
-    !coordinates ||
-    coordinates.length !== 4 ||
-    coordinates.some(Number.isNaN)
-  ) {
-    return null;
-  }
-  const [fromX, fromY, toX, toY] = coordinates as [
-    number,
-    number,
-    number,
-    number,
-  ];
-  const candidates = [
-    ...Object.values(options.pendingOperators),
-    ...Object.values(options.graph.operators),
-  ].filter((operator): operator is Operator => {
-    const operation = operator.operation;
-    return (
-      operator.fromSceneId === options.fromSceneId &&
-      (operator.toSceneId === options.fromSceneId ||
-        operator.toSceneId === null) &&
-      operation?.type === "swipe" &&
-      Boolean(operation.from && operation.to)
-    );
-  });
-  const sameDirection = candidates
-    .map((operator) => ({
-      operator,
-      distance:
-        Math.abs(operator.operation.from!.x - fromX) +
-        Math.abs(operator.operation.from!.y - fromY) +
-        Math.abs(operator.operation.to!.x - toX) +
-        Math.abs(operator.operation.to!.y - toY),
-      directionMatches:
-        Math.sign(operator.operation.to!.y - operator.operation.from!.y) ===
-          Math.sign(toY - fromY) &&
-        Math.sign(operator.operation.to!.x - operator.operation.from!.x) ===
-          Math.sign(toX - fromX),
-    }))
-    .filter((item) => item.directionMatches)
-    .sort((left, right) => left.distance - right.distance)[0];
-  if (sameDirection) return sameDirection.operator;
-  const operatorId = `runtime.operator.scroll.${createHash("sha256")
-    .update(`${options.fromSceneId}|${fromX},${fromY},${toX},${toY}`)
-    .digest("hex")
-    .slice(0, 12)}`;
-  return {
-    operatorId,
-    fromSceneId: options.fromSceneId,
-    toSceneId: options.fromSceneId,
-    operation: {
-      type: "swipe",
-      from: { x: fromX, y: fromY },
-      to: { x: toX, y: toY },
-    },
-    effects: [{ type: "ui_change", key: "viewport.changed", value: true }],
-    status: "candidate",
-    executionStats: { pass: 0, fail: 0 },
-    risk: "navigation",
-    settleMs: 700,
   };
 }
 

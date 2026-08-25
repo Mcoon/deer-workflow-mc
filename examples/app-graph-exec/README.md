@@ -56,10 +56,17 @@ An explicit Agent `blocked` result is retained with its reason rather than
 being collapsed into a generic unresolved error.
 
 Exec validates Graph ID, revision, App version, and device profile before any
-device action. Swipe preserves the Plan's complete `from/to` operation, and the
+device action. It discovers the installed version when the caller did not
+already provide it. A coordinate Binding is eligible only when the runtime,
+Graph, and Binding evidence versions all match; otherwise live selectors and
+Agent-assisted semantic resolution remain available, but historical coordinates fail closed. Swipe
+preserves the Plan's complete `from/to` operation, and the
 verdict comes from expected Scenes and `finalOracles`, not command exit codes
 alone. An unresolved step writes `discovery-request.json` for targeted App Graph
 Discovery.
+If the current Task is stale or invalid and the supplied Plan does not prove a
+current navigation-only replan, Exec returns `task_replan_required` before
+resetting the App.
 
 Accept and Console normally pass the complete Plan automatically. For
 debugging, place the full Plan result in an input file and run:

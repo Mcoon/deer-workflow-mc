@@ -10,7 +10,10 @@ import {
   buildStrictRestartCommand,
   buildStepCommands,
   parseStrictRestartResult,
+  parseForegroundApp,
+  parseInstalledAppVersion,
   resolveSemanticStepTarget,
+  viewportSearchTargetYRange,
   runGroundCaptureCommand,
   validatePlanAgainstGraph,
 } from "../../examples/app-graph-exec/workflow";
@@ -37,7 +40,14 @@ import {
 } from "../../examples/app-graph-exec/viewport-search";
 import { applyPatch } from "../../examples/ios-ui-graph-manager/patch";
 import type { AppGraphAcceptOutput } from "../../examples/app-graph-accept/types";
-import type { AgentFunction } from "@deerwork-ai/deer-workflow/agents";
+import {
+  normalizeCaseVerification,
+  resolveCaseVerification,
+} from "../../examples/app-graph-accept/workflow";
+import type {
+  AgentFunction,
+  AgentOptions,
+} from "@deerwork-ai/deer-workflow/agents";
 import {
   buildRuntimeCandidates,
   buildRuntimeRecoveryCommand,
@@ -142,6 +152,124 @@ describe("App Graph Plan pipeline", () => {
     }
   });
 
+  test("matches a stable selector with a delimited presentation suffix", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-selector-suffix-"));
+    try {
+      const plan = await runWorkflow<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "打开侧边栏，然后进入技能页面",
+        graphPath,
+        outputDir: root,
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      const step = plan.resolvedSteps.at(-1)!;
+      expect(
+        resolveSemanticStepTarget({
+          step,
+          uiElements: [
+            {
+              role: "StaticText",
+              accessibilityId: "技能 · 连接器",
+              label: "技能 · 连接器",
+              bounds: { x: 60, y: 198, width: 101, height: 20 },
+            },
+            uiElement("技能包", 16, 330),
+          ],
+          deviceProfileId: plan.deviceProfileId,
+          viewportWidth: 414,
+          viewportHeight: 896,
+        }),
+      ).toMatchObject({
+        source: "live_selector",
+        point: { x: 110.5, y: 208 },
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects an old Plan Binding when the runtime App version changed", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-runtime-version-"));
+    try {
+      const plan = await runWorkflow<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "打开侧边栏",
+        graphPath,
+        outputDir: root,
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      expect(
+        resolveSemanticStepTarget({
+          step: plan.resolvedSteps[0]!,
+          uiElements: [],
+          deviceProfileId: plan.deviceProfileId,
+          viewportWidth: 414,
+          viewportHeight: 896,
+          runtimeAppVersion: "99.0.0",
+          graphAppVersion: graph.appVersion,
+          requireVersionMatch: true,
+        }),
+      ).toMatchObject({
+        source: "unresolved",
+        bindingUsed: "missing",
+      });
+      expect(
+        resolveSemanticStepTarget({
+          step: plan.resolvedSteps[0]!,
+          uiElements: [],
+          deviceProfileId: plan.deviceProfileId,
+          viewportWidth: 414,
+          viewportHeight: 896,
+          graphAppVersion: graph.appVersion,
+          requireVersionMatch: true,
+        }),
+      ).toMatchObject({
+        source: "unresolved",
+        bindingUsed: "missing",
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("permits a Plan Binding only when runtime, Graph, and Binding versions match", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-binding-version-"));
+    try {
+      const plan = await runWorkflow<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "打开侧边栏",
+        graphPath,
+        outputDir: root,
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      const step = plan.resolvedSteps[0]!;
+      const versionedStep = {
+        ...step,
+        binding: { ...step.binding, appVersion: graph.appVersion },
+      };
+      expect(
+        resolveSemanticStepTarget({
+          step: versionedStep,
+          uiElements: [],
+          deviceProfileId: plan.deviceProfileId,
+          viewportWidth: 414,
+          viewportHeight: 896,
+          runtimeAppVersion: graph.appVersion,
+          graphAppVersion: graph.appVersion,
+          requireVersionMatch: true,
+        }),
+      ).toMatchObject({
+        source: "binding_fallback",
+        bindingUsed: "verified",
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("scrolls toward an offscreen selector instead of tapping outside the viewport", async () => {
     const root = await mkdtemp(join(tmpdir(), "app-graph-offscreen-target-"));
     try {
@@ -203,6 +331,98 @@ describe("App Graph Plan pipeline", () => {
         "device-1",
         "207,573,207,466",
       ]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("accepts a visible bottom link above the iOS home-indicator safe area", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-bottom-link-"));
+    try {
+      const plan = await runWorkflow<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "打开帮助与反馈",
+        graphPath,
+        outputDir: root,
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      const baseStep = plan.resolvedSteps.at(-1)!;
+      const step = {
+        ...baseStep,
+        targetElement: {
+          elementId: "bot.settings.row.item-29917a18",
+          title: "《个人信息清单》",
+          semanticRole: "settings_navigation_entry",
+          status: "verified" as const,
+          selectors: [
+            {
+              type: "accessibilityIdentifier" as const,
+              value: "《个人信息清单》",
+            },
+            { type: "label" as const, value: "《个人信息清单》" },
+            { type: "role" as const, value: "Button" },
+          ],
+          selectorTemplate: [
+            {
+              type: "accessibilityIdentifier" as const,
+              value: "《个人信息清单》",
+            },
+            { type: "label" as const, value: "《个人信息清单》" },
+            { type: "role" as const, value: "Button" },
+          ],
+          locationHint: {
+            region: "bottom_center" as const,
+            description: "页面底部中间区域",
+            sourceDeviceProfileId: plan.deviceProfileId,
+          },
+        },
+      };
+      const targetYRange = viewportSearchTargetYRange(896);
+      const resolution = resolveSemanticStepTarget({
+        step,
+        uiElements: [
+          {
+            role: "Button",
+            accessibilityId: "《个人信息清单》",
+            label: "《个人信息清单》",
+            bounds: { x: 90, y: 803, width: 98, height: 29 },
+          },
+        ],
+        deviceProfileId: plan.deviceProfileId,
+        viewportWidth: 414,
+        viewportHeight: 896,
+        deferBindingFallback: true,
+        minimumTargetY: targetYRange.minimumY,
+        maximumTargetY: targetYRange.maximumY,
+      });
+
+      expect(targetYRange.minimumY).toBeCloseTo(125.44);
+      expect(targetYRange.maximumY).toBeCloseTo(860.16);
+      expect(resolution).toMatchObject({
+        source: "live_selector",
+        point: { x: 139, y: 817.5 },
+        bindingUsed: "selector",
+      });
+      expect(
+        resolveSemanticStepTarget({
+          step,
+          uiElements: [
+            {
+              role: "Button",
+              accessibilityId: "《个人信息清单》",
+              label: "《个人信息清单》",
+              bounds: { x: 90, y: 870, width: 98, height: 20 },
+            },
+          ],
+          deviceProfileId: plan.deviceProfileId,
+          viewportWidth: 414,
+          viewportHeight: 896,
+          deferBindingFallback: true,
+          minimumTargetY: targetYRange.minimumY,
+          maximumTargetY: targetYRange.maximumY,
+        }),
+      ).toMatchObject({ source: "unresolved" });
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -547,7 +767,7 @@ describe("App Graph Plan pipeline", () => {
     }
   }, 15_000);
 
-  test("keeps a verified same-Scene viewport transition without Agent recovery", async () => {
+  test("replaces a historical same-Scene swipe with live viewport search", async () => {
     const root = await mkdtemp(join(tmpdir(), "app-graph-same-scene-state-"));
     const temporaryGraphPath = join(root, "graph.json");
     await writeFile(temporaryGraphPath, JSON.stringify(graph), "utf8");
@@ -647,14 +867,11 @@ describe("App Graph Plan pipeline", () => {
         (step) => step.toSceneId === "bot.settings",
       );
       expect(settingsStep).toBeDefined();
-      expect(swipeStep).toBeDefined();
+      expect(swipeStep).toBeUndefined();
       expect(privacyStep).toBeDefined();
       const exec = await runWorkflow<AppGraphExecOutput>(execWorkflowPath, {
         goal: plan.goal,
-        plan: {
-          ...plan,
-          resolvedSteps: [settingsStep!, swipeStep!, privacyStep!],
-        },
+        plan,
         graphPath: temporaryGraphPath,
         udid: "fake-device",
         outputDir: join(root, "exec"),
@@ -671,6 +888,12 @@ describe("App Graph Plan pipeline", () => {
         verdict: "pass",
         recoveryActions: [],
       });
+      if (!exec.success) return;
+      expect(
+        exec.steps.some(
+          (step) => (step.visibilityRecoveryCommands?.length ?? 0) > 0,
+        ),
+      ).toBeTrue();
       expect(agentCalls).toBe(0);
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -802,6 +1025,51 @@ describe("App Graph Plan pipeline", () => {
         }),
       ),
     ).toThrow("invalid PID proof");
+  });
+
+  test("requires re-planning before resetting when runtime Task health is stale", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-exec-replan-"));
+    const commands: string[][] = [];
+    const commandRunner = async (command: readonly string[]) => {
+      commands.push([...command]);
+      return {
+        stdout: JSON.stringify({
+          data: [{ packageName: graph.bundleId, version: "99.0.0" }],
+        }),
+        stderr: "",
+        exitCode: 0,
+      };
+    };
+    try {
+      const plan = await runWorkflow<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "打开侧边栏",
+        graphPath,
+        outputDir: join(root, "plan"),
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      const result = await runWorkflow<AppGraphExecOutput>(execWorkflowPath, {
+        goal: plan.goal,
+        plan,
+        graphPath,
+        udid: "fake-device",
+        outputDir: join(root, "exec"),
+        commandRunner,
+      });
+      expect(result).toMatchObject({
+        success: false,
+        mode: "exec_failure",
+        code: "task_replan_required",
+        taskHealth: "stale",
+        runtimeAppVersion: "99.0.0",
+      });
+      expect(commands).toEqual([
+        ["mobilecli", "apps", "list", "--device", "fake-device"],
+      ]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   test("validates a complete Plan in Exec plan-only mode", async () => {
@@ -1307,6 +1575,35 @@ describe("App Graph Plan pipeline", () => {
     expect(result.stdout).toBe("captured");
   });
 
+  test("reads the runtime App version from mobilecli foreground JSON", () => {
+    expect(
+      parseForegroundApp(
+        JSON.stringify({
+          status: "ok",
+          data: { packageName: "com.bot.doubao", version: "14.8.0" },
+        }),
+      ),
+    ).toEqual({ bundleId: "com.bot.doubao", appVersion: "14.8.0" });
+    expect(parseForegroundApp("com.bot.doubao\n")).toEqual({
+      bundleId: "com.bot.doubao",
+    });
+  });
+
+  test("reads the installed App version from mobilecli app inventory", () => {
+    expect(
+      parseInstalledAppVersion(
+        JSON.stringify({
+          status: "ok",
+          data: [
+            { packageName: "com.example.other", version: "1.0" },
+            { packageName: "com.bot.doubao", version: "14.8.0" },
+          ],
+        }),
+        "com.bot.doubao",
+      ),
+    ).toBe("14.8.0");
+  });
+
   test("waits through loading until two consecutive stable observations", async () => {
     const root = await mkdtemp(join(tmpdir(), "app-graph-stability-"));
     const sequence = [
@@ -1533,6 +1830,19 @@ describe("App Graph Plan pipeline", () => {
     ).toBe(true);
   });
 
+  test("matches a Scene title with a delimited presentation suffix", () => {
+    expect(
+      runtimeSceneMatches(
+        graph,
+        "skills.home",
+        observation([
+          uiElement("技能 · 连接器", 156, 60),
+          uiElement("技能包", 16, 160),
+        ]),
+      ),
+    ).toBe(true);
+  });
+
   test("lets the Scene Agent choose only a real safe candidate and supports at_target", async () => {
     const current = observation([
       uiElement("设置", 10, 20),
@@ -1750,6 +2060,7 @@ describe("App Graph Plan pipeline", () => {
             title: "打开侧边栏",
             step: "点击左上角对话列表按钮",
             expected: "显示搜索、技能和云盘",
+            oracles: [{ type: "ui_text_visible", value: "测试额外断言" }],
           },
           graphPath,
           outputDir: root,
@@ -1766,11 +2077,488 @@ describe("App Graph Plan pipeline", () => {
           schemaVersion: "app-graph-semantic-plan/v2",
           matchedTaskId: "chat.open_sidebar",
           graphIdentity: { revision: graph.revision },
+          finalOracles: [
+            ...graph.tasks["chat.open_sidebar"]!.finalOracles,
+            { type: "ui_text_visible", value: "测试额外断言" },
+          ],
         },
         execResult: {
           planSchemaVersion: "app-graph-semantic-plan/v2",
         },
       });
+      expect(result.cases[0]?.warnings).toEqual([]);
+      expect(result.cases[0]?.planResult?.success).toBeTrue();
+      if (result.cases[0]?.planResult?.success) {
+        expect(result.cases[0].planResult.planPath).toContain(
+          "plan-with-case-oracles.json",
+        );
+        expect(
+          await Bun.file(result.cases[0].planResult.planPath).exists(),
+        ).toBeTrue();
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("Accept normalizes verify aliases, wrappers, text, and duplicate oracles", () => {
+    expect(
+      normalizeCaseVerification({
+        case_id: "verify-normalization",
+        title: "校验侧边栏",
+        step: "打开侧边栏",
+        expected: "搜索可见且错误提示不可见",
+        oracles: [{ type: "ui_text_visible", value: "搜索" }],
+        verify: {
+          assertions: [
+            { type: "visible", text: "搜索" },
+            "不显示“错误提示”",
+            { kind: "scene", scene_id: "chat.sidebar" },
+            { checkType: "foreground", bundle_id: "com.bot.doubao" },
+          ],
+        },
+      }),
+    ).toEqual({
+      supplied: true,
+      sources: ["oracles", "verify"],
+      oracles: [
+        { type: "ui_text_visible", value: "搜索" },
+        { type: "ui_text_absent", value: "错误提示" },
+        { type: "scene_current", sceneId: "chat.sidebar" },
+        { type: "foreground_bundle", bundleId: "com.bot.doubao" },
+      ],
+      issues: [],
+      compiler: "deterministic",
+    });
+    expect(
+      normalizeCaseVerification({
+        case_id: "semantic-dedupe",
+        title: "语义去重",
+        step: "保持当前页面",
+        expected: "搜索可见",
+        oracles: [{ type: "text_visible", value: "搜索" }],
+        verify: { type: "visible", value: "搜索" },
+      }).oracles,
+    ).toEqual([{ type: "text_visible", value: "搜索" }]);
+    expect(
+      normalizeCaseVerification({
+        case_id: "partial-natural-language",
+        title: "复杂验证条件",
+        step: "保持当前页面",
+        expected: "",
+        verify:
+          "名称下方显示“AI 生成可能有误 注意核实”，并展示通话入口和朗读入口",
+      }).issues,
+    ).toEqual([
+      'verify: unsupported natural-language condition "名称下方显示“AI 生成可能有误 注意核实”，并展示通话入口和朗读入口"',
+    ]);
+  });
+
+  test("Accept blocks an unsupported verify condition instead of silently ignoring it", async () => {
+    const root = await mkdtemp(
+      join(tmpdir(), "app-graph-accept-invalid-verify-"),
+    );
+    try {
+      const result = await runWorkflow<AppGraphAcceptOutput>(
+        acceptWorkflowPath,
+        {
+          case: {
+            case_id: "unsupported-verify",
+            title: "打开侧边栏",
+            step: "点击左上角对话列表按钮",
+            expected: "页面颜色符合设计稿",
+            verify: { type: "color_matches_design", value: "blue" },
+          },
+          graphPath,
+          outputDir: root,
+          planOnly: true,
+        },
+      );
+      expect(result).toMatchObject({
+        success: false,
+        mode: "accept",
+        summary: { blocked: 1 },
+        cases: [
+          {
+            verdict: "blocked",
+            verification: {
+              supplied: true,
+              oracles: [],
+            },
+          },
+        ],
+      });
+      if (result.mode !== "accept") return;
+      expect(result.cases[0]?.reason).toContain(
+        "unsupported verification object",
+      );
+      expect(result.cases[0]?.planResult).toBeUndefined();
+      expect(result.cases[0]?.verificationPath).toEndWith(
+        "unsupported-verify/verification.json",
+      );
+      expect(
+        await Bun.file(result.cases[0]!.verificationPath!).exists(),
+      ).toBeTrue();
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("Accept executes mocked cases and lets verify conditions decide pass and fail", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-accept-verify-exec-"));
+    const temporaryGraphPath = join(root, "graph.json");
+    const caseSetPath = join(root, "cases.json");
+    const isolatedGraph = structuredClone(graph) as AppGraph;
+    (isolatedGraph.tasks as Record<string, AppGraph["tasks"][string]>)[
+      "mock.verify.chat"
+    ] = {
+      taskId: "mock.verify.chat",
+      intents: ["校验会话页验收条件"],
+      entrySceneId: "chat.detail",
+      steps: [],
+      finalOracles: [
+        { type: "scene_current", sceneId: "chat.detail" },
+        { type: "foreground_bundle", bundleId: graph.bundleId },
+      ],
+      status: "verified",
+      parameters: {},
+    };
+    await writeFile(temporaryGraphPath, JSON.stringify(isolatedGraph), "utf8");
+    await writeFile(
+      caseSetPath,
+      JSON.stringify({
+        cases: [
+          {
+            case_id: "verify-pass",
+            title: "验证条件通过",
+            goal: "校验会话页验收条件",
+            step: "保持在会话页",
+            expected: "专项验收标记可见且错误提示不可见",
+            oracles: [{ type: "ui_text_visible", value: "专项验收标记" }],
+            verify: {
+              checks: [
+                { type: "visible", text: "专项验收标记" },
+                "不显示“错误提示”",
+                {
+                  type: "all_text_visible",
+                  values: ["专项验收标记", "豆包"],
+                },
+                {
+                  type: "any_text_visible",
+                  values: ["不存在的候选", "专项验收标记"],
+                },
+              ],
+            },
+          },
+          {
+            case_id: "verify-fail",
+            title: "验证条件失败",
+            goal: "校验会话页验收条件",
+            step: "保持在会话页",
+            expected: "缺失验收标记可见",
+            verify: {
+              type: "any_text_visible",
+              values: ["缺失验收标记", "另一个缺失标记"],
+            },
+          },
+        ],
+      }),
+      "utf8",
+    );
+    const commandRunner = mockAcceptCommandRunner(root, [
+      "豆包",
+      "AI 生成可能有误 注意核实",
+      "发消息或按住说话...",
+      "专项验收标记",
+    ]);
+    try {
+      const result = await runWorkflow<AppGraphAcceptOutput>(
+        acceptWorkflowPath,
+        {
+          caseSetPath,
+          graphPath: temporaryGraphPath,
+          udid: "fake-device",
+          outputDir: root,
+          planOnly: false,
+          allowDiscovery: true,
+          runtimeAppVersion: graph.appVersion,
+          commandRunner,
+        },
+      );
+      expect(result).toMatchObject({
+        success: false,
+        mode: "accept",
+        summary: { total: 2, pass: 1, fail: 1, blocked: 0 },
+      });
+      if (result.mode !== "accept") return;
+      const passed = result.cases.find((item) => item.caseId === "verify-pass");
+      const failed = result.cases.find((item) => item.caseId === "verify-fail");
+      expect(passed).toMatchObject({
+        verdict: "pass",
+        verification: {
+          sources: ["oracles", "verify"],
+          oracles: [
+            { type: "ui_text_visible", value: "专项验收标记" },
+            { type: "ui_text_absent", value: "错误提示" },
+            {
+              type: "all_text_visible",
+              values: ["专项验收标记", "豆包"],
+            },
+            {
+              type: "any_text_visible",
+              values: ["不存在的候选", "专项验收标记"],
+            },
+          ],
+          issues: [],
+        },
+      });
+      expect(passed?.verificationPath).toEndWith(
+        "verify-pass/verification.json",
+      );
+      expect(passed?.planResult?.success).toBeTrue();
+      if (passed?.planResult?.success) {
+        expect(
+          passed.planResult.finalOracles.filter(
+            (oracle) =>
+              oracle.type === "ui_text_visible" &&
+              oracle.value === "专项验收标记",
+          ),
+        ).toHaveLength(1);
+      }
+      expect(passed?.execResult?.mode).toBe("exec");
+      if (passed?.execResult?.mode === "exec") {
+        expect(passed.execResult.finalOracleResults).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              type: "ui_text_visible",
+              expected: "专项验收标记",
+              success: true,
+            }),
+            expect.objectContaining({
+              type: "ui_text_absent",
+              expected: "错误提示",
+              success: true,
+            }),
+            expect.objectContaining({
+              type: "all_text_visible",
+              expected: "专项验收标记 | 豆包",
+              success: true,
+            }),
+            expect.objectContaining({
+              type: "any_text_visible",
+              expected: "不存在的候选 | 专项验收标记",
+              success: true,
+            }),
+          ]),
+        );
+      }
+      expect(failed).toMatchObject({ verdict: "fail" });
+      expect(failed?.execResult?.mode).toBe("exec");
+      if (failed?.execResult?.mode === "exec") {
+        expect(failed.execResult.finalOracleResults).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              type: "any_text_visible",
+              expected: "缺失验收标记 | 另一个缺失标记",
+              success: false,
+            }),
+          ]),
+        );
+      }
+      const persistedGraph = JSON.parse(
+        await readFile(temporaryGraphPath, "utf8"),
+      ) as AppGraph;
+      expect(persistedGraph.tasks["mock.verify.chat"]?.finalOracles).toEqual([
+        { type: "scene_current", sceneId: "chat.detail" },
+        { type: "foreground_bundle", bundleId: graph.bundleId },
+      ]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 20_000);
+
+  test("Accept compiles a simple expected result into machine-checkable oracles", async () => {
+    const root = await mkdtemp(
+      join(tmpdir(), "app-graph-pipeline-accept-warning-"),
+    );
+    try {
+      const result = await runWorkflow<AppGraphAcceptOutput>(
+        acceptWorkflowPath,
+        {
+          case: {
+            case_id: "sidebar-warning",
+            title: "打开侧边栏",
+            step: "点击左上角对话列表按钮",
+            expected: "显示搜索、技能和云盘",
+          },
+          graphPath,
+          outputDir: root,
+          planOnly: true,
+        },
+      );
+      expect(result.mode).toBe("accept");
+      if (result.mode !== "accept") return;
+      expect(result.cases[0]?.warnings).toEqual([]);
+      expect(result.cases[0]?.verification).toMatchObject({
+        supplied: true,
+        sources: ["expected"],
+        compiler: "deterministic",
+        oracles: [
+          { type: "ui_text_visible", value: "搜索" },
+          { type: "ui_text_visible", value: "技能" },
+          { type: "ui_text_visible", value: "云盘" },
+        ],
+        issues: [],
+      });
+      expect(result.cases[0]?.planResult?.success).toBeTrue();
+      if (result.cases[0]?.planResult?.success) {
+        expect(result.cases[0].planResult.finalOracles).toEqual(
+          graph.tasks["chat.open_sidebar"]!.finalOracles,
+        );
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("Accept uses a read-only Agent to compile complex expected conditions", async () => {
+    const root = await mkdtemp(
+      join(tmpdir(), "app-graph-accept-agent-verify-"),
+    );
+    let prompt = "";
+    let sandbox = "";
+    const agentRunner: AgentFunction = async <TOutput>(
+      value: string,
+      options?: AgentOptions,
+    ) => {
+      prompt = value;
+      sandbox = options?.sandbox ?? "";
+      return {
+        status: "compiled",
+        reason: "Converted all explicitly named UI conditions.",
+        oracles: [
+          {
+            type: "all_text_visible",
+            value: "",
+            values: ["AI 生成可能有误 注意核实", "通话入口", "朗读入口"],
+            sceneId: "",
+            bundleId: "",
+            maximumSsim: 0,
+          },
+        ],
+      } as TOutput;
+    };
+    try {
+      const plan = await runWorkflow<AppGraphPlanOutput>(planWorkflowPath, {
+        goal: "会话页",
+        graphPath,
+        outputDir: join(root, "plan"),
+        planOnly: true,
+      });
+      expect(plan.success).toBeTrue();
+      if (!plan.success) return;
+      const verification = await resolveCaseVerification({
+        structuredCase: {
+          case_id: "complex-expected",
+          title: "主 bot 导航栏信息可见",
+          goal: "会话页",
+          step: "查看主 bot 导航栏",
+          expected:
+            "名称下方显示“AI 生成可能有误 注意核实”，并展示通话入口和朗读入口。",
+        },
+        plan,
+        agentCwd: root,
+        timeoutMs: 1_000,
+        agentRunner,
+      });
+      expect(verification).toEqual({
+        supplied: true,
+        sources: ["expected"],
+        oracles: [
+          {
+            type: "all_text_visible",
+            values: ["AI 生成可能有误 注意核实", "通话入口", "朗读入口"],
+          },
+        ],
+        issues: [],
+        compiler: "agent",
+        reason: "Converted all explicitly named UI conditions.",
+      });
+      expect(sandbox).toBe("read-only");
+      expect(prompt).toContain("never return only a partial interpretation");
+      expect(prompt).toContain("主 bot 导航栏信息可见");
+      const mixed = await resolveCaseVerification({
+        structuredCase: {
+          case_id: "mixed-verify",
+          title: "混合验证",
+          step: "保持在会话页",
+          expected: "",
+          verify: [
+            { type: "visible", text: "豆包" },
+            "布局完整且入口间距符合设计",
+          ],
+        },
+        plan,
+        agentCwd: root,
+        timeoutMs: 1_000,
+        agentRunner,
+      });
+      expect(mixed).toMatchObject({
+        supplied: true,
+        sources: ["verify"],
+        compiler: "agent",
+        issues: [],
+        oracles: expect.arrayContaining([
+          { type: "ui_text_visible", value: "豆包" },
+        ]),
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("Accept resolves the installed App version before planning device cases", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-accept-version-"));
+    const commands: string[][] = [];
+    const commandRunner = async (command: readonly string[]) => {
+      commands.push([...command]);
+      if (command[0] === "mobilecli") {
+        return {
+          stdout: JSON.stringify({
+            data: [{ packageName: graph.bundleId, version: graph.appVersion }],
+          }),
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      return { stdout: "", stderr: "reset failed", exitCode: 1 };
+    };
+    try {
+      const result = await runWorkflow<AppGraphAcceptOutput>(
+        acceptWorkflowPath,
+        {
+          case: {
+            case_id: "sidebar-version",
+            title: "打开侧边栏",
+            step: "点击左上角对话列表按钮",
+            expected: "显示搜索、技能和云盘",
+          },
+          graphPath,
+          udid: "fake-device",
+          outputDir: root,
+          planOnly: false,
+          commandRunner,
+        },
+      );
+      expect(result.mode).toBe("accept");
+      if (result.mode !== "accept") return;
+      expect(result.cases[0]?.planResult).toMatchObject({
+        success: true,
+        runtimeAppVersion: graph.appVersion,
+      });
+      expect(
+        commands.filter((command) => command[0] === "mobilecli"),
+      ).toHaveLength(1);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -1795,6 +2583,45 @@ function uiElement(label: string, x: number, y: number) {
     accessibilityId: label,
     label,
     bounds: { x, y, width: 80, height: 40 },
+  };
+}
+
+function mockAcceptCommandRunner(root: string, labels: readonly string[]) {
+  return async (command: readonly string[]) => {
+    if (command[0] === "python3") {
+      return {
+        stdout: JSON.stringify({
+          schemaVersion: "ios-ui-devicectl-restart/v1",
+          success: true,
+          bundleId: graph.bundleId,
+          oldPids: [101],
+          newPid: 202,
+          currentPids: [202],
+        }),
+        stderr: "",
+        exitCode: 0,
+      };
+    }
+    if (command[1] === "screenshot") {
+      const outputIndex = command.indexOf("-o");
+      const outputPath =
+        outputIndex >= 0 ? command[outputIndex + 1] : undefined;
+      if (outputPath) await writeFile(outputPath, "fake-image", "utf8");
+      return { stdout: "", stderr: "", exitCode: 0 };
+    }
+    if (command[1] === "apps" && command[2] === "foreground") {
+      return { stdout: graph.bundleId, stderr: "", exitCode: 0 };
+    }
+    if (command[1] === "dump" && command[2] === "ui") {
+      return {
+        stdout: JSON.stringify(
+          labels.map((label, index) => uiElement(label, 20, 40 + index * 50)),
+        ),
+        stderr: "",
+        exitCode: 0,
+      };
+    }
+    return { stdout: "", stderr: "", exitCode: 0 };
   };
 }
 

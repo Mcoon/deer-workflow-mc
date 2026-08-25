@@ -216,6 +216,41 @@ describe("app-graph-plan", () => {
     }
   });
 
+  test("does not reuse coordinates when the runtime App version differs from the Graph", async () => {
+    const outputRoot = await mkdtemp(
+      join(tmpdir(), "app-graph-plan-version-isolation-"),
+    );
+    try {
+      const result = await runPlan({
+        goal: "打开侧边栏",
+        graphPath,
+        runtimeAppVersion: "99.0.0",
+        outputDir: outputRoot,
+        planOnly: true,
+      });
+      expect(result.success).toBeTrue();
+      if (!result.success) return;
+
+      const step = result.resolvedSteps[0];
+      expect(result.runtimeAppVersion).toBe("99.0.0");
+      expect(step?.normalizedPoint).toBeUndefined();
+      expect(step?.binding).toEqual({
+        deviceProfileId: "iphone-414x896-portrait",
+        status: "missing",
+      });
+      expect(step?.targetElement?.locationHint).toMatchObject({
+        region: "top_left",
+      });
+      expect(step?.resolutionPolicy.allowBindingFallback).toBeFalse();
+      expect(result.taskResolution).toMatchObject({
+        health: "stale",
+        recipeReused: false,
+      });
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
+  });
+
   test("compiles a multi-step semantic route for a matched Scene", async () => {
     const outputRoot = await mkdtemp(
       join(tmpdir(), "app-graph-plan-scene-route-"),
@@ -362,6 +397,162 @@ describe("app-graph-plan", () => {
     }
   });
 
+  test("rejects an ambiguous natural-language Task match", async () => {
+    const outputRoot = await mkdtemp(
+      join(tmpdir(), "app-graph-plan-ambiguous-"),
+    );
+    const temporaryGraphPath = join(outputRoot, "graph.json");
+    const ambiguous = structuredClone(graph) as AppGraph;
+    const tasks = ambiguous.tasks as Record<string, AppGraph["tasks"][string]>;
+    tasks["test.open_chat_a"] = {
+      taskId: "test.open_chat_a",
+      intents: ["打开聊天页面甲"],
+      entrySceneId: "chat.detail",
+      steps: [],
+      finalOracles: [{ type: "scene_current", sceneId: "chat.detail" }],
+      status: "verified",
+    };
+    tasks["test.open_chat_b"] = {
+      taskId: "test.open_chat_b",
+      intents: ["打开聊天页面乙"],
+      entrySceneId: "chat.detail",
+      steps: [],
+      finalOracles: [{ type: "ui_text_visible", value: "豆包" }],
+      status: "verified",
+    };
+    await writeFile(temporaryGraphPath, JSON.stringify(ambiguous), "utf8");
+    try {
+      const result = await runPlan({
+        goal: "打开聊天页面",
+        graphPath: temporaryGraphPath,
+        outputDir: outputRoot,
+        planOnly: true,
+      });
+      expect(result).toMatchObject({
+        success: false,
+        code: "task_match_ambiguous",
+      });
+      if (result.success) return;
+      expect(
+        result.taskCandidates?.map((candidate) => candidate.taskId),
+      ).toContain("test.open_chat_a");
+      expect(
+        result.taskCandidates?.map((candidate) => candidate.taskId),
+      ).toContain("test.open_chat_b");
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("replans an expired navigation Task from its target Scene", async () => {
+    const outputRoot = await mkdtemp(
+      join(tmpdir(), "app-graph-plan-stale-task-"),
+    );
+    const temporaryGraphPath = join(outputRoot, "graph.json");
+    const stale = structuredClone(graph) as AppGraph;
+    const task = stale.tasks["runtime.task.66ed2576a0a7"]!;
+    (
+      task as unknown as { validation: NonNullable<typeof task.validation> }
+    ).validation = {
+      ...task.validation!,
+      dependencyDigest: "0".repeat(64),
+      validUntil: "2020-01-01T00:00:00.000Z",
+    };
+    await writeFile(temporaryGraphPath, JSON.stringify(stale), "utf8");
+    try {
+      const result = await runPlan({
+        goal: "打开帮助与反馈",
+        graphPath: temporaryGraphPath,
+        outputDir: outputRoot,
+        planOnly: true,
+      });
+      expect(result.success).toBeTrue();
+      if (!result.success) return;
+      expect(result.taskResolution).toMatchObject({
+        health: "stale",
+        recipeReused: false,
+      });
+      expect(result.targetSceneId).toBe("bot.settings.customer_service");
+      expect(result.taskSteps).toEqual([]);
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("replans an explicitly stale navigation Task from its target Scene", async () => {
+    const outputRoot = await mkdtemp(
+      join(tmpdir(), "app-graph-plan-explicit-stale-task-"),
+    );
+    const temporaryGraphPath = join(outputRoot, "graph.json");
+    const stale = structuredClone(graph) as AppGraph;
+    const task = stale.tasks["runtime.task.66ed2576a0a7"]!;
+    (task as unknown as { status: string }).status = "stale";
+    await writeFile(temporaryGraphPath, JSON.stringify(stale), "utf8");
+    try {
+      const result = await runPlan({
+        goal: "打开帮助与反馈",
+        graphPath: temporaryGraphPath,
+        outputDir: outputRoot,
+        planOnly: true,
+      });
+      expect(result.success).toBeTrue();
+      if (!result.success) return;
+      expect(result.taskResolution).toMatchObject({
+        health: "stale",
+        recipeReused: false,
+        reasons: ["task_status_stale"],
+      });
+      expect(result.targetSceneId).toBe("bot.settings.customer_service");
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("fails closed when the only matching mutating Task is stale", async () => {
+    const outputRoot = await mkdtemp(
+      join(tmpdir(), "app-graph-plan-stale-mutation-"),
+    );
+    const temporaryGraphPath = join(outputRoot, "graph.json");
+    const stale = structuredClone(graph) as AppGraph;
+    const deleteTask = stale.tasks["message.delete_last"]!;
+    (stale.tasks as Record<string, AppGraph["tasks"][string]>)[
+      "test.approximate.delete"
+    ] = {
+      ...deleteTask,
+      taskId: "test.approximate.delete",
+      intents: ["删除文本消息"],
+      finalOracles: [
+        ...deleteTask.finalOracles,
+        { type: "ui_text_absent", value: "删除失败" },
+      ],
+      validation: undefined,
+    };
+    await writeFile(temporaryGraphPath, JSON.stringify(stale), "utf8");
+    try {
+      const result = await runPlan({
+        goal: "删除指定文本消息",
+        graphPath: temporaryGraphPath,
+        parameters: { text: "GraphV2 测试消息" },
+        runtimeAppVersion: "99.0.0",
+        outputDir: outputRoot,
+        planOnly: true,
+      });
+      expect(result).toMatchObject({
+        success: false,
+        code: "task_stale",
+        recoverable: true,
+      });
+      if (result.success) return;
+      expect(result.taskCandidates?.[0]).toMatchObject({
+        taskId: "message.delete_last",
+        health: "stale",
+        recipeReusable: false,
+      });
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
+  });
+
   test("preserves complete swipe operation semantics", async () => {
     const outputRoot = await mkdtemp(
       join(tmpdir(), "app-graph-plan-swipe-operation-"),
@@ -408,6 +599,7 @@ describe("app-graph-plan", () => {
         );
         const result = await runPlan({
           goal: task.intents[0] ?? task.taskId,
+          target: { kind: "task", id: task.taskId },
           graphPath,
           parameters,
           outputDir: outputRoot,

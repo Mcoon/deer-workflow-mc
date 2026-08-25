@@ -31,6 +31,19 @@ describe("App Graph v2 Map", () => {
       expect(html).toContain('id="device-select"');
       expect(html).toContain('id="device-refresh"');
       expect(html).toContain('id="graph-refresh"');
+      expect(html).toContain(
+        "position:fixed;z-index:60;right:16px;bottom:16px",
+      );
+      expect(html).toMatch(/Graph r\d+ 已同步/);
+      expect(html).toContain("加载 Graph r");
+      expect(html).toContain("graphRefresh.disabled = false");
+      expect(html).toContain(
+        "grid-template-columns:clamp(220px,15vw,280px) minmax(0,1fr) clamp(340px,21vw,400px)",
+      );
+      expect(html).toContain("#scene-filter{flex:0 1 220px;width:220px");
+      expect(html).toContain("width:100vw;max-width:100vw;min-width:0");
+      expect(html).toContain(".details>*{min-width:0;max-width:100%}");
+      expect(html).toContain("table-layout:fixed");
       expect(html).toContain('fetchJson("/api/devices"');
       expect(html).toContain('id="context-menu"');
       expect(html).toContain('data-context-action="execute"');
@@ -63,7 +76,9 @@ describe("App Graph v2 Map", () => {
       expect(html).toContain("restoreAgentSession");
       expect(html).toContain("sessionStorage.setItem(agentSessionKey");
       expect(html).not.toContain("setTimeout(() => location.reload()");
-      expect(html).toContain("Graph 已更新。请先点击顶栏的刷新按钮");
+      expect(html).toContain("Graph 已更新。请先点击右下角的加载按钮");
+      expect(html).toContain("刷新并查看新 Graph");
+      expect(html).toContain("Graph 未变化，无需刷新");
       expect(html).not.toContain("child_process");
       expect(html).not.toContain("Bun.spawn");
       const scripts = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)]

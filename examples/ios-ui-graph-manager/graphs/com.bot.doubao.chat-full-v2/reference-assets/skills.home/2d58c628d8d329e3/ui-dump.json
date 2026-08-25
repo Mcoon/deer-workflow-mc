@@ -1,0 +1,712 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "StaticText",
+        "label": "技能 · 连接器",
+        "name": "技能 · 连接器",
+        "rect": {
+          "x": 156,
+          "y": 60,
+          "width": 101,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "金融",
+        "name": "金融",
+        "rect": {
+          "x": 29,
+          "y": 112,
+          "width": 28,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "法律",
+        "name": "法律",
+        "rect": {
+          "x": 91,
+          "y": 112,
+          "width": 28,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "新媒体创作",
+        "name": "新媒体创作",
+        "rect": {
+          "x": 153,
+          "y": 112,
+          "width": 70,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "办公协作",
+        "name": "办公协作",
+        "rect": {
+          "x": 257,
+          "y": 112,
+          "width": 56,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "电商/营销",
+        "name": "电商/营销",
+        "rect": {
+          "x": 347,
+          "y": 112,
+          "width": 63,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "出行生活",
+        "name": "出行生活",
+        "rect": {
+          "x": 444,
+          "y": 112,
+          "width": 56,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "医疗",
+        "name": "医疗",
+        "rect": {
+          "x": 534,
+          "y": 112,
+          "width": 28,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "互联网",
+        "name": "互联网",
+        "rect": {
+          "x": 596,
+          "y": 112,
+          "width": 42,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "编程",
+        "name": "编程",
+        "rect": {
+          "x": 672,
+          "y": 112,
+          "width": 28,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "学术",
+        "name": "学术",
+        "rect": {
+          "x": 734,
+          "y": 112,
+          "width": 28,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "新鲜玩法",
+        "name": "新鲜玩法",
+        "rect": {
+          "x": 796,
+          "y": 112,
+          "width": 56,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "开学季",
+        "name": "开学季",
+        "rect": {
+          "x": 886,
+          "y": 112,
+          "width": 42,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "技能包",
+        "name": "技能包",
+        "rect": {
+          "x": 16,
+          "y": 160,
+          "width": 45,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "同花顺 iFinD",
+        "name": "同花顺 iFinD",
+        "rect": {
+          "x": 92,
+          "y": 209,
+          "width": 94,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 197,
+          "y": 215,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "查询股票、基金、债券及宏观金融数据",
+        "name": "查询股票、基金、债券及宏观金融数据",
+        "rect": {
+          "x": 92,
+          "y": 236,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "Wind 金融数据",
+        "name": "Wind 金融数据",
+        "rect": {
+          "x": 92,
+          "y": 293,
+          "width": 112,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 214,
+          "y": 299,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "查询股票、基金、指数、债券、公告新闻及宏观经济数据",
+        "name": "查询股票、基金、指数、债券、公告新闻及宏观经济数据",
+        "rect": {
+          "x": 92,
+          "y": 320,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "通达信",
+        "name": "通达信",
+        "rect": {
+          "x": 92,
+          "y": 377,
+          "width": 51,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 153,
+          "y": 383,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "面向金融投资领域的智能技能包",
+        "name": "面向金融投资领域的智能技能包",
+        "rect": {
+          "x": 92,
+          "y": 404,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "东方财富金融数据",
+        "name": "东方财富金融数据",
+        "rect": {
+          "x": 92,
+          "y": 461,
+          "width": 135,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 237,
+          "y": 467,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "查询 A 股、港股、美股、基金、债券、指数板块、公告新闻及宏观数据",
+        "name": "查询 A 股、港股、美股、基金、债券、指数板块、公告新闻及宏观数据",
+        "rect": {
+          "x": 92,
+          "y": 488,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "新浪财经",
+        "name": "新浪财经",
+        "rect": {
+          "x": 92,
+          "y": 545,
+          "width": 67,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 170,
+          "y": 551,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "24小时金融助手，实时汇率报价信息",
+        "name": "24小时金融助手，实时汇率报价信息",
+        "rect": {
+          "x": 92,
+          "y": 572,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "证券之星",
+        "name": "证券之星",
+        "rect": {
+          "x": 92,
+          "y": 629,
+          "width": 67,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 170,
+          "y": 635,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "上市公司信息查询技能包",
+        "name": "上市公司信息查询技能包",
+        "rect": {
+          "x": 92,
+          "y": 656,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "ETF榜单",
+        "name": "ETF榜单",
+        "rect": {
+          "x": 92,
+          "y": 713,
+          "width": 66,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 168,
+          "y": 719,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "沪深ETF涨跌、资金与特色榜单查询",
+        "name": "沪深ETF涨跌、资金与特色榜单查询",
+        "rect": {
+          "x": 92,
+          "y": 740,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "指数估值",
+        "name": "指数估值",
+        "rect": {
+          "x": 92,
+          "y": 797,
+          "width": 67,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 170,
+          "y": 803,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "沪深指数估值分析技能包",
+        "name": "沪深指数估值分析技能包",
+        "rect": {
+          "x": 92,
+          "y": 824,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "盈米",
+        "name": "盈米",
+        "rect": {
+          "x": 92,
+          "y": 881,
+          "width": 34,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 136,
+          "y": 887,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "提供基金数据、投顾策略、市场资讯、投研分析等能力",
+        "name": "提供基金数据、投顾策略、市场资讯、投研分析等能力",
+        "rect": {
+          "x": 92,
+          "y": 908,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "技能包",
+        "name": "技能包",
+        "rect": {
+          "x": 430,
+          "y": 160,
+          "width": 45,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "法研·法律法规检索",
+        "name": "法研·法律法规检索",
+        "rect": {
+          "x": 506,
+          "y": 209,
+          "width": 148,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 664,
+          "y": 215,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "现行有效法律法规条文的自然语言检索",
+        "name": "现行有效法律法规条文的自然语言检索",
+        "rect": {
+          "x": 506,
+          "y": 236,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "元典",
+        "name": "元典",
+        "rect": {
+          "x": 506,
+          "y": 293,
+          "width": 34,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 550,
+          "y": 299,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "检索法律法规、案例文书及企业信息",
+        "name": "检索法律法规、案例文书及企业信息",
+        "rect": {
+          "x": 506,
+          "y": 320,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "旷湖-专利大数据",
+        "name": "旷湖-专利大数据",
+        "rect": {
+          "x": 506,
+          "y": 377,
+          "width": 126,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "连接器",
+        "name": "连接器",
+        "rect": {
+          "x": 642,
+          "y": 383,
+          "width": 33,
+          "height": 12
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "专利搜索、统计、趋势分析",
+        "name": "专利搜索、统计、趋势分析",
+        "rect": {
+          "x": 506,
+          "y": 404,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "技能",
+        "name": "技能",
+        "rect": {
+          "x": 430,
+          "y": 459,
+          "width": 30,
+          "height": 22
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "合同起草",
+        "name": "合同起草",
+        "rect": {
+          "x": 506,
+          "y": 508,
+          "width": 246,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "生成结构化、可编辑的商业合同 Word 文档",
+        "name": "生成结构化、可编辑的商业合同 Word 文档",
+        "rect": {
+          "x": 506,
+          "y": 536,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "合同审查",
+        "name": "合同审查",
+        "rect": {
+          "x": 506,
+          "y": 594,
+          "width": 246,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "专业审查合同风险并逐条批注，输出带修订痕迹的修改建议。",
+        "name": "专业审查合同风险并逐条批注，输出带修订痕迹的修改建议。",
+        "rect": {
+          "x": 506,
+          "y": 622,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "法律合规评估",
+        "name": "法律合规评估",
+        "rect": {
+          "x": 506,
+          "y": 680,
+          "width": 246,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "评估法律合规风险，并基于公开法律来源生成可审阅报告。",
+        "name": "评估法律合规风险，并基于公开法律来源生成可审阅报告。",
+        "rect": {
+          "x": 506,
+          "y": 708,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "营销素材审核",
+        "name": "营销素材审核",
+        "rect": {
+          "x": 506,
+          "y": 766,
+          "width": 246,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议",
+        "name": "审查营销素材合规风险，覆盖广告宣传、价格促销、知识产权及特殊行业监管等维度，并逐项提出修改建议",
+        "rect": {
+          "x": 506,
+          "y": 794,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "补充协议起草",
+        "name": "补充协议起草",
+        "rect": {
+          "x": 506,
+          "y": 852,
+          "width": 246,
+          "height": 25
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "基于变更需求，起草补充协议、变更协议或终止协议",
+        "name": "基于变更需求，起草补充协议、变更协议或终止协议",
+        "rect": {
+          "x": 506,
+          "y": 880,
+          "width": 246,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "23:18",
+        "name": "23:18",
+        "rect": {
+          "x": 21,
+          "y": 15,
+          "width": 43,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 67,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

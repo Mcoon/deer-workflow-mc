@@ -137,30 +137,32 @@ export function renderAppGraphMapHtml(
 <style>
 :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e2e8f0;background:#0f172a}
 *{box-sizing:border-box;margin:0;padding:0}
-body{overflow:hidden;height:100vh}
-.app{height:100vh;display:grid;grid-template-rows:48px 1fr}
-header{display:flex;align-items:center;gap:12px;padding:0 14px;background:#1e293b;border-bottom:1px solid #334155;z-index:10}
-h1{font-size:14px;margin:0;white-space:nowrap;color:#f1f5f9}
-.meta{color:#94a3b8;font-size:10px;white-space:nowrap}
-.toolbar{margin-left:auto;display:flex;align-items:center;gap:6px}
-.toolbar input{width:200px;height:30px;border:1px solid #475569;border-radius:6px;padding:0 10px;font-size:11px;background:#1e293b;color:#e2e8f0}
-.toolbar select{height:30px;border:1px solid #475569;border-radius:6px;padding:0 8px;font-size:11px;background:#1e293b;color:#e2e8f0}
-.toolbar .device-select{max-width:280px;border-color:#0f766e}
+html,body{width:100%;max-width:100%;height:100%;overflow:hidden}
+.app{width:100vw;max-width:100vw;min-width:0;height:100vh;display:grid;grid-template-rows:48px minmax(0,1fr);overflow:hidden}
+header{display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden;padding:0 14px;background:#1e293b;border-bottom:1px solid #334155;z-index:10}
+h1{flex:0 0 auto;font-size:14px;margin:0;white-space:nowrap;color:#f1f5f9}
+.meta{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:#94a3b8;font-size:10px;white-space:nowrap}
+.toolbar{margin-left:auto;min-width:0;flex:1 1 auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.toolbar input{flex:0 1 180px;width:180px;min-width:100px;height:30px;border:1px solid #475569;border-radius:6px;padding:0 10px;font-size:11px;background:#1e293b;color:#e2e8f0}
+.toolbar select{min-width:0;height:30px;border:1px solid #475569;border-radius:6px;padding:0 8px;font-size:11px;background:#1e293b;color:#e2e8f0}
+.toolbar .device-select{flex:0 1 280px;width:280px;max-width:24vw;border-color:#0f766e}
+#scene-filter{flex:0 1 220px;width:220px;max-width:20vw}
 .toolbar button{height:30px;padding:0 10px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11px}
 .toolbar button:hover{background:#334155}
 .toolbar button.active{background:#2563eb;border-color:#2563eb}
-.toolbar button.graph-refresh{display:none;border-color:#d97706;color:#fde68a;background:#78350f}.toolbar button.graph-refresh.visible{display:block}
+.graph-refresh{position:fixed;z-index:60;right:16px;bottom:16px;min-width:126px;height:34px;padding:0 12px;border:1px solid #475569;border-radius:8px;background:#1e293b;color:#94a3b8;box-shadow:0 8px 24px #02061780;font-size:11px;cursor:default}.graph-refresh.visible{border-color:#d97706;color:#fef3c7;background:#92400e;cursor:pointer}.graph-refresh.visible:hover{background:#b45309}.graph-refresh:disabled{opacity:.88}
 .agent-toggle{border-color:#6366f1!important;color:#c4b5fd!important}
-.layout{display:grid;grid-template-columns:260px minmax(0,1fr) 340px;min-height:0}
-.sidebar{background:#1e293b;overflow:auto;padding:12px;border-right:1px solid #334155}
+.layout{width:100%;min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-columns:clamp(220px,15vw,280px) minmax(0,1fr) clamp(340px,21vw,400px)}
+.sidebar{min-width:0;min-height:0;background:#1e293b;overflow:auto;padding:12px;border-right:1px solid #334155}
 .sidebar h2{font-size:13px;margin:0 0 10px;color:#cbd5e1}
 .task-card{width:100%;padding:8px;text-align:left;margin:0 0 5px;display:block;border:1px solid #334155;background:#0f172a;border-radius:6px;cursor:pointer;color:#e2e8f0;font-family:inherit;transition:all .15s}
 .task-card:hover{border-color:#60a5fa;background:#1e3a5f}
 .task-card.selected{border-color:#2563eb;background:#1e3a5f;box-shadow:0 0 0 2px #2563eb40}
 .task-title{font-size:12px;font-weight:650}.task-id{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#94a3b8;margin-top:2px}.task-meta{font-size:9px;color:#94a3b8;margin-top:3px}
-.details{background:#1e293b;overflow:auto;padding:14px;border-left:1px solid #334155}
+.details{width:100%;min-width:0;min-height:0;overflow:auto;overflow-wrap:anywhere;background:#1e293b;padding:14px;border-left:1px solid #334155}
+.details>*{min-width:0;max-width:100%}
 .details h2{font-size:14px;margin:0 0 10px;color:#cbd5e1}
-.graph-container{position:relative;overflow:hidden;background:radial-gradient(ellipse at center,#1e293b 0%,#0f172a 70%)}
+.graph-container{min-width:0;min-height:0;position:relative;overflow:hidden;background:radial-gradient(ellipse at center,#1e293b 0%,#0f172a 70%)}
 .graph-container svg{width:100%;height:100%}
 .graph-container canvas{position:absolute;top:0;left:0;pointer-events:none}
 .graph-hint{position:absolute;right:12px;top:10px;z-index:3;background:#1e293bdd;border:1px solid #475569;border-radius:6px;padding:5px 8px;font-size:10px;color:#94a3b8}
@@ -188,7 +190,7 @@ h1{font-size:14px;margin:0;white-space:nowrap;color:#f1f5f9}
 .link-label{font-size:7px;fill:#94a3b8;pointer-events:none;text-anchor:middle}
 .pill{display:inline-block;padding:2px 6px;border-radius:999px;font-size:9px;font-weight:650}
 .pill.verified{background:#065f46;color:#6ee7b7}.pill.candidate{background:#78350f;color:#fcd34d}.pill.observed{background:#1e3a5f;color:#93c5fd}.pill.stale{background:#7f1d1d;color:#fca5a5}.pill.blocked,.pill.disabled{background:#334155;color:#94a3b8}
-.kv{display:grid;grid-template-columns:90px 1fr;gap:5px;font-size:11px;margin:8px 0}.kv b{color:#94a3b8}
+.kv{min-width:0;display:grid;grid-template-columns:minmax(72px,90px) minmax(0,1fr);gap:5px;font-size:11px;margin:8px 0}.kv>*{min-width:0;overflow-wrap:anywhere}.kv b{color:#94a3b8}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;word-break:break-all}
 .preview{display:block;width:100%;max-height:260px;object-fit:contain;background:#0f172a;border:1px solid #334155;border-radius:6px;margin-top:8px}
 .muted{color:#64748b;font-size:11px}
@@ -199,9 +201,10 @@ h1{font-size:14px;margin:0;white-space:nowrap;color:#f1f5f9}
 .agent-panel{position:fixed;z-index:70;right:16px;bottom:16px;width:min(440px,calc(100vw - 32px));height:min(620px,calc(100vh - 80px));display:none;grid-template-rows:auto auto 1fr auto auto;background:#111827;border:1px solid #475569;border-radius:12px;box-shadow:0 20px 70px #020617cc;overflow:hidden}.agent-panel.open{display:grid}.agent-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#1e293b;border-bottom:1px solid #334155}.agent-header strong{font-size:12px}.agent-service{font-size:9px;color:#94a3b8;margin-left:8px}.agent-service.connected{color:#6ee7b7}.agent-service.offline{color:#fca5a5}.agent-close{border:0;background:transparent;color:#94a3b8;font-size:18px;cursor:pointer}.agent-context{padding:8px 12px;background:#0f172a;color:#93c5fd;font:9px ui-monospace,SFMono-Regular,Menlo,monospace;border-bottom:1px solid #334155;word-break:break-all}.agent-messages{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}.agent-message{padding:8px 9px;border-radius:8px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word}.agent-message.system{background:#1e293b;color:#94a3b8}.agent-message.user{align-self:flex-end;max-width:88%;background:#1d4ed8;color:#eff6ff}.agent-message.agent{background:#312e81;color:#e0e7ff}.agent-message.error{background:#7f1d1d;color:#fecaca}.agent-message button,.proposal button{margin-top:7px;border:1px solid #6366f1;background:#1e1b4b;color:#e0e7ff;border-radius:6px;padding:6px 8px;cursor:pointer}.run-log{max-height:130px;overflow:auto;border-top:1px solid #334155;padding:7px 10px;background:#0f172a}.run-event{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:#cbd5e1;padding:3px 0}.run-event small{color:#64748b}.agent-form{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px;border-top:1px solid #334155;background:#1e293b}.agent-form textarea{resize:none;border:1px solid #475569;border-radius:7px;background:#0f172a;color:#e2e8f0;padding:8px;font:11px inherit}.agent-form>button{border:1px solid #6366f1;background:#4f46e5;color:white;border-radius:7px;padding:0 12px;cursor:pointer}.agent-form.busy{opacity:.65}.proposal{margin-top:7px;padding:8px;border:1px solid #6366f1;border-radius:7px}.proposal ul{padding-left:16px;margin-top:5px}
 .element-choice-list{display:flex;flex-direction:column;gap:5px;max-height:240px;overflow:auto;margin-top:8px}.element-choice-list button{margin-top:0;text-align:left}.element-choice-list small{display:block;color:#94a3b8;font:8px ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px}.element-choice-list .recapture{border-color:#0f766e;background:#064e3b;color:#d1fae5}
 .agent-message.thinking{background:#1e293b;color:#cbd5e1}.thinking-dots::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:thinking-dots 1.2s steps(4,end) infinite}@keyframes thinking-dots{0%{content:""}25%{content:"."}50%{content:".."}75%,100%{content:"..."}}
-table{width:100%;border-collapse:collapse;font-size:10px;background:#0f172a;border-radius:6px;overflow:hidden;border:1px solid #334155}
+table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;font-size:10px;background:#0f172a;border-radius:6px;overflow:hidden;border:1px solid #334155}
 th{text-align:left;padding:6px 8px;background:#1e293b;color:#94a3b8;font-weight:650;font-size:9px;text-transform:uppercase;letter-spacing:.5px}
-td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
+th,td{overflow-wrap:anywhere;word-break:break-word}td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
+@media(max-width:1500px){.layout{grid-template-columns:220px minmax(0,1fr) 340px}.meta:last-of-type{display:none}.toolbar .device-select{max-width:220px}#scene-filter{max-width:180px}.toolbar input{max-width:150px}}
 </style>
 </head>
 <body>
@@ -213,7 +216,6 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
   <div class="toolbar">
     <select id="device-select" class="device-select" title="执行设备"><option value="">正在扫描设备…</option></select>
     <button id="device-refresh" title="刷新设备列表">刷新设备</button>
-    <button id="graph-refresh" class="graph-refresh" title="Graph 已更新，手动刷新页面">Graph 已更新 · 刷新</button>
     <select id="scene-filter"><option value="">All Scenes</option>${sceneList}</select>
     <input id="search" placeholder="Search...">
     <button id="agent-toggle" class="agent-toggle">Agent</button>
@@ -244,6 +246,7 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
   </aside>
 </div>
 </div>
+<button id="graph-refresh" class="graph-refresh" type="button" disabled aria-live="polite" title="当前页面已加载最新 Graph">Graph r${graph.revision} 已同步</button>
 <div class="context-menu" id="context-menu" role="menu">
   <div class="context-title" id="context-title"></div>
   <button type="button" data-context-action="execute">执行到这里</button>
@@ -684,7 +687,14 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
       if (Number.isInteger(body.graphNumericRevision) && body.graphNumericRevision !== loadedGraphRevision) {
         graphStale = true;
         graphRefresh.classList.add("visible");
-        graphRefresh.textContent = "Graph r" + body.graphNumericRevision + " · 刷新";
+        graphRefresh.disabled = false;
+        graphRefresh.title = "Graph 已保存新版本，点击加载并保留 Agent 会话";
+        graphRefresh.textContent = "加载 Graph r" + body.graphNumericRevision;
+      } else if (!graphStale) {
+        graphRefresh.classList.remove("visible");
+        graphRefresh.disabled = true;
+        graphRefresh.title = "当前页面已加载最新 Graph";
+        graphRefresh.textContent = "Graph r" + loadedGraphRevision + " 已同步";
       }
       consoleAvailable = true;
       agentService.textContent = "已连接";
@@ -711,7 +721,7 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
     if (!host || !selectedTarget) return;
     if (graphStale) {
       host.className = "console-status error";
-      host.textContent = "Graph 已更新。请先点击顶栏的刷新按钮。";
+      host.textContent = "Graph 已更新。请先点击右下角的加载按钮。";
       return;
     }
     const operator = selectedTarget.kind === "operator" ? operatorMap[selectedTarget.id] : null;
@@ -773,7 +783,7 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
       return;
     }
     if (graphStale) {
-      appendAgentMessage("error", "Graph 已更新。请先点击顶栏的刷新按钮，当前对话会保留到你主动刷新为止。");
+      appendAgentMessage("error", "Graph 已更新。请先点击右下角的加载按钮，当前对话会保留到你主动刷新为止。");
       return;
     }
     if (action === "explore" && target.kind !== "element") {
@@ -837,7 +847,30 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
         events.close();
         setAgentBusy(false);
         if (event.status === "succeeded") {
-          appendAgentMessage("agent", event.message || event.status);
+          void fetchJson("/api/runs/" + encodeURIComponent(runId))
+            .then(({ body }) => {
+              const result = body.result || {};
+              const execResults = [result, result.finalExec, ...((result.rounds || []).map(round => round.execResult))].filter(Boolean);
+              const graphUpdated = execResults.some(item => item.graphUpdated === true);
+              const graphRevisionValue = execResults.map(item => item.graphRevision).find(Number.isInteger);
+              if (!graphUpdated) {
+                appendAgentMessage("agent", event.message || "执行成功。Graph 未变化，无需刷新。");
+                return;
+              }
+              graphStale = true;
+              graphRefresh.classList.add("visible");
+              graphRefresh.disabled = false;
+              graphRefresh.title = "Graph 已保存新版本，点击加载并保留 Agent 会话";
+              graphRefresh.textContent = Number.isInteger(graphRevisionValue) ? "加载 Graph r" + graphRevisionValue : "加载新 Graph";
+              const actions = document.createElement("div");
+              const button = document.createElement("button");
+              button.type = "button";
+              button.textContent = Number.isInteger(graphRevisionValue) ? "刷新并查看 Graph r" + graphRevisionValue : "刷新并查看新 Graph";
+              button.addEventListener("click", () => location.reload());
+              actions.appendChild(button);
+              appendAgentMessage("agent", event.message || "执行成功。Graph 已更新，请刷新查看。", actions);
+            })
+            .catch(() => appendAgentMessage("agent", event.message || event.status));
         } else {
           void fetchJson("/api/runs/" + encodeURIComponent(runId))
             .then(({ body }) => {
@@ -902,9 +935,11 @@ td{padding:5px 8px;border-top:1px solid #1e293b}tr:hover{background:#1e293b}
     try {
       const { body } = await fetchJson("/api/corrections/" + encodeURIComponent(proposalId) + "/apply", { method: "POST", body: "{}" });
       graphStale = true;
-      appendAgentMessage("system", "已应用 " + body.appliedChangeCount + " 项修改。Graph 有新版本，可点击顶栏按钮刷新。");
+      appendAgentMessage("system", "已应用 " + body.appliedChangeCount + " 项修改。Graph 有新版本，可点击右下角按钮加载。");
       graphRefresh.classList.add("visible");
-      graphRefresh.textContent = "Graph 已更新 · 刷新";
+      graphRefresh.disabled = false;
+      graphRefresh.title = "Graph 已保存新版本，点击加载并保留 Agent 会话";
+      graphRefresh.textContent = "加载新 Graph";
     } catch (error) {
       button.disabled = false;
       appendAgentMessage("error", String(error?.message || error));

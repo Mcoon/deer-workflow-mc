@@ -6,6 +6,7 @@ import type {
   Task,
   TaskOracle,
 } from "../ios-ui-graph-manager/types";
+import type { TaskHealthStatus } from "../ios-ui-graph-manager/task-health";
 
 export interface AppGraphPlanInput {
   readonly goal: string;
@@ -15,6 +16,8 @@ export interface AppGraphPlanInput {
   };
   readonly graphPath?: string;
   readonly deviceProfileId?: string;
+  /** Installed App version supplied by a device-aware caller. */
+  readonly runtimeAppVersion?: string;
   readonly udid?: string;
   readonly outputDir?: string;
   readonly planOnly?: boolean;
@@ -64,6 +67,17 @@ export interface ResolvedStep {
 export type AppGraphPlanResolutionType =
   "matched_task" | "matched_scene" | "matched_operator" | "unresolved";
 
+export interface TaskResolutionCandidate {
+  readonly taskId: string;
+  readonly matchedIntent: string;
+  readonly confidence: number;
+  readonly health: TaskHealthStatus;
+  readonly recipeReusable: boolean;
+  readonly targetSceneId?: string;
+  readonly validUntil?: string;
+  readonly reasons: readonly string[];
+}
+
 export interface ResolvedSceneContext {
   readonly sceneId: string;
   readonly title: string;
@@ -105,6 +119,8 @@ export interface ResolvedElementTarget {
 
 export interface ResolvedBinding {
   readonly deviceProfileId: string;
+  /** App version on which this Binding was last validated. */
+  readonly appVersion?: string;
   readonly status: "verified" | "candidate" | "missing";
   readonly normalizedPoint?: { readonly x: number; readonly y: number };
   readonly source?: "ui_dump" | "agent_inferred" | "manual";
@@ -142,6 +158,14 @@ export interface AppGraphPlanResult {
   };
   readonly matchedTaskId?: string;
   readonly matchedTask?: Task;
+  readonly taskCandidates?: readonly TaskResolutionCandidate[];
+  readonly taskResolution?: {
+    readonly health: TaskHealthStatus;
+    readonly recipeReused: boolean;
+    readonly dependencyDigest: string;
+    readonly validUntil?: string;
+    readonly reasons: readonly string[];
+  };
   readonly matchedOperatorId?: string;
   readonly entrySceneId: string;
   readonly entryScene: ResolvedSceneContext;
@@ -165,6 +189,8 @@ export interface AppGraphPlanResult {
   readonly finalOracles: readonly TaskOracle[];
   readonly parameters: Record<string, string>;
   readonly deviceProfileId: string;
+  /** Installed App version used when evaluating Task and binding freshness. */
+  readonly runtimeAppVersion?: string;
   readonly planningMs: number;
   readonly graphIdentity: {
     readonly graphId: string;
@@ -188,6 +214,7 @@ export interface AppGraphPlanFailure {
   readonly message: string;
   readonly recoverable: boolean;
   readonly evidencePaths: readonly string[];
+  readonly taskCandidates?: readonly TaskResolutionCandidate[];
 }
 
 export type AppGraphPlanOutput = AppGraphPlanResult | AppGraphPlanFailure;

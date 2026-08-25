@@ -84,6 +84,8 @@ bun run dev -- run examples/app-graph-plan/workflow.ts \
 | `targetScene`     | 目标或 Task 最终预期 Scene（若可推断）             |
 | `navigationRoute` | 从默认入口到 Task 入口或目标 Scene 的前置导航      |
 | `taskSteps`       | Graph Task 原始声明的步骤；Scene 目标时为空        |
+| `taskCandidates`  | 候选 Task 及健康度、有效期、目标 Scene 和拒绝原因  |
+| `taskResolution`  | 最终 Task 健康度，以及旧 recipe 是复用还是重规划   |
 | `resolvedSteps`   | 执行方应消费的完整语义步骤，包含前置导航和自动补桥 |
 | `finalOracles`    | 完成整个目标后必须校验的最终条件                   |
 | `graphIdentity`   | Graph ID、Schema、revision、更新时间和 App 版本    |
@@ -139,6 +141,13 @@ bun run dev -- run examples/app-graph-plan/workflow.ts \
 其他 device profile 的 Binding 只能生成粗粒度 `locationHint`，不会成为可执行坐标。
 执行方还应先验证 `graphIdentity.revision` 和 App 版本，避免消费过期 Plan。
 
+Task 解析不会只看 intent 相似度。Plan 会先合并语义相同的 recipe；多个不同 recipe
+分数接近时返回 `task_match_ambiguous`。随后检查 Task 结构、验证 TTL、Graph/真机 App
+version、device profile 和依赖摘要。过期的纯导航 Task 可以保留只读最终 Oracles，并按
+当前 Graph 重新求到目标 Scene 的路径；过期的业务修改型 Task 安全失败。调用方传入
+`runtimeAppVersion` 后，如果版本与 Graph 或 Binding 证据不一致，Plan 仍保留 Selectors
+和粗粒度位置提示，但移除可执行坐标并设置 `allowBindingFallback=false`。
+
 ## 失败结果
 
 无法安全编译时返回 `app-graph-semantic-plan-failure/v1`，`success=false`，不会返回
@@ -149,6 +158,7 @@ bun run dev -- run examples/app-graph-plan/workflow.ts \
 - `device_profile_missing`；
 - `missing_required_parameters`；
 - `unknown_parameters`；
+- `task_match_ambiguous`、`task_stale` 或 `task_invalid`；
 - `task_entry_unreachable` 或 `target_scene_unreachable`；
 - `goal_unresolved`。
 

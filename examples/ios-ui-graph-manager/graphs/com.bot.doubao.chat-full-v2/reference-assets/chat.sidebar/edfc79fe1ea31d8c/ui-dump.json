@@ -1,0 +1,482 @@
+{
+  "status": "ok",
+  "data": {
+    "elements": [
+      {
+        "type": "Button",
+        "rect": {
+          "x": 12,
+          "y": 51,
+          "width": 302,
+          "height": 38
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "搜索",
+            "name": "搜索",
+            "rect": {
+              "x": 52,
+              "y": 56,
+              "width": 212,
+              "height": 28
+            }
+          }
+        ]
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包",
+        "name": "豆包",
+        "rect": {
+          "x": 60,
+          "y": 118,
+          "width": 242,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "定时任务",
+        "name": "定时任务",
+        "rect": {
+          "x": 60,
+          "y": 158,
+          "width": 67,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "技能 · 连接器",
+        "name": "技能 · 连接器",
+        "rect": {
+          "x": 60,
+          "y": 198,
+          "width": 101,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 创作",
+        "name": "AI 创作",
+        "rect": {
+          "x": 60,
+          "y": 238,
+          "width": 54,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "云盘",
+        "name": "云盘",
+        "rect": {
+          "x": 60,
+          "y": 278,
+          "width": 34,
+          "height": 20
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "最近",
+        "name": "最近",
+        "rect": {
+          "x": 26,
+          "y": 319,
+          "width": 28,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "label": "调整分组",
+        "name": "调整分组",
+        "rect": {
+          "x": 284,
+          "y": 319,
+          "width": 18,
+          "height": 18
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "一起发疯",
+        "name": "一起发疯",
+        "rect": {
+          "x": 60,
+          "y": 358,
+          "width": 242,
+          "height": 20
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 0,
+          "y": 782,
+          "width": 326,
+          "height": 64
+        },
+        "children": [
+          {
+            "type": "StaticText",
+            "label": "用户876180",
+            "name": "用户876180",
+            "rect": {
+              "x": 70,
+              "y": 812,
+              "width": 96,
+              "height": 20
+            }
+          }
+        ]
+      },
+      {
+        "type": "Button",
+        "label": "对话列表",
+        "name": "对话列表",
+        "rect": {
+          "x": 334,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包，打开设置页",
+        "name": "豆包，打开设置页",
+        "rect": {
+          "x": 511,
+          "y": 51,
+          "width": 30,
+          "height": 21
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 生成可能有误 注意核实",
+        "name": "AI 生成可能有误 注意核实",
+        "rect": {
+          "x": 468,
+          "y": 72,
+          "width": 126,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "label": "打电话",
+        "name": "打电话",
+        "rect": {
+          "x": 644,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "Button",
+        "label": "朗读已关闭",
+        "name": "朗读已关闭",
+        "rect": {
+          "x": 688,
+          "y": 48,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "plaintext",
+        "name": "plaintext",
+        "rect": {
+          "x": 362,
+          "y": 198,
+          "width": 236,
+          "height": 38
+        }
+      },
+      {
+        "type": "Button",
+        "label": "flow markdown image table copy",
+        "name": "flow markdown image table copy",
+        "rect": {
+          "x": 608,
+          "y": 201,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "flow markdown image download",
+        "name": "flow markdown image download",
+        "rect": {
+          "x": 640,
+          "y": 201,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "flow markdown image table full",
+        "name": "flow markdown image table full",
+        "rect": {
+          "x": 672,
+          "y": 201,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "复制",
+        "name": "复制",
+        "rect": {
+          "x": 354,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "朗读",
+        "name": "朗读",
+        "rect": {
+          "x": 396,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "点赞",
+        "name": "点赞",
+        "rect": {
+          "x": 438,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "点踩",
+        "name": "点踩",
+        "rect": {
+          "x": 480,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "分享",
+        "name": "分享",
+        "rect": {
+          "x": 522,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "label": "重新生成",
+        "name": "重新生成",
+        "rect": {
+          "x": 678,
+          "y": 672,
+          "width": 34,
+          "height": 34
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 338,
+          "y": 744,
+          "width": 72,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "快速",
+        "name": "快速",
+        "rect": {
+          "x": 366,
+          "y": 754,
+          "width": 28,
+          "height": 17
+        }
+      },
+      {
+        "type": "Image",
+        "name": "action_bar_deep_thinking_menu",
+        "identifier": "action_bar_deep_thinking_menu",
+        "rect": {
+          "x": 398,
+          "y": 757,
+          "width": 4,
+          "height": 11
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 418,
+          "y": 744,
+          "width": 89,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "AI 创作",
+        "name": "AI 创作",
+        "rect": {
+          "x": 450,
+          "y": 754,
+          "width": 45,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 515,
+          "y": 744,
+          "width": 100,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "录音转写",
+        "name": "录音转写",
+        "rect": {
+          "x": 547,
+          "y": 754,
+          "width": 56,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 623,
+          "y": 744,
+          "width": 100,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "豆包爱学",
+        "name": "豆包爱学",
+        "rect": {
+          "x": 655,
+          "y": 754,
+          "width": 56,
+          "height": 17
+        }
+      },
+      {
+        "type": "Button",
+        "rect": {
+          "x": 731,
+          "y": 744,
+          "width": 100,
+          "height": 38
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "帮我写作",
+        "name": "帮我写作",
+        "rect": {
+          "x": 763,
+          "y": 754,
+          "width": 56,
+          "height": 17
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "发消息或按住说话...",
+        "name": "发消息或按住说话...",
+        "rect": {
+          "x": 392,
+          "y": 810,
+          "width": 236,
+          "height": 24
+        }
+      },
+      {
+        "type": "Button",
+        "label": "相机",
+        "name": "相机",
+        "rect": {
+          "x": 350,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "语音输入",
+        "name": "语音输入",
+        "rect": {
+          "x": 640,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "Button",
+        "label": "更多面板",
+        "name": "更多面板",
+        "rect": {
+          "x": 684,
+          "y": 806,
+          "width": 32,
+          "height": 32
+        }
+      },
+      {
+        "type": "StaticText",
+        "label": "22:54",
+        "name": "22:54",
+        "rect": {
+          "x": 20,
+          "y": 15,
+          "width": 45,
+          "height": 19
+        }
+      },
+      {
+        "type": "Image",
+        "label": "勿扰模式",
+        "name": "moon.fill",
+        "identifier": "moon.fill",
+        "rect": {
+          "x": 68,
+          "y": 17,
+          "width": 14,
+          "height": 14
+        }
+      }
+    ]
+  }
+}

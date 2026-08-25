@@ -6,7 +6,10 @@ import { log } from "@deerwork-ai/deer-workflow/logging";
 
 import {
   findBestScene,
-  findBestTask,
+  matchTask,
+  selectBestTaskMatch,
+  canReplanTaskAsScene,
+  evaluateTaskHealth,
   loadGraph,
   planRoute,
 } from "../ios-ui-graph-manager";
@@ -36,6 +39,7 @@ import type {
   ResolvedElementTarget,
   ResolvedSceneContext,
   ResolvedStep,
+  TaskResolutionCandidate,
 } from "./types";
 
 export { meta } from "./types";
@@ -87,18 +91,16 @@ export default async function appGraphPlan(
   let graph: AppGraph;
   try {
     graph = await loadGraph(graphPath);
-  } catch {
-    try {
-      graph = await loadGraph(DEFAULT_GRAPH_PATH);
-    } catch {
-      return planFailure({
-        outputDir,
-        goal,
-        code: "graph_load_failed",
-        message: "Cannot load graph from " + graphPath + ".",
-        recoverable: false,
-      });
-    }
+  } catch (error) {
+    return planFailure({
+      outputDir,
+      goal,
+      code: "graph_load_failed",
+      message: `Cannot load a valid graph from ${graphPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      recoverable: false,
+    });
   }
 
   const entrySceneId = resolveDefaultEntrySceneId(graph);
@@ -134,6 +136,7 @@ export default async function appGraphPlan(
     confidence: 0,
   };
   let matchedTask: Task | undefined;
+  let taskResolution: AppGraphPlanResult["taskResolution"];
   let matchedOperatorId: string | undefined;
   let targetSceneId: string | undefined;
   let navigationRoute: readonly RouteStep[] = [];
@@ -175,6 +178,7 @@ export default async function appGraphPlan(
           graph,
           route: routeToOperator,
           deviceProfileId,
+          runtimeAppVersion: args.runtimeAppVersion,
           parameters,
         }),
         compileOperatorStep({
@@ -182,6 +186,7 @@ export default async function appGraphPlan(
           operator,
           index: routeToOperator.length,
           deviceProfileId,
+          runtimeAppVersion: args.runtimeAppVersion,
           parameters,
         }),
       ];
@@ -215,15 +220,84 @@ export default async function appGraphPlan(
     ];
   }
 
+  const taskCandidates = explicitTarget
+    ? []
+    : matchTask(graph, goal).map((match) => ({
+        match,
+        health: evaluateTaskHealth({
+          graph,
+          task: graph.tasks[match.taskId]!,
+          deviceProfileId,
+          runtimeAppVersion: args.runtimeAppVersion,
+        }),
+      }));
+  const taskCandidateDiagnostics: TaskResolutionCandidate[] =
+    taskCandidates.map(({ match, health }) => ({
+      taskId: match.taskId,
+      matchedIntent: match.intent,
+      confidence: match.confidence,
+      health: health.status,
+      recipeReusable: health.recipeReusable,
+      targetSceneId: health.targetSceneId,
+      validUntil: health.validUntil,
+      reasons: health.reasons,
+    }));
+  const taskCandidatesForOutput:
+    readonly TaskResolutionCandidate[] | undefined =
+    taskCandidateDiagnostics.length > 0
+      ? taskCandidateDiagnostics.slice(0, 5)
+      : undefined;
   const taskMatch =
     explicitTarget?.kind === "task"
       ? { taskId: explicitTarget.id, intent: goal, confidence: 1 }
       : explicitTarget
         ? null
-        : findBestTask(graph, goal);
+        : selectBestTaskMatch(
+            graph,
+            taskCandidates.map(({ match }) => match),
+          );
+  if (!explicitTarget && !taskMatch && taskCandidates.length > 1) {
+    return planFailure({
+      outputDir,
+      goal,
+      code: "task_match_ambiguous",
+      message: `Task match is ambiguous: ${taskCandidates
+        .slice(0, 5)
+        .map(({ match }) => `${match.taskId} (${match.confidence.toFixed(2)})`)
+        .join(", ")}.`,
+      recoverable: true,
+      taskCandidates: taskCandidateDiagnostics,
+    });
+  }
   if (taskMatch) {
     const task = graph.tasks[taskMatch.taskId];
-    if (task && !UNAVAILABLE_STATUSES.has(task.status)) {
+    if (task) {
+      const health = evaluateTaskHealth({
+        graph,
+        task,
+        deviceProfileId,
+        runtimeAppVersion: args.runtimeAppVersion,
+      });
+      taskResolution = {
+        health: health.status,
+        recipeReused: health.recipeReusable,
+        dependencyDigest: health.dependencyDigest,
+        validUntil: health.validUntil,
+        reasons: health.reasons,
+      };
+      if (
+        health.status === "invalid" ||
+        (health.status === "stale" && !canReplanTaskAsScene(graph, task))
+      ) {
+        return planFailure({
+          outputDir,
+          goal,
+          code: health.status === "invalid" ? "task_invalid" : "task_stale",
+          message: `Task ${task.taskId} cannot reuse its recipe: ${health.reasons.join(", ")}.`,
+          recoverable: true,
+          taskCandidates: taskCandidateDiagnostics,
+        });
+      }
       const parameterIssue = validateTaskParameters(task, parameters);
       if (parameterIssue) {
         return planFailure({
@@ -256,13 +330,36 @@ export default async function appGraphPlan(
       }
 
       try {
-        resolvedSteps = compileTaskPlan({
-          graph,
-          task,
-          initialRoute: routeToTaskEntry,
-          deviceProfileId,
-          parameters,
-        });
+        if (health.status === "stale" && canReplanTaskAsScene(graph, task)) {
+          const freshRoute = planRoute(
+            graph,
+            entrySceneId,
+            health.targetSceneId!,
+          );
+          if (freshRoute === null) {
+            throw new Error(
+              `Stale Task ${task.taskId} cannot be replanned to ${health.targetSceneId}.`,
+            );
+          }
+          navigationRoute = freshRoute;
+          resolvedSteps = compileRouteSteps({
+            graph,
+            route: freshRoute,
+            deviceProfileId,
+            runtimeAppVersion: args.runtimeAppVersion,
+            parameters,
+          });
+          taskResolution = { ...taskResolution, recipeReused: false };
+        } else {
+          resolvedSteps = compileTaskPlan({
+            graph,
+            task,
+            initialRoute: routeToTaskEntry,
+            deviceProfileId,
+            runtimeAppVersion: args.runtimeAppVersion,
+            parameters,
+          });
+        }
       } catch (error) {
         return planFailure({
           outputDir,
@@ -282,8 +379,8 @@ export default async function appGraphPlan(
         confidence: taskMatch.confidence,
         matchedText: taskMatch.intent,
       };
-      navigationRoute = routeToTaskEntry;
-      taskSteps = task.steps;
+      if (!navigationRoute.length) navigationRoute = routeToTaskEntry;
+      taskSteps = taskResolution?.recipeReused === false ? [] : task.steps;
       finalOracles = task.finalOracles.map((oracle) =>
         interpolateOracle(oracle, parameters),
       );
@@ -293,7 +390,7 @@ export default async function appGraphPlan(
           task.taskId +
           " (confidence: " +
           taskMatch.confidence.toFixed(2) +
-          ")",
+          `; health: ${taskResolution?.health ?? "unknown"}; recipe: ${taskResolution?.recipeReused === false ? "replanned" : "reused"})`,
       );
     }
   }
@@ -344,6 +441,7 @@ export default async function appGraphPlan(
           graph,
           route: routeToScene,
           deviceProfileId,
+          runtimeAppVersion: args.runtimeAppVersion,
           parameters,
         });
       } catch (error) {
@@ -427,6 +525,8 @@ export default async function appGraphPlan(
     resolution,
     matchedTaskId: matchedTask?.taskId,
     matchedTask,
+    taskCandidates: taskCandidatesForOutput,
+    taskResolution,
     matchedOperatorId,
     entrySceneId,
     entryScene: sceneContext(graph, entryScene),
@@ -441,6 +541,7 @@ export default async function appGraphPlan(
     finalOracles,
     parameters,
     deviceProfileId,
+    runtimeAppVersion: args.runtimeAppVersion,
     planningMs: Date.now() - startedAt,
     graphIdentity: {
       graphId: graph.graphId,
@@ -513,6 +614,7 @@ function compileTaskPlan(options: {
   task: Task;
   initialRoute: readonly RouteStep[];
   deviceProfileId: string;
+  runtimeAppVersion?: string;
   parameters: Readonly<Record<string, string>>;
 }): ResolvedStep[] {
   const steps: ResolvedStep[] = [];
@@ -523,6 +625,7 @@ function compileTaskPlan(options: {
         operator: requireOperator(options.graph, routeStep.operatorId),
         index: steps.length,
         deviceProfileId: options.deviceProfileId,
+        runtimeAppVersion: options.runtimeAppVersion,
         parameters: options.parameters,
       }),
     );
@@ -557,6 +660,7 @@ function compileTaskPlan(options: {
             operator: bridgeOperator,
             index: steps.length,
             deviceProfileId: options.deviceProfileId,
+            runtimeAppVersion: options.runtimeAppVersion,
             parameters: options.parameters,
           }),
         );
@@ -569,6 +673,7 @@ function compileTaskPlan(options: {
         operator,
         index: steps.length,
         deviceProfileId: options.deviceProfileId,
+        runtimeAppVersion: options.runtimeAppVersion,
         parameters: resolveStepParameters(options.parameters, taskStep.params),
         skipIf: taskStep.skipIf,
       }),
@@ -582,6 +687,7 @@ export function compileRouteSteps(options: {
   graph: AppGraph;
   route: readonly RouteStep[];
   deviceProfileId: string;
+  runtimeAppVersion?: string;
   parameters: Readonly<Record<string, string>>;
 }): ResolvedStep[] {
   return options.route.map((routeStep, index) =>
@@ -590,6 +696,7 @@ export function compileRouteSteps(options: {
       operator: requireOperator(options.graph, routeStep.operatorId),
       index,
       deviceProfileId: options.deviceProfileId,
+      runtimeAppVersion: options.runtimeAppVersion,
       parameters: options.parameters,
     }),
   );
@@ -600,6 +707,7 @@ function compileOperatorStep(options: {
   operator: Operator;
   index: number;
   deviceProfileId: string;
+  runtimeAppVersion?: string;
   parameters: Readonly<Record<string, string>>;
   skipIf?: TaskStep["skipIf"];
 }): ResolvedStep {
@@ -638,11 +746,18 @@ function compileOperatorStep(options: {
     ...selector,
     value: interpolate(selector.value, options.parameters),
   }));
-  const binding = element
+  const profileBinding = element
     ? chooseBinding(element, options.deviceProfileId)
     : undefined;
+  const binding = bindingMatchesRuntime({
+    binding: profileBinding,
+    graphAppVersion: graph.appVersion,
+    runtimeAppVersion: options.runtimeAppVersion,
+  })
+    ? profileBinding
+    : undefined;
   const hintBinding =
-    binding ?? (element ? chooseHintBinding(element) : undefined);
+    profileBinding ?? (element ? chooseHintBinding(element) : undefined);
   const bindingStatus = binding
     ? binding.status === "verified"
       ? "verified"
@@ -711,6 +826,8 @@ function compileOperatorStep(options: {
     targetElement,
     binding: {
       deviceProfileId: options.deviceProfileId,
+      appVersion:
+        binding?.execution?.lastValidatedAppVersion ?? binding?.appVersion,
       status: bindingStatus,
       normalizedPoint: binding?.normalizedPoint,
       source: binding?.source,
@@ -890,6 +1007,20 @@ function chooseBinding(
   return element.bindings[deviceProfileId];
 }
 
+function bindingMatchesRuntime(options: {
+  binding?: Binding;
+  graphAppVersion?: string;
+  runtimeAppVersion?: string;
+}): boolean {
+  if (!options.binding) return false;
+  if (!options.runtimeAppVersion) return true;
+  if (options.graphAppVersion !== options.runtimeAppVersion) return false;
+  const validatedVersion =
+    options.binding.execution?.lastValidatedAppVersion ??
+    options.binding.appVersion;
+  return validatedVersion === options.runtimeAppVersion;
+}
+
 function chooseHintBinding(element: Element): Binding | undefined {
   return Object.values(element.bindings).sort((left, right) =>
     left.status === right.status ? 0 : left.status === "verified" ? -1 : 1,
@@ -1061,6 +1192,7 @@ function planFailure(options: {
   code: string;
   message: string;
   recoverable: boolean;
+  taskCandidates?: readonly TaskResolutionCandidate[];
 }): AppGraphPlanFailure {
   return {
     schemaVersion: "app-graph-semantic-plan-failure/v1",
@@ -1072,5 +1204,6 @@ function planFailure(options: {
     message: options.message,
     recoverable: options.recoverable,
     evidencePaths: [],
+    taskCandidates: options.taskCandidates,
   };
 }

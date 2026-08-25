@@ -191,10 +191,33 @@ function validateTask(
       `Task "${taskId}": entrySceneId "${t.entrySceneId}" not found in scenes.`,
     );
   }
+  if (!Array.isArray(t.intents) || t.intents.length === 0) {
+    errors.push(`Task "${taskId}": intents must be a non-empty array.`);
+  } else if (
+    t.intents.some((intent) => typeof intent !== "string" || !intent.trim())
+  ) {
+    errors.push(`Task "${taskId}": intents must contain non-empty strings.`);
+  }
+  if (
+    ![
+      "observed",
+      "candidate",
+      "verified",
+      "stale",
+      "blocked",
+      "disabled",
+    ].includes(t.status)
+  ) {
+    errors.push(`Task "${taskId}": status is invalid.`);
+  }
   if (!Array.isArray(t.steps)) {
     errors.push(`Task "${taskId}": steps must be an array.`);
   } else {
     for (const step of t.steps) {
+      if (!step || typeof step.operatorId !== "string") {
+        errors.push(`Task "${taskId}": every step requires operatorId.`);
+        continue;
+      }
       if (operators && !(step.operatorId in operators)) {
         errors.push(
           `Task "${taskId}": step operatorId "${step.operatorId}" not found in operators.`,
@@ -204,6 +227,85 @@ function validateTask(
   }
   if (!Array.isArray(t.finalOracles)) {
     errors.push(`Task "${taskId}": finalOracles must be an array.`);
+  } else if (t.finalOracles.length === 0) {
+    errors.push(`Task "${taskId}": finalOracles must not be empty.`);
+  } else {
+    for (const oracle of t.finalOracles) {
+      if (!oracle || typeof oracle !== "object") {
+        errors.push(`Task "${taskId}": every final Oracle must be an object.`);
+        continue;
+      }
+      const supportedOracleTypes = new Set([
+        "text_visible",
+        "text_absent",
+        "ui_text_visible",
+        "ui_text_absent",
+        "all_text_visible",
+        "any_text_visible",
+        "region_stable",
+        "visual_changed",
+        "foreground_bundle",
+        "scene_current",
+      ]);
+      if (!supportedOracleTypes.has(oracle.type)) {
+        errors.push(
+          `Task "${taskId}": unsupported final Oracle type "${String(oracle.type)}".`,
+        );
+        continue;
+      }
+      if (
+        (oracle.type === "all_text_visible" ||
+          oracle.type === "any_text_visible" ||
+          oracle.type === "region_stable") &&
+        (!Array.isArray(oracle.values) ||
+          oracle.values.length === 0 ||
+          oracle.values.some(
+            (value: unknown) => typeof value !== "string" || !value.trim(),
+          ))
+      ) {
+        errors.push(
+          `Task "${taskId}": ${oracle.type} oracle requires non-empty values.`,
+        );
+      }
+      if (
+        (oracle.type === "text_visible" ||
+          oracle.type === "text_absent" ||
+          oracle.type === "ui_text_visible" ||
+          oracle.type === "ui_text_absent") &&
+        (typeof oracle.value !== "string" || !oracle.value.trim())
+      ) {
+        errors.push(`Task "${taskId}": ${oracle.type} oracle requires value.`);
+      }
+      if (
+        oracle.type === "visual_changed" &&
+        (typeof oracle.maximumSsim !== "number" ||
+          !Number.isFinite(oracle.maximumSsim) ||
+          oracle.maximumSsim < 0 ||
+          oracle.maximumSsim > 1)
+      ) {
+        errors.push(
+          `Task "${taskId}": visual_changed oracle requires maximumSsim between 0 and 1.`,
+        );
+      }
+      if (
+        oracle.type === "scene_current" &&
+        (typeof oracle.sceneId !== "string" ||
+          !scenes ||
+          !(oracle.sceneId in scenes))
+      ) {
+        errors.push(
+          `Task "${taskId}": scene_current oracle references missing Scene "${String(oracle.sceneId)}".`,
+        );
+      }
+      if (
+        oracle.type === "foreground_bundle" &&
+        (typeof oracle.bundleId !== "string" || !oracle.bundleId.trim())
+      ) {
+        errors.push(
+          `Task "${taskId}": foreground_bundle oracle requires bundleId.`,
+        );
+      }
+    }
   }
   if (t.validation) {
     if (!Array.isArray(t.validation.evidencePaths)) {
@@ -213,6 +315,32 @@ function validateTask(
     }
     if (!["guarded", "fast", "quarantined"].includes(t.validation.tier)) {
       errors.push(`Task "${taskId}": validation tier is invalid.`);
+    }
+    for (const [field, value] of [
+      ["lastValidatedAt", t.validation.lastValidatedAt],
+      ["lastFailedAt", t.validation.lastFailedAt],
+      ["validUntil", t.validation.validUntil],
+    ] as const) {
+      if (value !== undefined && !Number.isFinite(Date.parse(value))) {
+        errors.push(`Task "${taskId}": validation ${field} must be ISO 8601.`);
+      }
+    }
+    if (
+      t.validation.validatedGraphRevision !== undefined &&
+      (!Number.isInteger(t.validation.validatedGraphRevision) ||
+        t.validation.validatedGraphRevision < 1)
+    ) {
+      errors.push(
+        `Task "${taskId}": validation validatedGraphRevision must be a positive integer.`,
+      );
+    }
+    if (
+      t.validation.dependencyDigest !== undefined &&
+      !/^[a-f0-9]{64}$/.test(t.validation.dependencyDigest)
+    ) {
+      errors.push(
+        `Task "${taskId}": validation dependencyDigest must be a SHA-256 hex digest.`,
+      );
     }
   }
 }

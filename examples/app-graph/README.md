@@ -36,6 +36,11 @@ bun run dev -- run examples/app-graph/workflow.ts \
   }'
 ```
 
+Before Plan, device execution reads the installed version for the Graph's own
+`bundleId`. The version is passed through Plan and Exec so stale Task recipes
+and old coordinate Bindings cannot enter the fast path. If version discovery
+is unavailable, execution stays guarded and resolves the current UI live.
+
 The final output is one `app-graph-workflow-result/v1` or
 `app-graph-workflow-failure/v1`. The lower-level Plan, Exec, Discovery, and
 Accept Workflows remain available for debugging and batch cases.
@@ -50,6 +55,17 @@ A successful Scene route without an existing Task is persisted through one
 revision-safe `runtime-learning.json` patch. The first independent success
 creates a candidate/guarded Task. A second success promotes the Task, its
 Operators, and device-profile Bindings to verified/fast. Later executions on
-the same App version and profile reuse the complete recipe, including learned
-swipes, and retain only final Ground/Oracle evidence. A failed fast result is
-downgraded to guarded before a safe cold-reset fallback.
+the same App version and profile may reuse the complete semantic recipe and
+retain only final Ground/Oracle evidence. Viewport-search swipes are transient
+observations rather than durable Task steps: execution checks one screen at a
+time until the semantic target is visible. A failed fast result is downgraded
+to guarded before a safe cold-reset fallback.
+
+Task reuse is health-gated. A Task is `fresh` only while its validation TTL,
+App version, device profile, and dependency digest still match. Legacy or
+partially proven Tasks are `guarded`; expired or changed recipes are `stale`;
+structurally broken recipes are `invalid`. A stale navigation-only Task is
+replanned to its target Scene from the current Graph. Mutating recipes fail
+closed. Semantically duplicate runtime Tasks are merged, diagnostic prompts
+and internal IDs are excluded from intent matching, and ambiguous matches
+return a structured planning failure instead of choosing arbitrarily.

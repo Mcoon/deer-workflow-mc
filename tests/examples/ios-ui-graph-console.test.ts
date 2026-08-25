@@ -45,6 +45,26 @@ describe("iOS UI Graph Console", () => {
     );
   });
 
+  test("summarizes whether successful execution changed the Graph", () => {
+    expect(
+      workflowSuccessMessage({
+        success: true,
+        mode: "app_graph",
+        graphUpdated: true,
+        finalExec: { graphUpdated: true, graphRevision: 95 },
+      }),
+    ).toBe(
+      "执行成功。Graph 已更新到 r95，请刷新页面查看新的 Task、截图或 Binding。",
+    );
+    expect(
+      workflowSuccessMessage({
+        success: true,
+        mode: "app_graph",
+        graphUpdated: false,
+      }),
+    ).toBe("执行成功。Graph 未变化，无需刷新。");
+  });
+
   test("summarizes failed exploration with focus and visibility progress", () => {
     expect(
       workflowFailureMessage({
@@ -140,6 +160,15 @@ describe("iOS UI Graph Console", () => {
   });
 
   test("normalizes Task and Operator exploration to their resulting Scene", () => {
+    expect(
+      normalizeActionRequest(graph, {
+        action: "execute",
+        target: { kind: "scene", id: "bot.settings.sound" },
+      }),
+    ).toMatchObject({
+      target: { kind: "scene", id: "bot.settings.sound" },
+      goal: "打开声音设置",
+    });
     expect(
       normalizeActionRequest(graph, {
         action: "execute",

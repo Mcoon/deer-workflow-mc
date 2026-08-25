@@ -55,6 +55,11 @@ Exec 会在执行前校验 Graph ID、revision、App 版本和 device profile；
 要求重新 Plan。Swipe 使用 Plan 中完整的 `from/to`，最终 verdict 来自步骤预期 Scene 和
 `finalOracles`，不能只凭命令退出码通过。无法实时解析的步骤会写出
 `discovery-request.json`，供 App Graph Discovery 定向补图。
+调用方未传入真机 App version 时，Exec 会主动查询。只有 runtime 与 Graph version 一致时
+历史 Binding 坐标才有资格参与 fallback；不一致或无法证明时仍可用实时 Selector 与 Agent
+语义定位，但坐标会安全禁用。
+如果当前 Task 已 stale/invalid，且传入 Plan 不能证明自己是本次版本下生成的纯导航重规划，
+Exec 会在重启 App 前返回 `task_replan_required`。
 
 结果中的 `recoveryActions` 记录 Graph route 和 Agent 恢复动作；`graphUpdated` 表示本轮
 是否更新 Graph，`graphPatchPaths` 指向所有 runtime candidate patch。
@@ -87,6 +92,7 @@ bun run dev -- run examples/app-graph-exec/workflow.ts \
 ## Guarded 与 Fast
 
 Exec 默认先以 guarded 证据重放学习路径。两次独立成功后，Task、Operator 和同 profile
-Binding 进入 fast；fast 只在 App version/profile 一致、所有 recipe step 均 verified/fast 时
-启用。fast 仍执行一次严格重启和最终 Ground/Oracle，但省略每一步的 screenshot/UI dump。
+Binding 进入 fast；fast 只在 Task TTL、依赖摘要、App version/profile 均有效，且所有 recipe
+step 均 verified/fast 时启用。fast 仍执行一次严格重启和最终 Ground/Oracle，但省略每一步的
+screenshot/UI dump。
 最终验证失败会写 `fast-failure-downgrade.json`，降回 guarded 后重新建立冷启基线执行。

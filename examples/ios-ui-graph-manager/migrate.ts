@@ -5,6 +5,7 @@ import type {
   ExperimentOperator,
   ExperimentScene,
   ExperimentTask,
+  ExperimentVerifierAssertion,
 } from "./legacy-v1-types";
 import type {
   AppGraph,
@@ -17,6 +18,7 @@ import type {
   SelectorEntry,
   StructuredEffect,
   Task,
+  TaskOracle,
   TaskStep,
 } from "./types";
 
@@ -177,30 +179,62 @@ function migrateOperator(op: ExperimentOperator): Operator {
 
 function migrateTask(t: ExperimentTask): Task {
   const steps: TaskStep[] = t.operatorIds.map((oid) => ({ operatorId: oid }));
+  const finalOracles = dedupeTaskOracles([
+    ...t.finalOracles.map(migrateTaskOracle),
+    ...(t.verifier?.assertions ?? []).map(migrateVerifierAssertion),
+  ]);
 
   return {
     taskId: t.taskId,
     intents: [...t.intents],
     entrySceneId: t.entrySceneId,
     steps,
-    finalOracles: t.finalOracles.map((o) => {
-      switch (o.type) {
-        case "scene_current":
-          return { type: "scene_current", sceneId: o.sceneId };
-        case "foreground_bundle":
-          return { type: "foreground_bundle", bundleId: o.bundleId };
-        case "visual_changed":
-          return { type: "visual_changed", maximumSsim: o.maximumSsim };
-        default:
-          return {
-            type: o.type as Task["finalOracles"][number]["type"],
-            value: o.value,
-          };
-      }
-    }),
+    finalOracles,
     status: migrateStatus(t.status),
     parameters: t.parameters as Task["parameters"],
   };
+}
+
+function migrateVerifierAssertion(
+  assertion: ExperimentVerifierAssertion,
+): TaskOracle {
+  switch (assertion.type) {
+    case "all_text_visible":
+    case "any_text_visible":
+    case "region_stable":
+      return { type: assertion.type, values: [...assertion.values] };
+    case "scene_current":
+      return { type: "scene_current", sceneId: assertion.sceneId };
+    case "foreground_bundle":
+      return { type: "foreground_bundle", bundleId: assertion.bundleId };
+    case "text_absent":
+      return { type: "text_absent", value: assertion.value };
+  }
+}
+
+function migrateTaskOracle(
+  oracle: ExperimentTask["finalOracles"][number],
+): TaskOracle {
+  switch (oracle.type) {
+    case "scene_current":
+      return { type: "scene_current", sceneId: oracle.sceneId };
+    case "foreground_bundle":
+      return { type: "foreground_bundle", bundleId: oracle.bundleId };
+    case "visual_changed":
+      return { type: "visual_changed", maximumSsim: oracle.maximumSsim };
+    default:
+      return { type: oracle.type, value: oracle.value };
+  }
+}
+
+function dedupeTaskOracles(oracles: readonly TaskOracle[]): TaskOracle[] {
+  const seen = new Set<string>();
+  return oracles.filter((oracle) => {
+    const key = JSON.stringify(oracle);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function migrateV1ToV2(

@@ -1,11 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
 
 import appGraphExec from "../app-graph-exec/workflow";
 import appGraphPlan from "../app-graph-plan/workflow";
+import { loadGraph } from "../ios-ui-graph-manager";
+import { runCommand } from "../ios-regression-kit";
 
 import type { AppGraphExecOutput } from "../app-graph-exec/types";
 import type { AppGraphPlanResult } from "../app-graph-plan/types";
@@ -20,6 +22,10 @@ import type {
 export { meta } from "./types";
 
 const DEFAULT_OUTPUT_ROOT = "/tmp/ios_perf-opt/app-graph";
+const DEFAULT_GRAPH_PATH = resolve(
+  dirname(import.meta.path),
+  "../ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
+);
 
 export default async function appGraphWorkflow(
   args: AppGraphWorkflowInput,
@@ -52,6 +58,28 @@ export default async function appGraphWorkflow(
   const rounds: AppGraphWorkflowRound[] = [];
   const evidencePaths: string[] = [];
   const planOnly = args.planOnly === true;
+  const commandRunner = args.commandRunner ?? runCommand;
+  const graphPath = resolve(args.graphPath?.trim() || DEFAULT_GRAPH_PATH);
+  let runtimeAppVersion = args.runtimeAppVersion?.trim() || undefined;
+  if (!planOnly && !runtimeAppVersion && args.udid?.trim()) {
+    try {
+      const graph = await loadGraph(graphPath);
+      const installed = await commandRunner(
+        ["mobilecli", "apps", "list", "--device", args.udid.trim()],
+        process.cwd(),
+      );
+      if (installed.exitCode === 0) {
+        runtimeAppVersion = installedAppVersion(
+          installed.stdout,
+          graph.bundleId,
+        );
+      }
+    } catch {
+      log(
+        "Installed App version is unavailable; Exec will remain guarded unless it can prove version identity.",
+      );
+    }
+  }
   const maximumRecoveryRounds = Math.max(
     0,
     Math.min(3, args.maximumRecoveryRounds ?? 0),
@@ -73,9 +101,10 @@ export default async function appGraphWorkflow(
       goal,
       target: args.target,
       parameters: args.parameters,
-      graphPath: args.graphPath,
+      graphPath,
       deviceProfileId: args.deviceProfileId,
       udid: args.udid,
+      runtimeAppVersion,
       outputDir: join(roundDirectory, "plan"),
       planOnly: true,
     });
@@ -123,7 +152,7 @@ export default async function appGraphWorkflow(
     const execResult = await appGraphExec({
       goal,
       plan: planResult,
-      graphPath: args.graphPath,
+      graphPath,
       projectRoot: args.projectRoot,
       agentCwd: args.agentCwd,
       udid: args.udid,
@@ -132,6 +161,8 @@ export default async function appGraphWorkflow(
       planOnly: false,
       skipReset: roundIndex > 0,
       allowLearning: args.allowLearning,
+      runtimeAppVersion,
+      runtimeAppVersionChecked: true,
       model: args.model,
       agentTimeoutMs: args.agentTimeoutMs,
       maxAgentRecoverySteps: args.maxAgentRecoverySteps,
@@ -207,6 +238,28 @@ export default async function appGraphWorkflow(
     evidencePaths,
     startedAt,
   });
+}
+
+export function installedAppVersion(
+  output: string,
+  bundleId: string,
+): string | undefined {
+  try {
+    const parsed = JSON.parse(output) as {
+      readonly data?: readonly {
+        readonly packageName?: unknown;
+        readonly version?: unknown;
+      }[];
+    };
+    const app = parsed.data?.find(
+      (candidate) => candidate.packageName === bundleId,
+    );
+    return typeof app?.version === "string"
+      ? app.version.trim() || undefined
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function executionFailure(options: {

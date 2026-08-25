@@ -862,7 +862,7 @@ function scoreScene(
     : 0;
   const semanticNames = [scene.title, ...scene.aliases].map(normalizeText);
   const nameMatched = semanticNames.some((name) =>
-    observed.some((value) => value === name),
+    observed.some((value) => stableTextVariantMatches(value, name)),
   );
   return {
     sceneId: scene.sceneId,
@@ -915,6 +915,18 @@ export function runtimeObservationsEquivalent(
 
 function normalizeText(value: string): string {
   return value.trim().toLocaleLowerCase();
+}
+
+function stableTextVariantMatches(actual: string, expected: string): boolean {
+  const normalizedActual = normalizeText(actual);
+  const normalizedExpected = normalizeText(expected);
+  if (!normalizedExpected || !normalizedActual.startsWith(normalizedExpected)) {
+    return false;
+  }
+  if (normalizedActual === normalizedExpected) return true;
+  return /^[\s·•|/／\-—–:：]/.test(
+    normalizedActual.slice(normalizedExpected.length),
+  );
 }
 
 function candidateCard(candidate: RuntimeCandidate) {

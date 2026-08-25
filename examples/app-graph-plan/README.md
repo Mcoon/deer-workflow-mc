@@ -89,6 +89,8 @@ are:
 | `targetScene`     | Requested or inferred final Scene, when available                                       |
 | `navigationRoute` | Pre-navigation from the default entry to the Task entry or target Scene                 |
 | `taskSteps`       | Original Graph Task declaration; empty for a Scene goal                                 |
+| `taskCandidates`  | Top intent matches with health, expiry, target Scene, and rejection reasons             |
+| `taskResolution`  | Selected Task health and whether its stored recipe was reused or replanned              |
 | `resolvedSteps`   | Complete semantic steps for the executor, including pre-navigation and inserted bridges |
 | `finalOracles`    | Conditions that must hold after the complete goal                                       |
 | `graphIdentity`   | Graph ID, schema, revision, update time, and App version                                |
@@ -149,6 +151,16 @@ A Binding from another device profile can provide only a coarse
 also validate `graphIdentity.revision` and the App version before consuming a
 potentially stale Plan.
 
+Task resolution does not trust intent similarity alone. It deduplicates
+semantically equivalent recipes, rejects close matches with different recipes
+as `task_match_ambiguous`, and evaluates structural dependencies, validation
+TTL, Graph/runtime App version, and device profile. A stale navigation-only
+Task can be replanned from the current Graph to its target Scene while keeping
+its read-only final Oracles; stale mutating Tasks fail closed. When a runtime
+App version is provided and differs from the Graph or Binding evidence, the
+Plan keeps selectors and coarse location hints but removes executable
+coordinates and sets `allowBindingFallback=false`.
+
 ## Failure result
 
 When the goal cannot be compiled safely, the Workflow returns
@@ -160,6 +172,7 @@ empty successful Plan. Common `code` values include:
 - `device_profile_missing`;
 - `missing_required_parameters`;
 - `unknown_parameters`;
+- `task_match_ambiguous`, `task_stale`, or `task_invalid`;
 - `task_entry_unreachable` or `target_scene_unreachable`;
 - `goal_unresolved`.
 

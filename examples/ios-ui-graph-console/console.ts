@@ -340,6 +340,16 @@ export function workflowSuccessMessage(result: unknown): string {
     elementsDiscovered?: unknown;
     graphUpdated?: unknown;
     graphRevision?: unknown;
+    finalExec?: {
+      readonly graphUpdated?: unknown;
+      readonly graphRevision?: unknown;
+    };
+    rounds?: readonly {
+      readonly execResult?: {
+        readonly graphUpdated?: unknown;
+        readonly graphRevision?: unknown;
+      };
+    }[];
   };
   if (value.mode === "discovery") {
     const actions = Number(value.actionsExecuted ?? 0);
@@ -369,7 +379,20 @@ export function workflowSuccessMessage(result: unknown): string {
       value.graphUpdated === true ? "updated" : "unchanged"
     }.${revision}${target}${destination}`;
   }
-  return "Workflow completed successfully.";
+  const executionResults = [
+    value,
+    value.finalExec,
+    ...(value.rounds ?? []).map((round) => round.execResult),
+  ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const graphUpdated = executionResults.some(
+    (item) => item.graphUpdated === true,
+  );
+  const graphRevision = executionResults
+    .map((item) => item.graphRevision)
+    .find((revision) => typeof revision === "number");
+  return graphUpdated
+    ? `执行成功。Graph 已更新${typeof graphRevision === "number" ? `到 r${graphRevision}` : ""}，请刷新页面查看新的 Task、截图或 Binding。`
+    : "执行成功。Graph 未变化，无需刷新。";
 }
 
 export function workflowFailureMessage(result: unknown): string {
@@ -884,10 +907,13 @@ export function normalizeActionRequest(
     if (!entry) {
       throw new Error(`element does not exist: ${request.target.id}.`);
     }
-    return {
+    return withSemanticExecutionGoal(graph, {
       ...request,
       target: { kind: "scene", id: entry.sceneId },
-    };
+    });
+  }
+  if (request.action === "execute" && request.target.kind === "scene") {
+    return withSemanticExecutionGoal(graph, request);
   }
   if (request.action !== "explore") {
     return request;
@@ -925,6 +951,15 @@ export function normalizeActionRequest(
         task.entrySceneId,
     },
   };
+}
+
+function withSemanticExecutionGoal(
+  graph: AppGraph,
+  request: GraphConsoleActionRequest,
+): GraphConsoleActionRequest {
+  if (request.goal?.trim() || request.target.kind !== "scene") return request;
+  const scene = graph.scenes[request.target.id];
+  return scene ? { ...request, goal: `打开${scene.title}` } : request;
 }
 
 function requestIsDestructive(

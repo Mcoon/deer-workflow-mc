@@ -7,6 +7,7 @@ import type {
 import type { AppGraphPlanResult } from "../app-graph-plan/types";
 import type { ExecStepRecord } from "./types";
 import { isHistoricalViewportHintStep } from "./viewport-search";
+import { evaluateTaskHealth } from "../ios-ui-graph-manager/task-health";
 
 export interface FastRecipeStep {
   readonly operator: Operator;
@@ -19,10 +20,28 @@ export function compileFastRecipe(options: {
   plan: AppGraphPlanResult;
   deviceProfileId: string;
   udid: string;
+  runtimeAppVersion?: string;
 }): { task: Task; steps: readonly FastRecipeStep[] } | null {
   const taskId = options.plan.matchedTaskId;
   const task = taskId ? options.graph.tasks[taskId] : undefined;
   if (!task || task.status !== "verified" || task.validation?.tier !== "fast") {
+    return null;
+  }
+  if (
+    !options.runtimeAppVersion ||
+    !options.graph.appVersion ||
+    options.runtimeAppVersion !== options.graph.appVersion
+  ) {
+    return null;
+  }
+  if (
+    evaluateTaskHealth({
+      graph: options.graph,
+      task,
+      deviceProfileId: options.deviceProfileId,
+      runtimeAppVersion: options.runtimeAppVersion,
+    }).status !== "fresh"
+  ) {
     return null;
   }
   if (
@@ -36,6 +55,11 @@ export function compileFastRecipe(options: {
   if (
     options.plan.resolvedSteps.some((_, index) =>
       isHistoricalViewportHintStep(options.plan.resolvedSteps, index),
+    ) ||
+    options.plan.resolvedSteps.some((step) =>
+      ["selection", "permission", "mutation", "destructive"].includes(
+        step.risk,
+      ),
     )
   ) {
     return null;

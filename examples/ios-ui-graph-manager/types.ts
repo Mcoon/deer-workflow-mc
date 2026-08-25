@@ -20,6 +20,9 @@ export interface ExecutionTrust {
   readonly lastFailedAt?: string;
   readonly lastValidatedAppVersion?: string;
   readonly lastDeviceProfileId?: string;
+  readonly validatedGraphRevision?: number;
+  readonly dependencyDigest?: string;
+  readonly validUntil?: string;
   readonly lastFailure?: string;
 }
 
@@ -125,10 +128,14 @@ export interface TaskOracle {
     | "text_absent"
     | "ui_text_visible"
     | "ui_text_absent"
+    | "all_text_visible"
+    | "any_text_visible"
+    | "region_stable"
     | "visual_changed"
     | "foreground_bundle"
     | "scene_current";
   readonly value?: string;
+  readonly values?: readonly string[];
   readonly sceneId?: string;
   readonly bundleId?: string;
   readonly maximumSsim?: number;
@@ -158,6 +165,9 @@ export interface Task {
     readonly lastFailedAt?: string;
     readonly lastValidatedAppVersion?: string;
     readonly lastDeviceProfileId?: string;
+    readonly validatedGraphRevision?: number;
+    readonly dependencyDigest?: string;
+    readonly validUntil?: string;
     readonly lastFailure?: string;
     readonly requiresFixtureReplay?: boolean;
   };
@@ -202,6 +212,7 @@ export interface GraphPatch {
   readonly graphId: string;
   readonly baseRevision: number;
   readonly source: "discovery" | "navigator" | "manual";
+  readonly appVersion?: string;
   readonly scenes?: Record<string, Partial<Scene> & { sceneId: string }>;
   readonly operators?: Record<
     string,

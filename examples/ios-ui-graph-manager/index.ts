@@ -60,10 +60,25 @@ export {
 } from "./indexes";
 export { planRoute } from "./route";
 export {
+  canReplanTaskAsScene,
+  DEFAULT_FAST_TASK_TTL_MS,
+  DEFAULT_GUARDED_TASK_TTL_MS,
+  evaluateTaskHealth,
+  findEquivalentTaskId,
+  migrateTaskCatalog,
+  normalizeTaskCatalogForWrite,
+  taskDependencyDigest,
+  taskIntentIsReusable,
+  taskSemanticSignature,
+  taskValidityDeadline,
+} from "./task-health";
+export type { TaskHealth, TaskHealthStatus } from "./task-health";
+export {
   findScene,
   findBestScene,
   matchTask,
   findBestTask,
+  selectBestTaskMatch,
   type SceneMatch,
   type TaskMatch,
 } from "./match";
@@ -74,16 +89,26 @@ import { applyPatch } from "./patch";
 import { rebuildAllIndexes } from "./indexes";
 import { validateGraph } from "./validate";
 import { persistGraphReferenceAssets } from "./assets";
+import { normalizeTaskCatalogForWrite } from "./task-health";
 
 export async function loadGraph(graphPath: string): Promise<AppGraph> {
-  return readGraph(graphPath);
+  const graph = await readGraph(graphPath);
+  const validation = validateGraph(graph);
+  if (!validation.valid) {
+    throw new Error(`Graph validation failed: ${validation.errors.join("; ")}`);
+  }
+  return graph;
 }
 
 export async function saveGraph(
   graphPath: string,
   graph: AppGraph,
 ): Promise<void> {
-  const persistedGraph = await persistGraphReferenceAssets(graphPath, graph);
+  const normalizedGraph = normalizeTaskCatalogForWrite(graph);
+  const persistedGraph = await persistGraphReferenceAssets(
+    graphPath,
+    normalizedGraph,
+  );
   const validation = validateGraph(persistedGraph);
   if (!validation.valid) {
     throw new Error(`Graph validation failed: ${validation.errors.join("; ")}`);

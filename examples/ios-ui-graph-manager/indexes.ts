@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import type { AppGraph } from "./types";
 import { getIndexesDir } from "./store";
+import { taskIntentIsReusable } from "./task-health";
 
 export interface SceneSemanticIndex {
   [sceneId: string]: {
@@ -81,7 +82,9 @@ export function buildOperatorByElementIndex(
 export function buildTaskIntentIndex(graph: AppGraph): TaskIntentIndex {
   const index: TaskIntentIndex = {};
   for (const task of Object.values(graph.tasks)) {
+    if (["blocked", "disabled"].includes(task.status)) continue;
     for (const intent of task.intents) {
+      if (!taskIntentIsReusable(intent)) continue;
       if (!index[intent]) index[intent] = [];
       index[intent].push(task.taskId);
     }

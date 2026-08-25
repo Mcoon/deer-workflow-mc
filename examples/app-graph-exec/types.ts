@@ -15,12 +15,18 @@ export interface AppGraphExecInput {
   readonly skipReset?: boolean;
   readonly maxSteps?: number;
   readonly allowLearning?: boolean;
+  /** Runtime App version already observed by the caller after launch. */
+  readonly runtimeAppVersion?: string;
+  /** Internal handoff proving the caller already attempted version discovery. */
+  readonly runtimeAppVersionChecked?: boolean;
   readonly model?: string;
   readonly agentTimeoutMs?: number;
   readonly maxAgentRecoverySteps?: number;
   readonly minimumAgentConfidence?: number;
   /** Prefer a learned verified fast recipe when all trust gates match. */
   readonly preferFastPath?: boolean;
+  /** Optional unaugmented Plan used only for persistent runtime learning. */
+  readonly learningPlan?: AppGraphPlanResult;
   /** Test/runtime injection. CLI callers normally omit this. */
   readonly agentRunner?: AgentFunction;
   /** Test/host injection. CLI callers normally omit this. */
@@ -89,6 +95,10 @@ export interface AppGraphExecResult {
   readonly steps: readonly ExecStepRecord[];
   readonly totalDurationMs: number;
   readonly graphRevision: number;
+  readonly graphAppVersion?: string;
+  readonly runtimeAppVersion?: string;
+  readonly taskHealth?: string;
+  readonly taskHealthReasons?: readonly string[];
   readonly planSchemaVersion: AppGraphPlanResult["schemaVersion"];
   readonly planPath: string;
   readonly finalOracleResults: readonly FinalOracleResult[];
@@ -151,6 +161,10 @@ export interface AppGraphExecFailure {
   readonly recoveryActions?: readonly RuntimeRecoveryActionRecord[];
   readonly graphUpdated?: boolean;
   readonly graphPatchPaths?: readonly string[];
+  readonly graphAppVersion?: string;
+  readonly runtimeAppVersion?: string;
+  readonly taskHealth?: string;
+  readonly taskHealthReasons?: readonly string[];
 }
 
 export type AppGraphExecOutput = AppGraphExecResult | AppGraphExecFailure;

@@ -128,9 +128,16 @@ describe("App Graph unified workflow", () => {
         mode: "app_graph_failure",
         code: "reset_failed",
       });
-      expect(commands).toHaveLength(1);
-      expect(commands[0]?.[0]).toBe("python3");
-      expect(commands[0]?.[1]).toContain(
+      expect(commands).toHaveLength(2);
+      expect(commands[0]).toEqual([
+        "mobilecli",
+        "apps",
+        "list",
+        "--device",
+        "fake-device",
+      ]);
+      expect(commands[1]?.[0]).toBe("python3");
+      expect(commands[1]?.[1]).toContain(
         "ios-regression-kit/devicectl_restart.py",
       );
       expect(agentCalls).toBe(0);
@@ -139,6 +146,52 @@ describe("App Graph unified workflow", () => {
         mode: "exec_failure",
         code: "reset_failed",
       });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("resolves the installed version for the Graph bundle instead of a fixed App", async () => {
+    const root = await mkdtemp(join(tmpdir(), "app-graph-custom-bundle-"));
+    const temporaryGraphPath = join(root, "graph.json");
+    const customGraph = structuredClone(graph) as AppGraph;
+    (customGraph as unknown as { bundleId: string }).bundleId =
+      "com.example.custom";
+    await writeFile(temporaryGraphPath, JSON.stringify(customGraph), "utf8");
+    const commands: string[][] = [];
+    const commandRunner = async (command: readonly string[]) => {
+      commands.push([...command]);
+      if (command[0] === "mobilecli") {
+        return {
+          stdout: JSON.stringify({
+            data: [
+              { packageName: "com.bot.doubao", version: "14.7.0" },
+              { packageName: "com.example.custom", version: "14.8.0" },
+            ],
+          }),
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      return { stdout: "", stderr: "reset failed", exitCode: 1 };
+    };
+    try {
+      const result = await runUnified({
+        goal: "打开侧边栏",
+        graphPath: temporaryGraphPath,
+        udid: "fake-device",
+        outputDir: root,
+        planOnly: false,
+        commandRunner,
+      });
+      expect(result.success).toBeFalse();
+      expect(result.rounds[0]?.planResult).toMatchObject({
+        success: true,
+        runtimeAppVersion: "14.8.0",
+      });
+      expect(
+        commands.filter((command) => command[0] === "mobilecli"),
+      ).toHaveLength(1);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

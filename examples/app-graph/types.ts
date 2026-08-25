@@ -23,6 +23,8 @@ export interface AppGraphWorkflowInput {
   readonly outputDir?: string;
   readonly planOnly?: boolean;
   readonly allowLearning?: boolean;
+  /** Test/runtime injection for the installed App version. */
+  readonly runtimeAppVersion?: string;
   readonly maximumRecoveryRounds?: number;
   readonly maxAgentRecoverySteps?: number;
   readonly minimumAgentConfidence?: number;

@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
 
-import { loadGraph } from "../ios-ui-graph-manager";
+import { evaluateTaskHealth, loadGraph } from "../ios-ui-graph-manager";
 import { planRoute } from "../ios-ui-graph-manager";
 import {
   buildMobilecliForegroundCommand,
@@ -138,6 +138,24 @@ export default async function appGraphExec(
       recoverable: planIssue.recoverable,
     });
   }
+  if (args.learningPlan) {
+    const learningPlanIssue = validatePlanAgainstGraph(
+      args.learningPlan,
+      graph,
+      requestedProfileId,
+    );
+    if (learningPlanIssue || !sameExecutionRecipe(plan, args.learningPlan)) {
+      return fail({
+        outputDir,
+        goal,
+        code: "learning_plan_mismatch",
+        message:
+          learningPlanIssue?.message ??
+          "Learning Plan must match the executable Plan except for acceptance-only final Oracles.",
+        recoverable: false,
+      });
+    }
+  }
   const deviceProfile = graph.deviceProfiles[requestedProfileId]!;
   const agentTimeoutMs = Math.max(
     1_000,
@@ -199,6 +217,59 @@ export default async function appGraphExec(
       recoverable: false,
     });
   }
+  let runtimeAppVersion = args.runtimeAppVersion?.trim() || undefined;
+  if (!runtimeAppVersion && args.runtimeAppVersionChecked !== true) {
+    try {
+      const installedApps = await runGroundCaptureCommand(
+        ["mobilecli", "apps", "list", "--device", udid],
+        commandRunner,
+        3,
+        true,
+      );
+      if (installedApps.exitCode === 0) {
+        runtimeAppVersion = parseInstalledAppVersion(
+          installedApps.stdout,
+          graph.bundleId || DEFAULT_BUNDLE_ID,
+        );
+      }
+    } catch {
+      log(
+        "Installed App version was unavailable; fast execution remains disabled.",
+      );
+    }
+  }
+  const matchedTask = plan.matchedTaskId
+    ? graph.tasks[plan.matchedTaskId]
+    : undefined;
+  const runtimeTaskHealth = matchedTask
+    ? evaluateTaskHealth({
+        graph,
+        task: matchedTask,
+        deviceProfileId: requestedProfileId,
+        runtimeAppVersion,
+      })
+    : undefined;
+  const planProvesCurrentStaleReplan =
+    runtimeTaskHealth?.status === "stale" &&
+    plan.taskResolution?.health === "stale" &&
+    plan.taskResolution.recipeReused === false &&
+    plan.runtimeAppVersion === runtimeAppVersion;
+  if (
+    runtimeTaskHealth?.status === "invalid" ||
+    (runtimeTaskHealth?.status === "stale" && !planProvesCurrentStaleReplan)
+  ) {
+    return fail({
+      outputDir,
+      goal,
+      code: "task_replan_required",
+      message: `Task ${matchedTask?.taskId ?? plan.matchedTaskId} is ${runtimeTaskHealth.status}: ${runtimeTaskHealth.reasons.join(", ")}. Re-plan with the current runtime App version before execution.`,
+      recoverable: true,
+      graphAppVersion: graph.appVersion,
+      runtimeAppVersion,
+      taskHealth: runtimeTaskHealth.status,
+      taskHealthReasons: runtimeTaskHealth.reasons,
+    });
+  }
 
   phase("Reset");
   if (args.skipReset) {
@@ -224,13 +295,41 @@ export default async function appGraphExec(
 
   phase("Ground");
   let fastFallbackUsed = false;
+  try {
+    if (runtimeAppVersion) {
+      await writeFile(
+        join(outputDir, "runtime-app.json"),
+        JSON.stringify(
+          { bundleId: graph.bundleId, appVersion: runtimeAppVersion },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+      evidencePaths.push(join(outputDir, "runtime-app.json"));
+      if (
+        runtimeAppVersion &&
+        graph.appVersion &&
+        runtimeAppVersion !== graph.appVersion
+      ) {
+        log(
+          `Runtime App ${runtimeAppVersion} differs from Graph ${graph.appVersion}; disabling fast execution and validating live UI in guarded mode.`,
+        );
+      }
+    }
+  } catch {
+    log(
+      "Runtime App version was unavailable; fast execution remains subject to Task health gates.",
+    );
+  }
   const fastRecipe =
-    args.preferFastPath !== false
+    args.preferFastPath !== false && runtimeTaskHealth?.status === "fresh"
       ? compileFastRecipe({
           graph,
           plan,
           deviceProfileId: requestedProfileId,
           udid,
+          runtimeAppVersion,
         })
       : null;
   if (fastRecipe) {
@@ -310,6 +409,10 @@ export default async function appGraphExec(
           steps: fastSteps,
           totalDurationMs: Date.now() - startedAt,
           graphRevision: graph.revision,
+          graphAppVersion: graph.appVersion,
+          runtimeAppVersion,
+          taskHealth: runtimeTaskHealth?.status,
+          taskHealthReasons: runtimeTaskHealth?.reasons,
           finalOracleResults: fastOracleResults,
           recoveryActions: [],
           graphUpdated: fastGraphUpdated,
@@ -330,6 +433,7 @@ export default async function appGraphExec(
         graph,
         taskId: fastRecipe.task.taskId,
         deviceProfileId: requestedProfileId,
+        runtimeAppVersion,
         outputDir,
         evidencePath: fastEvidence.uiDumpPath,
         failure:
@@ -415,6 +519,7 @@ export default async function appGraphExec(
     model: args.model,
     agentRunner: args.agentRunner,
     commandRunner,
+    runtimeAppVersion,
   });
   graph = entryRecovery.graph;
   evidence = entryRecovery.evidence;
@@ -494,6 +599,7 @@ export default async function appGraphExec(
             model: args.model,
             agentRunner: args.agentRunner,
             commandRunner,
+            runtimeAppVersion,
           });
     graph = stepEntry.graph;
     evidence = stepEntry.evidence;
@@ -547,6 +653,7 @@ export default async function appGraphExec(
       model: args.model,
       agentRunner: args.agentRunner,
       commandRunner,
+      runtimeAppVersion,
     });
     const record = executed.record;
     graph = executed.graph;
@@ -694,6 +801,7 @@ export default async function appGraphExec(
         model: args.model,
         agentRunner: args.agentRunner,
         commandRunner,
+        runtimeAppVersion,
       });
       graph = recovery.graph;
       evidence = recovery.evidence;
@@ -813,10 +921,11 @@ export default async function appGraphExec(
     const learned = await persistSuccessfulExecutionLearning({
       graphPath,
       graph,
-      plan,
+      plan: args.learningPlan ?? plan,
       goal,
       steps,
       deviceProfileId: requestedProfileId,
+      runtimeAppVersion,
       outputDir,
       evidencePath: evidence.uiDumpPath,
       finalSceneEvidence: {
@@ -832,7 +941,9 @@ export default async function appGraphExec(
     if (learningPatchPath) graphPatchPaths.push(learningPatchPath);
     log(
       learned.graphUpdated
-        ? `Learned ${learned.taskId} as ${learned.taskStatus}/${learned.executionTier}.`
+        ? learned.taskId
+          ? `Learned ${learned.taskId} as ${learned.taskStatus}/${learned.executionTier}.`
+          : "Learned execution evidence and Scene assets without creating a reusable Task."
         : "Execution passed; runtime learning patch was not applied.",
     );
   } else if (allowLearning) {
@@ -850,6 +961,10 @@ export default async function appGraphExec(
     steps,
     totalDurationMs: Date.now() - startedAt,
     graphRevision: graph.revision,
+    graphAppVersion: graph.appVersion,
+    runtimeAppVersion,
+    taskHealth: runtimeTaskHealth?.status,
+    taskHealthReasons: runtimeTaskHealth?.reasons,
     finalOracleResults,
     recoveryActions,
     graphUpdated,
@@ -949,11 +1064,33 @@ export function validatePlanAgainstGraph(
   return null;
 }
 
+function sameExecutionRecipe(
+  executionPlan: AppGraphPlanResult,
+  learningPlan: AppGraphPlanResult,
+): boolean {
+  return (
+    executionPlan.graphIdentity.graphId ===
+      learningPlan.graphIdentity.graphId &&
+    executionPlan.graphIdentity.revision ===
+      learningPlan.graphIdentity.revision &&
+    executionPlan.matchedTaskId === learningPlan.matchedTaskId &&
+    executionPlan.entrySceneId === learningPlan.entrySceneId &&
+    executionPlan.targetSceneId === learningPlan.targetSceneId &&
+    JSON.stringify(executionPlan.taskSteps) ===
+      JSON.stringify(learningPlan.taskSteps) &&
+    JSON.stringify(executionPlan.resolvedSteps) ===
+      JSON.stringify(learningPlan.resolvedSteps) &&
+    JSON.stringify(executionPlan.parameters) ===
+      JSON.stringify(learningPlan.parameters)
+  );
+}
+
 interface GroundEvidence {
   readonly screenshotPath: string;
   readonly uiDumpPath: string;
   readonly foregroundPath: string;
   readonly foregroundBundleId: string;
+  readonly foregroundAppVersion?: string;
   readonly uiElements: readonly UiElement[];
   readonly ocrPath?: string;
 }
@@ -975,6 +1112,9 @@ export function resolveSemanticStepTarget(options: {
   deferBindingFallback?: boolean;
   minimumTargetY?: number;
   maximumTargetY?: number;
+  runtimeAppVersion?: string;
+  graphAppVersion?: string;
+  requireVersionMatch?: boolean;
 }): StepResolution {
   const { step } = options;
   if (step.operation.type === "swipe" || step.operation.type === "input_text") {
@@ -1035,6 +1175,11 @@ export function resolveSemanticStepTarget(options: {
   if (
     !options.deferBindingFallback &&
     step.resolutionPolicy.allowBindingFallback &&
+    (!options.requireVersionMatch ||
+      (Boolean(options.runtimeAppVersion) &&
+        Boolean(options.graphAppVersion) &&
+        options.runtimeAppVersion === options.graphAppVersion &&
+        step.binding.appVersion === options.runtimeAppVersion)) &&
     step.binding.deviceProfileId === options.deviceProfileId &&
     step.binding.normalizedPoint &&
     step.binding.normalizedPoint.x >= 0 &&
@@ -1074,6 +1219,18 @@ function pointWithinViewport(
     point.y >= minimumY &&
     point.y < maximumY
   );
+}
+
+export function viewportSearchTargetYRange(viewportHeight: number): {
+  readonly minimumY: number;
+  readonly maximumY: number;
+} {
+  return {
+    minimumY: viewportHeight * 0.14,
+    // Keep taps clear of the iOS home-indicator gesture area without
+    // discarding legitimate controls in the last visible content row.
+    maximumY: viewportHeight - Math.max(32, viewportHeight * 0.04),
+  };
 }
 
 export function buildStepCommands(options: {
@@ -1164,6 +1321,7 @@ async function executeSemanticStep(options: {
   model?: string;
   agentRunner?: AppGraphExecInput["agentRunner"];
   commandRunner: NonNullable<AppGraphExecInput["commandRunner"]>;
+  runtimeAppVersion?: string;
 }): Promise<{
   record: ExecStepRecord;
   graph: AppGraph;
@@ -1188,6 +1346,9 @@ async function executeSemanticStep(options: {
     viewportWidth: options.viewportWidth,
     viewportHeight: options.viewportHeight,
     deferBindingFallback: true,
+    runtimeAppVersion: options.runtimeAppVersion,
+    graphAppVersion: graph.appVersion,
+    requireVersionMatch: true,
   });
   if (
     resolution.source === "unresolved" &&
@@ -1199,6 +1360,7 @@ async function executeSemanticStep(options: {
       elementId: options.step.targetElement.elementId,
       semanticRole: options.step.targetElement.semanticRole,
     });
+    const targetYRange = viewportSearchTargetYRange(options.viewportHeight);
     const searchDir = join(options.stepDir, "visibility-recovery");
     try {
       const search = await searchViewports({
@@ -1213,8 +1375,11 @@ async function executeSemanticStep(options: {
             viewportWidth: options.viewportWidth,
             viewportHeight: options.viewportHeight,
             deferBindingFallback: true,
-            minimumTargetY: options.viewportHeight * 0.14,
-            maximumTargetY: options.viewportHeight * 0.9,
+            minimumTargetY: targetYRange.minimumY,
+            maximumTargetY: targetYRange.maximumY,
+            runtimeAppVersion: options.runtimeAppVersion,
+            graphAppVersion: graph.appVersion,
+            requireVersionMatch: true,
           });
           return candidate.source === "unresolved" ? null : candidate;
         },
@@ -1357,6 +1522,9 @@ async function executeSemanticStep(options: {
       deviceProfileId: options.deviceProfileId,
       viewportWidth: options.viewportWidth,
       viewportHeight: options.viewportHeight,
+      runtimeAppVersion: options.runtimeAppVersion,
+      graphAppVersion: graph.appVersion,
+      requireVersionMatch: true,
     });
     if (
       bindingResolution.source === "binding_fallback" &&
@@ -1472,6 +1640,7 @@ async function ensureRuntimeScene(options: {
   model?: string;
   agentRunner?: AppGraphExecInput["agentRunner"];
   commandRunner: NonNullable<AppGraphExecInput["commandRunner"]>;
+  runtimeAppVersion?: string;
 }): Promise<EnsureRuntimeSceneResult> {
   let graph = options.graph;
   let evidence = options.evidence;
@@ -1552,6 +1721,7 @@ async function ensureRuntimeScene(options: {
         graph,
         route,
         deviceProfileId: options.deviceProfileId,
+        runtimeAppVersion: options.runtimeAppVersion,
         parameters: options.parameters,
       });
       for (const [routeIndex, routeStep] of routeSteps.entries()) {
@@ -1583,6 +1753,7 @@ async function ensureRuntimeScene(options: {
           model: options.model,
           agentRunner: options.agentRunner,
           commandRunner: options.commandRunner,
+          runtimeAppVersion: options.runtimeAppVersion,
         });
         graph = executed.graph;
         graphUpdated ||= executed.graphUpdated;
@@ -2053,10 +2224,15 @@ async function captureGround(
     );
   }
   await writeFile(uiDumpPath, dump.stdout, "utf8");
-  const foregroundBundleId = foreground.stdout.trim();
+  const foregroundApp = parseForegroundApp(foreground.stdout);
+  const foregroundBundleId = foregroundApp.bundleId;
   await writeFile(
     foregroundPath,
-    JSON.stringify({ foregroundBundleId }, null, 2),
+    JSON.stringify(
+      { foregroundBundleId, appVersion: foregroundApp.appVersion },
+      null,
+      2,
+    ),
     "utf8",
   );
   return {
@@ -2064,8 +2240,62 @@ async function captureGround(
     uiDumpPath,
     foregroundPath,
     foregroundBundleId,
+    foregroundAppVersion: foregroundApp.appVersion,
     uiElements: parseUiDump(dump.stdout),
   };
+}
+
+export function parseInstalledAppVersion(
+  output: string,
+  bundleId: string,
+): string | undefined {
+  try {
+    const parsed = JSON.parse(output) as {
+      readonly data?: readonly {
+        readonly packageName?: unknown;
+        readonly version?: unknown;
+      }[];
+    };
+    const app = parsed.data?.find(
+      (candidate) => candidate.packageName === bundleId,
+    );
+    return typeof app?.version === "string"
+      ? app.version.trim() || undefined
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function parseForegroundApp(output: string): {
+  readonly bundleId: string;
+  readonly appVersion?: string;
+} {
+  const trimmed = output.trim();
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      readonly data?: {
+        readonly packageName?: unknown;
+        readonly version?: unknown;
+      };
+    };
+    const bundleId =
+      typeof parsed.data?.packageName === "string"
+        ? parsed.data.packageName.trim()
+        : "";
+    if (bundleId) {
+      return {
+        bundleId,
+        appVersion:
+          typeof parsed.data?.version === "string"
+            ? parsed.data.version.trim() || undefined
+            : undefined,
+      };
+    }
+  } catch {
+    // Older mobilecli versions may return only the bundle identifier.
+  }
+  return { bundleId: trimmed };
 }
 
 export async function runGroundCaptureCommand(
@@ -2161,27 +2391,38 @@ function uiElementMatchesSelector(
   selector: UiSelector,
 ): boolean {
   if (selector.accessibilityId) {
-    return (
-      normalizeText(element.accessibilityId ?? "") ===
-      normalizeText(selector.accessibilityId)
+    return stableTextVariantMatches(
+      element.accessibilityId ?? "",
+      selector.accessibilityId,
     );
   }
   if (selector.label) {
-    return normalizeText(element.label ?? "") === normalizeText(selector.label);
+    return stableTextVariantMatches(element.label ?? "", selector.label);
   }
   if (selector.text) {
-    const expected = normalizeText(selector.text);
-    return [element.text, element.label, element.value].some(
-      (value) => normalizeText(value ?? "") === expected,
+    return [element.text, element.label, element.value].some((value) =>
+      stableTextVariantMatches(value ?? "", selector.text ?? ""),
     );
   }
   if (selector.value) {
-    return normalizeText(element.value ?? "") === normalizeText(selector.value);
+    return stableTextVariantMatches(element.value ?? "", selector.value);
   }
   if (selector.role) {
     return normalizeText(element.role ?? "") === normalizeText(selector.role);
   }
   return false;
+}
+
+function stableTextVariantMatches(actual: string, expected: string): boolean {
+  const normalizedActual = normalizeText(actual);
+  const normalizedExpected = normalizeText(expected);
+  if (!normalizedExpected || !normalizedActual.startsWith(normalizedExpected)) {
+    return false;
+  }
+  if (normalizedActual === normalizedExpected) return true;
+  return /^[\s·•|/／\-—–:：]/.test(
+    normalizedActual.slice(normalizedExpected.length),
+  );
 }
 
 function selectPreferredTargetMatch(
@@ -2374,6 +2615,21 @@ function evaluateFinalOracles(
       const value = normalizeText(oracle.value ?? "");
       success =
         Boolean(value) && !observed.some((item) => item.includes(value));
+    } else if (
+      oracle.type === "all_text_visible" ||
+      oracle.type === "any_text_visible"
+    ) {
+      const values = (oracle.values ?? []).map(normalizeText).filter(Boolean);
+      expected = values.join(" | ");
+      success =
+        values.length > 0 &&
+        (oracle.type === "all_text_visible"
+          ? values.every((value) =>
+              observed.some((item) => item.includes(value)),
+            )
+          : values.some((value) =>
+              observed.some((item) => item.includes(value)),
+            ));
     } else {
       supported = false;
       expected = `${oracle.type} requires visual evidence`;
@@ -2500,6 +2756,10 @@ function fail(options: {
   recoveryActions?: readonly RuntimeRecoveryActionRecord[];
   graphUpdated?: boolean;
   graphPatchPaths?: readonly string[];
+  graphAppVersion?: string;
+  runtimeAppVersion?: string;
+  taskHealth?: string;
+  taskHealthReasons?: readonly string[];
 }): AppGraphExecFailure {
   return {
     success: false,
@@ -2517,6 +2777,10 @@ function fail(options: {
     recoveryActions: options.recoveryActions,
     graphUpdated: options.graphUpdated,
     graphPatchPaths: options.graphPatchPaths,
+    graphAppVersion: options.graphAppVersion,
+    runtimeAppVersion: options.runtimeAppVersion,
+    taskHealth: options.taskHealth,
+    taskHealthReasons: options.taskHealthReasons,
   };
 }
 
@@ -2530,6 +2794,10 @@ function execResult(options: {
   steps: readonly ExecStepRecord[];
   totalDurationMs: number;
   graphRevision: number;
+  graphAppVersion?: string;
+  runtimeAppVersion?: string;
+  taskHealth?: string;
+  taskHealthReasons?: readonly string[];
   finalOracleResults: readonly FinalOracleResult[];
   recoveryActions: readonly RuntimeRecoveryActionRecord[];
   graphUpdated: boolean;
@@ -2554,6 +2822,10 @@ function execResult(options: {
     steps: options.steps,
     totalDurationMs: options.totalDurationMs,
     graphRevision: options.graphRevision,
+    graphAppVersion: options.graphAppVersion,
+    runtimeAppVersion: options.runtimeAppVersion,
+    taskHealth: options.taskHealth,
+    taskHealthReasons: options.taskHealthReasons,
     planSchemaVersion: options.plan.schemaVersion,
     planPath: options.plan.planPath,
     finalOracleResults: options.finalOracleResults,

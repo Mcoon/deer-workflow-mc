@@ -3,9 +3,9 @@
   "graphId": "com.bot.doubao.chat-full-v2",
   "bundleId": "com.bot.doubao",
   "appName": "豆包",
-  "appVersion": "14.7.0",
-  "revision": 78,
-  "updatedAt": "2026-08-22T09:43:35.853Z",
+  "appVersion": "14.8.0",
+  "revision": 96,
+  "updatedAt": "2026-08-24T15:50:44.307Z",
   "deviceProfiles": {
     "iphone-414x896-portrait": {
       "profileId": "iphone-414x896-portrait",
@@ -3274,7 +3274,16 @@
       "title": "会话快捷媒体面板",
       "aliases": ["更多面板", "快捷相册面板", "会话快捷媒体面板", "会话页"],
       "visualTextAnchors": ["关闭面板", "相册", "文件", "发消息或按住说话..."],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/chat.media_panel/7981bc34e5207626/screenshot.png",
+          "uiDump": "reference-assets/chat.media_panel/7981bc34e5207626/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/chat.media_panel/eee6a33de080b902/screenshot.png",
+          "uiDump": "reference-assets/chat.media_panel/eee6a33de080b902/ui-dump.json"
+        }
+      ],
       "elements": {
         "composer_shortcut_toolbar_scroll": {
           "elementId": "composer_shortcut_toolbar_scroll",
@@ -3789,7 +3798,16 @@
         "后台声音朗读",
         "温柔桃子（升级版）"
       ],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/bot.settings.sound/12b39d4e93fc1f89/screenshot.png",
+          "uiDump": "reference-assets/bot.settings.sound/12b39d4e93fc1f89/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/bot.settings.sound/fc839a7df561a567/screenshot.png",
+          "uiDump": "reference-assets/bot.settings.sound/fc839a7df561a567/ui-dump.json"
+        }
+      ],
       "elements": {
         "sound.adjust_panel_collapse": {
           "elementId": "sound.adjust_panel_collapse",
@@ -12513,9 +12531,18 @@
       "parentSceneId": null,
       "status": "verified",
       "title": "技能页面",
-      "aliases": ["技能", "技能页面", "技能列表视口变化"],
-      "visualTextAnchors": ["技能", "个股研究", "估值建模"],
-      "referenceAssets": [],
+      "aliases": ["技能", "技能页面", "技能列表视口变化", "技能 · 连接器"],
+      "visualTextAnchors": ["技能 · 连接器", "技能包", "同花顺 iFinD"],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/skills.home/2d3da9e9e04b9b20/screenshot.png",
+          "uiDump": "reference-assets/skills.home/2d3da9e9e04b9b20/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/skills.home/2d58c628d8d329e3/screenshot.png",
+          "uiDump": "reference-assets/skills.home/2d58c628d8d329e3/ui-dump.json"
+        }
+      ],
       "elements": {
         "skills.home.skill_list": {
           "elementId": "skills.home.skill_list",
@@ -13384,7 +13411,8 @@
             }
           }
         }
-      }
+      },
+      "effectiveVersion": "14.8.0"
     },
     "chat.sidebar": {
       "sceneId": "chat.sidebar",
@@ -13393,7 +13421,20 @@
       "title": "会话侧边栏",
       "aliases": ["对话列表", "侧边栏", "会话列表面板", "会话侧边栏"],
       "visualTextAnchors": ["搜索", "技能", "云盘"],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/chat.sidebar/edfc79fe1ea31d8c/screenshot.png",
+          "uiDump": "reference-assets/chat.sidebar/edfc79fe1ea31d8c/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/chat.sidebar/b7b3a03505183004/screenshot.png",
+          "uiDump": "reference-assets/chat.sidebar/b7b3a03505183004/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/chat.sidebar/0e926701232bce88/screenshot.png",
+          "uiDump": "reference-assets/chat.sidebar/0e926701232bce88/ui-dump.json"
+        }
+      ],
       "elements": {
         "sidebar.nav.creation": {
           "elementId": "sidebar.nav.creation",
@@ -13467,6 +13508,14 @@
           "selectors": [
             {
               "type": "accessibilityIdentifier",
+              "value": "技能 · 连接器"
+            },
+            {
+              "type": "label",
+              "value": "技能 · 连接器"
+            },
+            {
+              "type": "accessibilityIdentifier",
               "value": "技能"
             },
             {
@@ -13482,14 +13531,29 @@
             "iphone-414x896-portrait": {
               "deviceProfileId": "iphone-414x896-portrait",
               "normalizedPoint": {
-                "x": 0.18115942028985507,
-                "y": 0.20089285714285715
+                "x": 0.2669082125603865,
+                "y": 0.23214285714285715
               },
               "source": "ui_dump",
-              "status": "verified",
-              "observedAt": "2026-08-16T06:10:04.075Z"
+              "status": "candidate",
+              "observedAt": "2026-08-22T15:18:05.531Z",
+              "appVersion": "14.8.0",
+              "execution": {
+                "tier": "guarded",
+                "successfulExecutions": 1,
+                "failedExecutions": 0,
+                "consecutiveSuccessfulExecutions": 1,
+                "consecutiveFailedExecutions": 0,
+                "evidencePaths": [
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/skills-fixed/2026-08-22T15-17-26-764Z/round-01/exec/2026-08-22T15-17-28-622Z/step-02/post-step-03-ui-dump.json"
+                ],
+                "lastValidatedAt": "2026-08-22T15:18:05.531Z",
+                "lastValidatedAppVersion": "14.8.0",
+                "lastDeviceProfileId": "iphone-414x896-portrait"
+              }
             }
-          }
+          },
+          "effectiveVersion": "14.8.0"
         },
         "chat.sidebar.cloud.drive.entry": {
           "elementId": "chat.sidebar.cloud.drive.entry",
@@ -13514,12 +13578,26 @@
             "iphone-414x896-portrait": {
               "deviceProfileId": "iphone-414x896-portrait",
               "normalizedPoint": {
-                "x": 0.18115942028985507,
-                "y": 0.3080357142857143
+                "x": 0.1859903381642512,
+                "y": 0.32142857142857145
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-16T06:15:41.348Z"
+              "observedAt": "2026-08-22T15:00:52.169Z",
+              "appVersion": "14.8.0",
+              "execution": {
+                "tier": "guarded",
+                "successfulExecutions": 1,
+                "failedExecutions": 0,
+                "consecutiveSuccessfulExecutions": 1,
+                "consecutiveFailedExecutions": 0,
+                "evidencePaths": [
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/cloud-drive/2026-08-22T15-00-16-983Z/round-01/exec/2026-08-22T15-00-17-956Z/step-02/post-step-02-ui-dump.json"
+                ],
+                "lastValidatedAt": "2026-08-22T15:00:52.169Z",
+                "lastValidatedAppVersion": "14.8.0",
+                "lastDeviceProfileId": "iphone-414x896-portrait"
+              }
             }
           }
         }
@@ -18611,6 +18689,10 @@
         {
           "screenshot": "reference-assets/bot.settings/15635ad1219d6949/screenshot.png",
           "uiDump": "reference-assets/bot.settings/15635ad1219d6949/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/bot.settings/d4780eb226e027a4/screenshot.png",
+          "uiDump": "reference-assets/bot.settings/d4780eb226e027a4/ui-dump.json"
         }
       ],
       "elements": {
@@ -18848,7 +18930,22 @@
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-15T16:11:42.776Z"
+              "observedAt": "2026-08-24T15:50:44.293Z",
+              "appVersion": "14.8.0",
+              "execution": {
+                "tier": "fast",
+                "successfulExecutions": 2,
+                "failedExecutions": 0,
+                "consecutiveSuccessfulExecutions": 2,
+                "consecutiveFailedExecutions": 0,
+                "evidencePaths": [
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824154537-135ce39b/2026-08-24T15-45-38-072Z/round-01/exec/2026-08-24T15-45-38-849Z/step-02/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824155010-8e4397dc/2026-08-24T15-50-11-491Z/round-01/exec/2026-08-24T15-50-12-226Z/step-02/post-step-02-ui-dump.json"
+                ],
+                "lastValidatedAt": "2026-08-24T15:50:44.293Z",
+                "lastValidatedAppVersion": "14.8.0",
+                "lastDeviceProfileId": "iphone-414x896-portrait"
+              }
             }
           }
         },
@@ -19347,11 +19444,25 @@
               "deviceProfileId": "iphone-414x896-portrait",
               "normalizedPoint": {
                 "x": 0.3357487922705314,
-                "y": 0.9123883928571429
+                "y": 0.9291294642857143
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-16T07:06:43.271Z"
+              "observedAt": "2026-08-24T15:30:02.168Z",
+              "appVersion": "14.8.0",
+              "execution": {
+                "tier": "guarded",
+                "successfulExecutions": 1,
+                "failedExecutions": 0,
+                "consecutiveSuccessfulExecutions": 1,
+                "consecutiveFailedExecutions": 0,
+                "evidencePaths": [
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824152856-78740dba/2026-08-24T15-28-56-662Z/round-01/exec/2026-08-24T15-28-57-596Z/step-02/post-step-02-ui-dump.json"
+                ],
+                "lastValidatedAt": "2026-08-24T15:30:02.168Z",
+                "lastValidatedAppVersion": "14.8.0",
+                "lastDeviceProfileId": "iphone-414x896-portrait"
+              }
             }
           }
         },
@@ -19411,17 +19522,17 @@
               "deviceProfileId": "iphone-414x896-portrait",
               "normalizedPoint": {
                 "x": 0.5,
-                "y": 0.43638392857142855
+                "y": 0.8482142857142857
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-21T14:39:32.218Z",
-              "appVersion": "14.7.0",
+              "observedAt": "2026-08-22T14:59:22.559Z",
+              "appVersion": "14.8.0",
               "execution": {
                 "tier": "fast",
-                "successfulExecutions": 6,
+                "successfulExecutions": 7,
                 "failedExecutions": 0,
-                "consecutiveSuccessfulExecutions": 6,
+                "consecutiveSuccessfulExecutions": 7,
                 "consecutiveFailedExecutions": 0,
                 "evidencePaths": [
                   "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
@@ -19429,10 +19540,11 @@
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141536-0f7d7362/2026-08-21T14-15-37-243Z/round-01/exec/2026-08-21T14-15-37-261Z/step-02/post-step-ui-dump.json",
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json",
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json",
-                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json"
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/help-feedback/2026-08-22T14-58-19-931Z/round-01/exec/2026-08-22T14-58-20-835Z/step-02/post-step-03-ui-dump.json"
                 ],
-                "lastValidatedAt": "2026-08-21T14:39:32.218Z",
-                "lastValidatedAppVersion": "14.7.0",
+                "lastValidatedAt": "2026-08-22T14:59:22.559Z",
+                "lastValidatedAppVersion": "14.8.0",
                 "lastDeviceProfileId": "iphone-414x896-portrait"
               }
             }
@@ -22278,16 +22390,16 @@
       ],
       "referenceAssets": [
         {
-          "screenshot": "reference-assets/chat.detail/770fb54996214793/screenshot.png",
-          "uiDump": "reference-assets/chat.detail/770fb54996214793/ui-dump.json"
-        },
-        {
-          "screenshot": "reference-assets/chat.detail/7815cf17fb7d11ff/screenshot.png",
-          "uiDump": "reference-assets/chat.detail/7815cf17fb7d11ff/ui-dump.json"
-        },
-        {
           "screenshot": "reference-assets/chat.detail/8b7f9ec7b81fa643/screenshot.png",
           "uiDump": "reference-assets/chat.detail/8b7f9ec7b81fa643/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/chat.detail/01693f406eed99e8/screenshot.png",
+          "uiDump": "reference-assets/chat.detail/01693f406eed99e8/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/chat.detail/926fc69eb57b936c/screenshot.png",
+          "uiDump": "reference-assets/chat.detail/926fc69eb57b936c/ui-dump.json"
         }
       ],
       "elements": {
@@ -22500,13 +22612,13 @@
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-22T04:54:13.161Z",
-              "appVersion": "14.7.0",
+              "observedAt": "2026-08-24T15:50:44.293Z",
+              "appVersion": "14.8.0",
               "execution": {
                 "tier": "fast",
-                "successfulExecutions": 11,
+                "successfulExecutions": 18,
                 "failedExecutions": 0,
-                "consecutiveSuccessfulExecutions": 11,
+                "consecutiveSuccessfulExecutions": 18,
                 "consecutiveFailedExecutions": 0,
                 "evidencePaths": [
                   "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
@@ -22519,10 +22631,17 @@
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json",
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json",
                   "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json",
-                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json"
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/settings/2026-08-22T14-57-36-783Z/round-01/exec/2026-08-22T14-57-37-647Z/step-01/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/help-feedback/2026-08-22T14-58-19-931Z/round-01/exec/2026-08-22T14-58-20-835Z/step-02/post-step-03-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T08-38-54-255Z/cases/main-bot-navbar-open-settings/exec/2026-08-24T08-39-14-186Z/step-01/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T09-16-16-157Z/cases/main-bot-navbar-open-settings/exec/2026-08-24T09-16-34-552Z/step-01/post-step-03-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824152856-78740dba/2026-08-24T15-28-56-662Z/round-01/exec/2026-08-24T15-28-57-596Z/step-02/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824154537-135ce39b/2026-08-24T15-45-38-072Z/round-01/exec/2026-08-24T15-45-38-849Z/step-02/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824155010-8e4397dc/2026-08-24T15-50-11-491Z/round-01/exec/2026-08-24T15-50-12-226Z/step-02/post-step-02-ui-dump.json"
                 ],
-                "lastValidatedAt": "2026-08-22T04:54:13.161Z",
-                "lastValidatedAppVersion": "14.7.0",
+                "lastValidatedAt": "2026-08-24T15:50:44.293Z",
+                "lastValidatedAppVersion": "14.8.0",
                 "lastDeviceProfileId": "iphone-414x896-portrait"
               }
             }
@@ -22545,6 +22664,14 @@
             {
               "type": "role",
               "value": "Button"
+            },
+            {
+              "type": "accessibilityIdentifier",
+              "value": "更多"
+            },
+            {
+              "type": "label",
+              "value": "更多"
             }
           ],
           "bindings": {
@@ -22556,7 +22683,22 @@
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-15T13:36:45.215Z"
+              "observedAt": "2026-08-24T11:22:39.097Z",
+              "appVersion": "14.8.0",
+              "execution": {
+                "tier": "fast",
+                "successfulExecutions": 2,
+                "failedExecutions": 0,
+                "consecutiveSuccessfulExecutions": 2,
+                "consecutiveFailedExecutions": 0,
+                "evidencePaths": [
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824103830-4f7a457f/2026-08-24T10-38-31-465Z/round-01/exec/2026-08-24T10-38-32-356Z/step-01/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824112210-f16a495f/2026-08-24T11-22-11-228Z/round-01/exec/2026-08-24T11-22-12-418Z/step-01/post-step-02-ui-dump.json"
+                ],
+                "lastValidatedAt": "2026-08-24T11:22:39.097Z",
+                "lastValidatedAppVersion": "14.8.0",
+                "lastDeviceProfileId": "iphone-414x896-portrait"
+              }
             }
           }
         },
@@ -22836,7 +22978,24 @@
               },
               "source": "ui_dump",
               "status": "verified",
-              "observedAt": "2026-08-16T05:23:14.044Z"
+              "observedAt": "2026-08-22T15:18:05.531Z",
+              "appVersion": "14.8.0",
+              "execution": {
+                "tier": "fast",
+                "successfulExecutions": 4,
+                "failedExecutions": 0,
+                "consecutiveSuccessfulExecutions": 4,
+                "consecutiveFailedExecutions": 0,
+                "evidencePaths": [
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/sidebar/2026-08-22T14-54-16-381Z/round-01/exec/2026-08-22T14-54-17-302Z/step-01/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/sidebar-second/2026-08-22T14-55-44-328Z/round-01/exec/2026-08-22T14-55-45-347Z/step-01/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/cloud-drive/2026-08-22T15-00-16-983Z/round-01/exec/2026-08-22T15-00-17-956Z/step-02/post-step-02-ui-dump.json",
+                  "/tmp/ios_perf-opt/app-graph-task-real-validation/skills-fixed/2026-08-22T15-17-26-764Z/round-01/exec/2026-08-22T15-17-28-622Z/step-02/post-step-03-ui-dump.json"
+                ],
+                "lastValidatedAt": "2026-08-22T15:18:05.531Z",
+                "lastValidatedAppVersion": "14.8.0",
+                "lastDeviceProfileId": "iphone-414x896-portrait"
+              }
             }
           }
         },
@@ -25161,7 +25320,12 @@
         "使用过程信息",
         "当前设备信息"
       ],
-      "referenceAssets": [],
+      "referenceAssets": [
+        {
+          "screenshot": "reference-assets/bot.settings.personal_information_collection_list/79cf7f4d3f110564/screenshot.png",
+          "uiDump": "reference-assets/bot.settings.personal_information_collection_list/79cf7f4d3f110564/ui-dump.json"
+        }
+      ],
       "elements": {
         "page_title": {
           "elementId": "page_title",
@@ -27907,16 +28071,16 @@
       "effectiveVersion": "14.7.0",
       "referenceAssets": [
         {
-          "screenshot": "reference-assets/bot.settings.customer_service/02b86375c352e9f0/screenshot.png",
-          "uiDump": "reference-assets/bot.settings.customer_service/02b86375c352e9f0/ui-dump.json"
-        },
-        {
           "screenshot": "reference-assets/bot.settings.customer_service/0685459d58ad14a0/screenshot.png",
           "uiDump": "reference-assets/bot.settings.customer_service/0685459d58ad14a0/ui-dump.json"
         },
         {
           "screenshot": "reference-assets/bot.settings.customer_service/722ed817fcf2c48e/screenshot.png",
           "uiDump": "reference-assets/bot.settings.customer_service/722ed817fcf2c48e/ui-dump.json"
+        },
+        {
+          "screenshot": "reference-assets/bot.settings.customer_service/2e11e6fd77ae8456/screenshot.png",
+          "uiDump": "reference-assets/bot.settings.customer_service/2e11e6fd77ae8456/ui-dump.json"
         }
       ],
       "elements": {
@@ -39860,17 +40024,17 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 13,
+        "pass": 20,
         "fail": 0,
-        "lastExecutedAt": "2026-08-22T04:54:13.161Z"
+        "lastExecutedAt": "2026-08-24T15:50:44.293Z"
       },
       "risk": "navigation",
       "settleMs": 900,
       "execution": {
         "tier": "fast",
-        "successfulExecutions": 11,
+        "successfulExecutions": 18,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 11,
+        "consecutiveSuccessfulExecutions": 18,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
@@ -39883,10 +40047,17 @@
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/settings/2026-08-22T14-57-36-783Z/round-01/exec/2026-08-22T14-57-37-647Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/help-feedback/2026-08-22T14-58-19-931Z/round-01/exec/2026-08-22T14-58-20-835Z/step-02/post-step-03-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T08-38-54-255Z/cases/main-bot-navbar-open-settings/exec/2026-08-24T08-39-14-186Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T09-16-16-157Z/cases/main-bot-navbar-open-settings/exec/2026-08-24T09-16-34-552Z/step-01/post-step-03-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824152856-78740dba/2026-08-24T15-28-56-662Z/round-01/exec/2026-08-24T15-28-57-596Z/step-02/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824154537-135ce39b/2026-08-24T15-45-38-072Z/round-01/exec/2026-08-24T15-45-38-849Z/step-02/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824155010-8e4397dc/2026-08-24T15-50-11-491Z/round-01/exec/2026-08-24T15-50-12-226Z/step-02/post-step-02-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-22T04:54:13.161Z",
-        "lastValidatedAppVersion": "14.7.0",
+        "lastValidatedAt": "2026-08-24T15:50:44.293Z",
+        "lastValidatedAppVersion": "14.8.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
     },
@@ -39922,11 +40093,26 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 0,
-        "fail": 1
+        "pass": 2,
+        "fail": 1,
+        "lastExecutedAt": "2026-08-24T11:22:39.097Z"
       },
       "risk": "navigation",
-      "settleMs": 900
+      "settleMs": 900,
+      "execution": {
+        "tier": "fast",
+        "successfulExecutions": 2,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824103830-4f7a457f/2026-08-24T10-38-31-465Z/round-01/exec/2026-08-24T10-38-32-356Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824112210-f16a495f/2026-08-24T11-22-11-228Z/round-01/exec/2026-08-24T11-22-12-418Z/step-01/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-24T11:22:39.097Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait"
+      }
     },
     "chat.open_camera": {
       "operatorId": "chat.open_camera",
@@ -40858,12 +41044,26 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 1,
+        "pass": 3,
         "fail": 0,
-        "lastExecutedAt": "2026-08-15T16:11:42.819Z"
+        "lastExecutedAt": "2026-08-24T15:50:44.293Z"
       },
       "risk": "navigation",
-      "settleMs": 900
+      "settleMs": 900,
+      "execution": {
+        "tier": "fast",
+        "successfulExecutions": 2,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824154537-135ce39b/2026-08-24T15-45-38-072Z/round-01/exec/2026-08-24T15-45-38-849Z/step-02/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824155010-8e4397dc/2026-08-24T15-50-11-491Z/round-01/exec/2026-08-24T15-50-12-226Z/step-02/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-24T15:50:44.293Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait"
+      }
     },
     "bot.settings.fabd3ffe8b28.tap.bot.settings.font_background": {
       "operatorId": "bot.settings.fabd3ffe8b28.tap.bot.settings.font_background",
@@ -42761,17 +42961,17 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 7,
+        "pass": 8,
         "fail": 0,
-        "lastExecutedAt": "2026-08-21T14:39:32.218Z"
+        "lastExecutedAt": "2026-08-22T14:59:22.559Z"
       },
       "risk": "navigation",
       "settleMs": 900,
       "execution": {
         "tier": "fast",
-        "successfulExecutions": 6,
+        "successfulExecutions": 7,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 6,
+        "consecutiveSuccessfulExecutions": 7,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
@@ -42779,10 +42979,11 @@
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141536-0f7d7362/2026-08-21T14-15-37-243Z/round-01/exec/2026-08-21T14-15-37-261Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/help-feedback/2026-08-22T14-58-19-931Z/round-01/exec/2026-08-22T14-58-20-835Z/step-02/post-step-03-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T14:39:32.218Z",
-        "lastValidatedAppVersion": "14.7.0",
+        "lastValidatedAt": "2026-08-22T14:59:22.559Z",
+        "lastValidatedAppVersion": "14.8.0",
         "lastDeviceProfileId": "iphone-414x896-portrait"
       }
     },
@@ -45486,11 +45687,28 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 0,
-        "fail": 0
+        "pass": 4,
+        "fail": 0,
+        "lastExecutedAt": "2026-08-22T15:18:05.531Z"
       },
       "risk": "interaction",
-      "settleMs": 900
+      "settleMs": 900,
+      "execution": {
+        "tier": "fast",
+        "successfulExecutions": 4,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 4,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/sidebar/2026-08-22T14-54-16-381Z/round-01/exec/2026-08-22T14-54-17-302Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/sidebar-second/2026-08-22T14-55-44-328Z/round-01/exec/2026-08-22T14-55-45-347Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/cloud-drive/2026-08-22T15-00-16-983Z/round-01/exec/2026-08-22T15-00-17-956Z/step-02/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/skills-fixed/2026-08-22T15-17-26-764Z/round-01/exec/2026-08-22T15-17-28-622Z/step-02/post-step-03-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T15:18:05.531Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait"
+      }
     },
     "chat.detail.detail.tap.chat.call": {
       "operatorId": "chat.detail.detail.tap.chat.call",
@@ -47246,11 +47464,25 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 0,
-        "fail": 0
+        "pass": 1,
+        "fail": 0,
+        "lastExecutedAt": "2026-08-22T15:18:05.531Z"
       },
       "risk": "navigation",
-      "settleMs": 900
+      "settleMs": 900,
+      "execution": {
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/skills-fixed/2026-08-22T15-17-26-764Z/round-01/exec/2026-08-22T15-17-28-622Z/step-02/post-step-03-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T15:18:05.531Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait"
+      }
     },
     "semantic.abde3a425dfdcb": {
       "operatorId": "semantic.abde3a425dfdcb",
@@ -47332,12 +47564,25 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 1,
+        "pass": 2,
         "fail": 0,
-        "lastExecutedAt": "2026-08-16T06:15:41.481Z"
+        "lastExecutedAt": "2026-08-22T15:00:52.169Z"
       },
       "risk": "navigation",
-      "settleMs": 900
+      "settleMs": 900,
+      "execution": {
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/cloud-drive/2026-08-22T15-00-16-983Z/round-01/exec/2026-08-22T15-00-17-956Z/step-02/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T15:00:52.169Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait"
+      }
     },
     "semantic.89899021db3f35": {
       "operatorId": "semantic.89899021db3f35",
@@ -48307,12 +48552,25 @@
       ],
       "status": "verified",
       "executionStats": {
-        "pass": 1,
+        "pass": 2,
         "fail": 0,
-        "lastExecutedAt": "2026-08-16T07:06:43.451Z"
+        "lastExecutedAt": "2026-08-24T15:30:02.168Z"
       },
       "risk": "navigation",
-      "settleMs": 900
+      "settleMs": 900,
+      "execution": {
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824152856-78740dba/2026-08-24T15-28-56-662Z/round-01/exec/2026-08-24T15-28-57-596Z/step-02/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-24T15:30:02.168Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait"
+      }
     },
     "bot.settings.0b6cd352a965.tap.bot.settings.third_party_information_sharing_list": {
       "operatorId": "bot.settings.0b6cd352a965.tap.bot.settings.third_party_information_sharing_list",
@@ -51848,6 +52106,17 @@
           "type": "string",
           "required": true
         }
+      },
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["发送文本消息"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "811a894b1946dfc3bae19f6a1957aca99900d0103efe814b4e77163c00c6c834"
       }
     },
     "photo.capture_and_ask": {
@@ -51891,6 +52160,17 @@
           "type": "string",
           "required": true
         }
+      },
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["拍照发送消息问这是什么"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "4f23e3e0a6e475dcd7c1777fbfad3bedaeb4e0141566a7393a7976ca01cf461b"
       }
     },
     "photo.select_only": {
@@ -51923,7 +52203,18 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["选择一张照片"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "efd9d703f2bf4ee8008ad17326454816187bc2b6fd19c04b406b710cdfea686d"
+      }
     },
     "chat.load_more": {
       "taskId": "chat.load_more",
@@ -51949,7 +52240,18 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["上滑加载更多消息", "查看更早消息"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "1827aaaab2c72bed9bf03cc0f4eebfe266bd5a35fb3f64df47b9ef070c548460"
+      }
     },
     "chat.enable_auto_read": {
       "taskId": "chat.enable_auto_read",
@@ -51975,7 +52277,18 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开自动播报", "打开自动朗读"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "a5ac15b8e16a55027589ac087140319181fc3094c4414d86e85db032d3121869"
+      }
     },
     "bot.open_settings": {
       "taskId": "bot.open_settings",
@@ -52017,11 +52330,33 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["进入当前bot的设置页", "打开豆包设置"],
+        "tier": "fast",
+        "successfulExecutions": 2,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T08-38-54-255Z/cases/main-bot-navbar-open-settings/exec/2026-08-24T08-39-14-186Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T09-16-16-157Z/cases/main-bot-navbar-open-settings/exec/2026-08-24T09-16-34-552Z/step-01/post-step-03-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-24T09:17:08.020Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 91,
+        "dependencyDigest": "6cb0c91c8ba6fc5a85c30cda1b9bafc8e78a41af45e9981fc553a5faa06c76ed",
+        "validUntil": "2026-08-31T09:17:08.020Z"
+      }
     },
     "dynamic.chat.open_more_panel": {
       "taskId": "dynamic.chat.open_more_panel",
-      "intents": ["打开快捷媒体面板"],
+      "intents": [
+        "打开快捷媒体面板",
+        "重新探索从会话页进入会话快捷媒体面板 chat.media_panel 的可靠打开路径，重点验证当前 chat.open_more_panel 路径及入口元素是否仍然有效。"
+      ],
       "entrySceneId": "chat.detail",
       "steps": [
         {
@@ -52039,7 +52374,29 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": [
+          "打开快捷媒体面板",
+          "重新探索从会话页进入会话快捷媒体面板 chat.media_panel 的可靠打开路径，重点验证当前 chat.open_more_panel 路径及入口元素是否仍然有效。"
+        ],
+        "tier": "fast",
+        "successfulExecutions": 2,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824103830-4f7a457f/2026-08-24T10-38-31-465Z/round-01/exec/2026-08-24T10-38-32-356Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824112210-f16a495f/2026-08-24T11-22-11-228Z/round-01/exec/2026-08-24T11-22-12-418Z/step-01/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-24T11:22:39.097Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 93,
+        "dependencyDigest": "376872c006fc571cae9d1cecd01242a7581c3651856deb7c6ff9668cb5f15441",
+        "validUntil": "2026-08-31T11:22:39.097Z"
+      }
     },
     "message.delete_last": {
       "taskId": "message.delete_last",
@@ -52082,6 +52439,17 @@
           "type": "string",
           "required": true
         }
+      },
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["删除指定文本消息", "删除内容为指定文本的消息"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "82d647d6998dc7a33c5b95c1c4419a704fb799e3e1876c71946d026d80c76127"
       }
     },
     "chat.actionbar_scroll_end": {
@@ -52126,7 +52494,18 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["滑动actionbar到最后"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "dbb8fe2a842fae562c11ca5a091645b0c639a8e35af5451a603457dcea4937bb"
+      }
     },
     "chat.open_sidebar": {
       "taskId": "chat.open_sidebar",
@@ -52160,7 +52539,26 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开侧边栏"],
+        "tier": "fast",
+        "successfulExecutions": 2,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/sidebar/2026-08-22T14-54-16-381Z/round-01/exec/2026-08-22T14-54-17-302Z/step-01/post-step-02-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/sidebar-second/2026-08-22T14-55-44-328Z/round-01/exec/2026-08-22T14-55-45-347Z/step-01/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T14:56:08.317Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 81,
+        "dependencyDigest": "b89e613e41d50b098024c53ff9d0aa7e06996a5080c028bc476b025da07c8b65",
+        "validUntil": "2026-08-29T14:56:08.317Z"
+      }
     },
     "cloud.drive.open.from.chat.sidebar": {
       "taskId": "cloud.drive.open.from.chat.sidebar",
@@ -52185,7 +52583,25 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开侧边栏然后点击云盘进入云盘"],
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/cloud-drive/2026-08-22T15-00-16-983Z/round-01/exec/2026-08-22T15-00-17-956Z/step-02/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T15:00:52.169Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 85,
+        "dependencyDigest": "0e6c8cc315b9d05487019c6be2a0656bedf43434a12de2e4bf6fbe706deaf706",
+        "validUntil": "2026-09-21T15:00:52.169Z"
+      }
     },
     "skills.open_from_chat_sidebar": {
       "taskId": "skills.open_from_chat_sidebar",
@@ -52201,8 +52617,8 @@
       ],
       "finalOracles": [
         {
-          "type": "text_visible",
-          "value": "技能 && 个股研究 && 估值建模"
+          "type": "scene_current",
+          "sceneId": "skills.home"
         },
         {
           "type": "foreground_bundle",
@@ -52210,67 +52626,33 @@
         },
         {
           "type": "ui_text_visible",
-          "value": "技能"
+          "value": "技能 · 连接器"
         },
         {
           "type": "ui_text_visible",
-          "value": "个股研究"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "估值建模"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "行业分析报告"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "针对某一行业的中长期基本面与产业研究报告"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "板块热度小报"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "合同起草"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "电商商品素材"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "电商商品内容生产，标题、详情页文案、商品图片等"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "电商活动策划"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "生成、改写、优化专业电商活动策划方案"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "用户研究与需求洞察"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "视觉创作"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "品牌产品等设计企划及演示文稿、文档与视觉资产交付"
-        },
-        {
-          "type": "ui_text_visible",
-          "value": "QA 系统测试"
+          "value": "技能包"
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开侧边栏，然后进入技能页面"],
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/skills-fixed/2026-08-22T15-17-26-764Z/round-01/exec/2026-08-22T15-17-28-622Z/step-02/post-step-03-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T15:18:05.531Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 87,
+        "dependencyDigest": "ea8a788b0dee124889d6e6c899d8b94789452ba962ea9d2be7363854be57900b",
+        "validUntil": "2026-09-21T15:18:05.531Z"
+      }
     },
     "bot.open_memory_settings": {
       "taskId": "bot.open_memory_settings",
@@ -52292,7 +52674,18 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开豆包bot的记忆设置"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "7310f0d97d3ff3df0a288c8e8d5cf69d7bcc6f7f992c8fd895a3beb13969b7a3"
+      }
     },
     "dynamic.chat.open_bot_settings": {
       "taskId": "dynamic.chat.open_bot_settings",
@@ -52314,7 +52707,25 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开设置页面"],
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/settings/2026-08-22T14-57-36-783Z/round-01/exec/2026-08-22T14-57-37-647Z/step-01/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-22T14:57:58.633Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 83,
+        "dependencyDigest": "bfed4476b44c27363607ca05a7fdbf0b8a5616711a328708164aefc2990d4bed",
+        "validUntil": "2026-09-21T14:57:58.633Z"
+      }
     },
     "bot.settings.set_max_font_size": {
       "taskId": "bot.settings.set_max_font_size",
@@ -52352,7 +52763,22 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": [
+          "将字号设置成最大",
+          "将字号设置成最大并重启生效",
+          "把聊天字体调到最大并应用"
+        ],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "0787abaafe130c81e5b8df29c2b7c5d7d598e66f9fc946c2d16685c414e199ba"
+      }
     },
     "dynamic.chat.open_camera": {
       "taskId": "dynamic.chat.open_camera",
@@ -52374,7 +52800,18 @@
         }
       ],
       "status": "verified",
-      "parameters": {}
+      "parameters": {},
+      "validation": {
+        "source": "declared",
+        "sourceGoals": ["打开相机"],
+        "tier": "guarded",
+        "successfulExecutions": 0,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 0,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [],
+        "dependencyDigest": "f6af61a7c3c3effa04182e93689d2ef9b7902501f9f447ca2426733685bfe59f"
+      }
     },
     "runtime.task.66ed2576a0a7": {
       "taskId": "runtime.task.66ed2576a0a7",
@@ -52383,9 +52820,6 @@
       "steps": [
         {
           "operatorId": "chat.open_bot_settings"
-        },
-        {
-          "operatorId": "bot.settings.settings_scroll_region.swipe_up.bot.settings"
         },
         {
           "operatorId": "bot.settings.item-120ed8fe.tap.bot.settings.customer_service"
@@ -52406,18 +52840,22 @@
       "validation": {
         "source": "runtime_composition",
         "sourceGoals": ["打开帮助与反馈"],
-        "tier": "fast",
-        "successfulExecutions": 2,
+        "tier": "guarded",
+        "successfulExecutions": 3,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 2,
+        "consecutiveSuccessfulExecutions": 3,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
           "/tmp/ios_perf-opt/app-graph-learning-validation/run-1/2026-08-19T10-01-20-900Z/round-01/exec/2026-08-19T10-01-20-918Z/step-02/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/app-graph-learning-validation/run-2/2026-08-19T10-02-50-892Z/round-01/exec/2026-08-19T10-02-50-904Z/step-03/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/app-graph-learning-validation/run-2/2026-08-19T10-02-50-892Z/round-01/exec/2026-08-19T10-02-50-904Z/step-03/post-step-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-task-real-validation/help-feedback/2026-08-22T14-58-19-931Z/round-01/exec/2026-08-22T14-58-20-835Z/step-02/post-step-03-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-19T10:03:56.516Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
+        "lastValidatedAt": "2026-08-22T14:59:22.559Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 84,
+        "dependencyDigest": "901964704e158ed3b6c2db6075b7d7c7e049abd7ec887efffd9594c0589bec28",
+        "validUntil": "2026-09-21T14:59:22.559Z"
       }
     },
     "runtime.task.c3fbdf062d77": {
@@ -52427,9 +52865,6 @@
       "steps": [
         {
           "operatorId": "chat.open_bot_settings"
-        },
-        {
-          "operatorId": "bot.settings.settings_scroll_region.swipe_up.bot.settings"
         },
         {
           "operatorId": "bot.settings.settings.tap.bot.settings.privacy.permissions"
@@ -52450,7 +52885,7 @@
       "validation": {
         "source": "runtime_composition",
         "sourceGoals": ["打开隐私和权限"],
-        "tier": "fast",
+        "tier": "guarded",
         "successfulExecutions": 2,
         "failedExecutions": 0,
         "consecutiveSuccessfulExecutions": 2,
@@ -52459,9 +52894,7 @@
           "/tmp/ios_perf-opt/app-graph/2026-08-19T16-14-56-168Z/round-01/exec/2026-08-19T16-14-56-328Z/step-02/post-step-ui-dump.json",
           "/tmp/ios_perf-opt/app-graph/2026-08-19T16-28-00-662Z/round-01/exec/2026-08-19T16-28-01-088Z/step-03/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-19T16:28:41.144Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
+        "dependencyDigest": "cb1a70ef1f243cfc1eda04257bec7faf579b9cf3f1358552f02ac0f9694e801b"
       }
     },
     "runtime.task.f088f50dd89b": {
@@ -52499,186 +52932,12 @@
         "evidencePaths": [
           "/tmp/ios_perf-opt/app-graph/2026-08-21T13-53-18-631Z/round-01/exec/2026-08-21T13-53-18-667Z/step-02/post-step-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T13:53:51.377Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
+        "dependencyDigest": "00505866737801668afc8df38a4f6282dfda876ab2f0fa48fb041fc206a20b13"
       }
     },
-    "runtime.task.4c2df6917265": {
-      "taskId": "runtime.task.4c2df6917265",
-      "intents": ["bot.settings"],
-      "entrySceneId": "chat.detail",
-      "steps": [
-        {
-          "operatorId": "chat.open_bot_settings"
-        }
-      ],
-      "finalOracles": [
-        {
-          "type": "scene_current",
-          "sceneId": "bot.settings"
-        },
-        {
-          "type": "foreground_bundle",
-          "bundleId": "com.bot.doubao"
-        }
-      ],
-      "status": "verified",
-      "parameters": {},
-      "validation": {
-        "source": "runtime_composition",
-        "sourceGoals": ["bot.settings"],
-        "tier": "fast",
-        "successfulExecutions": 2,
-        "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 2,
-        "consecutiveFailedExecutions": 0,
-        "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141346-61f953e8/2026-08-21T14-13-46-685Z/round-01/exec/2026-08-21T14-13-46-695Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045354-0225f805/2026-08-22T04-53-54-375Z/round-01/exec/2026-08-22T04-53-54-387Z/step-01/post-step-ui-dump.json"
-        ],
-        "lastValidatedAt": "2026-08-22T04:54:13.161Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
-      }
-    },
-    "runtime.task.6fdc61326fe3": {
-      "taskId": "runtime.task.6fdc61326fe3",
-      "intents": ["bot.settings.customer_service"],
-      "entrySceneId": "chat.detail",
-      "steps": [
-        {
-          "operatorId": "chat.open_bot_settings"
-        },
-        {
-          "operatorId": "bot.settings.settings_scroll_region.swipe_up.bot.settings"
-        },
-        {
-          "operatorId": "bot.settings.item-120ed8fe.tap.bot.settings.customer_service"
-        }
-      ],
-      "finalOracles": [
-        {
-          "type": "scene_current",
-          "sceneId": "bot.settings.customer_service"
-        },
-        {
-          "type": "foreground_bundle",
-          "bundleId": "com.bot.doubao"
-        }
-      ],
-      "status": "verified",
-      "parameters": {},
-      "validation": {
-        "source": "runtime_composition",
-        "sourceGoals": ["bot.settings.customer_service"],
-        "tier": "fast",
-        "successfulExecutions": 2,
-        "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 2,
-        "consecutiveFailedExecutions": 0,
-        "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821141536-0f7d7362/2026-08-21T14-15-37-243Z/round-01/exec/2026-08-21T14-15-37-261Z/step-02/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143324-65480059/2026-08-21T14-33-24-328Z/round-01/exec/2026-08-21T14-33-24-340Z/step-02/post-step-ui-dump.json"
-        ],
-        "lastValidatedAt": "2026-08-21T14:33:52.119Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
-      }
-    },
-    "runtime.task.0bfe5ef60d62": {
-      "taskId": "runtime.task.0bfe5ef60d62",
-      "intents": ["页面的录屏不对 需要重新录一下"],
-      "entrySceneId": "chat.detail",
-      "steps": [
-        {
-          "operatorId": "chat.open_bot_settings"
-        },
-        {
-          "operatorId": "bot.settings.settings_scroll_region.swipe_up.bot.settings"
-        },
-        {
-          "operatorId": "bot.settings.item-120ed8fe.tap.bot.settings.customer_service"
-        }
-      ],
-      "finalOracles": [
-        {
-          "type": "scene_current",
-          "sceneId": "bot.settings.customer_service"
-        },
-        {
-          "type": "foreground_bundle",
-          "bundleId": "com.bot.doubao"
-        }
-      ],
-      "status": "candidate",
-      "parameters": {},
-      "validation": {
-        "source": "runtime_composition",
-        "sourceGoals": ["页面的录屏不对 需要重新录一下"],
-        "tier": "guarded",
-        "successfulExecutions": 1,
-        "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 1,
-        "consecutiveFailedExecutions": 0,
-        "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143221-3065ad90/2026-08-21T14-32-21-571Z/round-01/exec/2026-08-21T14-32-21-586Z/step-02/post-step-ui-dump.json"
-        ],
-        "lastValidatedAt": "2026-08-21T14:32:55.433Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
-      }
-    },
-    "runtime.task.c8b0a2c3e43b": {
-      "taskId": "runtime.task.c8b0a2c3e43b",
-      "intents": [
-        "查找并验证从会话页到场景 bot.settings.customer_service 的完整导航路径。当前上下文只证明 bot.settings 可通过已验证 operator bot.settings.item-120ed8fe.tap.bot.settings.customer_service 到达该页面，并存在一个从 chat.ai_song.more_menu 到该页面的 stale operator；缺少从会话页起点到这些中间场景的可靠证据。"
-      ],
-      "entrySceneId": "chat.detail",
-      "steps": [
-        {
-          "operatorId": "chat.open_bot_settings"
-        },
-        {
-          "operatorId": "bot.settings.settings_scroll_region.swipe_up.bot.settings"
-        },
-        {
-          "operatorId": "bot.settings.item-120ed8fe.tap.bot.settings.customer_service"
-        }
-      ],
-      "finalOracles": [
-        {
-          "type": "scene_current",
-          "sceneId": "bot.settings.customer_service"
-        },
-        {
-          "type": "foreground_bundle",
-          "bundleId": "com.bot.doubao"
-        }
-      ],
-      "status": "candidate",
-      "parameters": {},
-      "validation": {
-        "source": "runtime_composition",
-        "sourceGoals": [
-          "查找并验证从会话页到场景 bot.settings.customer_service 的完整导航路径。当前上下文只证明 bot.settings 可通过已验证 operator bot.settings.item-120ed8fe.tap.bot.settings.customer_service 到达该页面，并存在一个从 chat.ai_song.more_menu 到该页面的 stale operator；缺少从会话页起点到这些中间场景的可靠证据。"
-        ],
-        "tier": "guarded",
-        "successfulExecutions": 1,
-        "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 1,
-        "consecutiveFailedExecutions": 0,
-        "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821143859-8fd7be2e/2026-08-21T14-39-00-089Z/round-01/exec/2026-08-21T14-39-00-107Z/step-02/post-step-ui-dump.json"
-        ],
-        "lastValidatedAt": "2026-08-21T14:39:32.218Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
-      }
-    },
-    "runtime.task.82e1765d043c": {
-      "taskId": "runtime.task.82e1765d043c",
-      "intents": ["chat.detail"],
+    "runtime.task.d5dec8bf7222": {
+      "taskId": "runtime.task.d5dec8bf7222",
+      "intents": ["会话页"],
       "entrySceneId": "chat.detail",
       "steps": [],
       "finalOracles": [
@@ -52695,109 +52954,112 @@
       "parameters": {},
       "validation": {
         "source": "runtime_composition",
-        "sourceGoals": ["chat.detail"],
-        "tier": "fast",
-        "successfulExecutions": 4,
-        "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 4,
-        "consecutiveFailedExecutions": 0,
-        "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821152950-2a652f39/entry-exec/2026-08-21T15-29-50-366Z/ground-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821153450-5b8c22ed/entry-exec/2026-08-21T15-34-51-138Z/ground-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821153856-a800edfc/entry-exec/2026-08-21T15-38-56-555Z/ground-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821154109-f0e205c0/entry-exec/2026-08-21T15-42-52-950Z/ground-ui-dump.json"
-        ],
-        "lastValidatedAt": "2026-08-21T15:43:09.798Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
-      }
-    },
-    "runtime.task.0bc77bb53bb7": {
-      "taskId": "runtime.task.0bc77bb53bb7",
-      "intents": ["chat.ppt.generate.panel"],
-      "entrySceneId": "chat.detail",
-      "steps": [
-        {
-          "operatorId": "chat.actionbar_scroll_end.2.swipe_left.horizontalscrollregion"
-        },
-        {
-          "operatorId": "chat.detail.PPT.tap.chat.ppt.generate.panel"
-        }
-      ],
-      "finalOracles": [
-        {
-          "type": "scene_current",
-          "sceneId": "chat.ppt.generate.panel"
-        },
-        {
-          "type": "foreground_bundle",
-          "bundleId": "com.bot.doubao"
-        }
-      ],
-      "status": "verified",
-      "parameters": {},
-      "validation": {
-        "source": "runtime_composition",
-        "sourceGoals": ["chat.ppt.generate.panel"],
+        "sourceGoals": ["会话页"],
         "tier": "fast",
         "successfulExecutions": 2,
         "failedExecutions": 0,
         "consecutiveSuccessfulExecutions": 2,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161050-173de165/2026-08-21T16-10-50-534Z/round-01/exec/2026-08-21T16-10-50-544Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161810-215aedc7/2026-08-21T16-18-11-239Z/round-01/exec/2026-08-21T16-18-11-251Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T08-38-54-255Z/cases/main-bot-navbar-visible/exec/2026-08-24T08-38-56-089Z/ground-ui-dump.json",
+          "/tmp/ios_perf-opt/app-graph-accept-main-bot-navigation/2026-08-24T09-16-16-157Z/cases/main-bot-navbar-visible/exec/2026-08-24T09-16-17-609Z/ground-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-21T16:18:34.026Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
+        "lastValidatedAt": "2026-08-24T09:16:34.447Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 90,
+        "dependencyDigest": "95d1dbbf9161e6f87640807d7627b182f0907f6fd7bb1deb1be4be2a27938f24",
+        "validUntil": "2026-08-31T09:16:34.447Z"
       }
     },
-    "runtime.task.e08b0d608de3": {
-      "taskId": "runtime.task.e08b0d608de3",
-      "intents": ["chat.buy_before_ask"],
+    "runtime.task.9164f1e96ae1": {
+      "taskId": "runtime.task.9164f1e96ae1",
+      "intents": [
+        "执行到 scene:bot.settings.personal_information_collection_list"
+      ],
       "entrySceneId": "chat.detail",
       "steps": [
         {
-          "operatorId": "chat.actionbar_scroll_end.2.swipe_left.horizontalscrollregion"
+          "operatorId": "chat.open_bot_settings"
         },
         {
-          "operatorId": "semantic.0f65ab137ed77d"
-        },
-        {
-          "operatorId": "chat.detail.text-48c8a0de049d.tap.chat.buy_before_ask"
+          "operatorId": "bot.settings.a085cb3d7c19.tap.bot.settings.personal_information_collection_list"
         }
       ],
       "finalOracles": [
         {
           "type": "scene_current",
-          "sceneId": "chat.buy_before_ask"
+          "sceneId": "bot.settings.personal_information_collection_list"
         },
         {
           "type": "foreground_bundle",
           "bundleId": "com.bot.doubao"
         }
       ],
-      "status": "verified",
+      "status": "candidate",
       "parameters": {},
       "validation": {
         "source": "runtime_composition",
-        "sourceGoals": ["chat.buy_before_ask"],
-        "tier": "fast",
-        "successfulExecutions": 5,
+        "sourceGoals": [
+          "执行到 scene:bot.settings.personal_information_collection_list"
+        ],
+        "tier": "guarded",
+        "successfulExecutions": 1,
         "failedExecutions": 0,
-        "consecutiveSuccessfulExecutions": 5,
+        "consecutiveSuccessfulExecutions": 1,
         "consecutiveFailedExecutions": 0,
         "evidencePaths": [
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161204-8dcef2bd/2026-08-21T16-12-05-278Z/round-01/exec/2026-08-21T16-12-05-292Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260821161901-7eb8441c/2026-08-21T16-19-01-688Z/round-01/exec/2026-08-21T16-19-01-758Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822041619-2d4b20bd/2026-08-22T04-16-19-670Z/round-01/exec/2026-08-22T04-16-19-695Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822045218-9236dd8a/2026-08-22T04-52-18-817Z/round-01/exec/2026-08-22T04-52-18-871Z/step-01/post-step-ui-dump.json",
-          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260822052818-355fa09e/2026-08-22T05-28-19-462Z/round-01/exec/2026-08-22T05-28-19-477Z/step-01/post-step-ui-dump.json"
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824152856-78740dba/2026-08-24T15-28-56-662Z/round-01/exec/2026-08-24T15-28-57-596Z/step-02/post-step-02-ui-dump.json"
         ],
-        "lastValidatedAt": "2026-08-22T05:28:50.500Z",
-        "lastValidatedAppVersion": "14.7.0",
-        "lastDeviceProfileId": "iphone-414x896-portrait"
+        "lastValidatedAt": "2026-08-24T15:30:02.168Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 94,
+        "dependencyDigest": "42ecef6c9616aeb33e4991bac95976aa405f0c32c24a89430a4ffc73660f7d0a",
+        "validUntil": "2026-09-23T15:30:02.168Z"
+      }
+    },
+    "runtime.task.32bee10d0f39": {
+      "taskId": "runtime.task.32bee10d0f39",
+      "intents": ["重新采集", "打开声音设置"],
+      "entrySceneId": "chat.detail",
+      "steps": [
+        {
+          "operatorId": "chat.open_bot_settings"
+        },
+        {
+          "operatorId": "bot.settings.b70120cedee8.tap.bot.settings.sound"
+        }
+      ],
+      "finalOracles": [
+        {
+          "type": "scene_current",
+          "sceneId": "bot.settings.sound"
+        },
+        {
+          "type": "foreground_bundle",
+          "bundleId": "com.bot.doubao"
+        }
+      ],
+      "status": "candidate",
+      "parameters": {},
+      "validation": {
+        "source": "runtime_composition",
+        "sourceGoals": ["打开声音设置"],
+        "tier": "guarded",
+        "successfulExecutions": 1,
+        "failedExecutions": 0,
+        "consecutiveSuccessfulExecutions": 1,
+        "consecutiveFailedExecutions": 0,
+        "evidencePaths": [
+          "/tmp/ios_perf-opt/ios-ui-graph-console/runs/20260824155010-8e4397dc/2026-08-24T15-50-11-491Z/round-01/exec/2026-08-24T15-50-12-226Z/step-02/post-step-02-ui-dump.json"
+        ],
+        "lastValidatedAt": "2026-08-24T15:50:44.293Z",
+        "lastValidatedAppVersion": "14.8.0",
+        "lastDeviceProfileId": "iphone-414x896-portrait",
+        "validatedGraphRevision": 96,
+        "dependencyDigest": "6a79274f3df0899a797d7990eb24f9386d6e46d9b30ed66c1b528ce6034b48d2",
+        "validUntil": "2026-09-23T15:50:44.293Z"
       }
     }
   }
