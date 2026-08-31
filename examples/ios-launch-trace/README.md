@@ -8,7 +8,7 @@ needed for the trace capture itself.
 ## What it does
 
 1. prepares an output directory under
-   `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/`;
+   `/tmp/ios_perf-opt/ios-launch-trace/`;
 2. runs the existing `flow-ios-trace-collection` `collect_trace.py` script in
    `launch` mode;
 3. reads `summary.json` and `time_profile.xml`;
@@ -23,7 +23,9 @@ collector may install the supplied `.app` unless `skipInstall` is set.
 ```bash
 deer-workflow run ./examples/ios-launch-trace/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "timeLimit": "20s"
@@ -35,22 +37,24 @@ collector summary, and the HTML report path.
 
 ## Inputs
 
-- `projectRoot`: target iOS project root.
+- `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
+- `projectRoot`: target iOS source root.
+- `buildRoot`: root containing `.vscode-out`; defaults to `projectRoot`.
 - `udid`: real-device UDID passed to `xctrace`.
 - `bundleId`: bundle identifier launched under Time Profiler. Defaults to
   `com.bot.doubao`.
 - `collectorScriptPath`: path to `collect_trace.py`. Defaults to the local
   `ios-perf-optimizer` checkout.
-- `appPath`: existing `.app` bundle. If omitted, the collector uses its
-  flow_iOS default: `<projectRoot parent>/.vscode-out/Grace.app`.
+- `appPath`: existing `.app` bundle. If omitted, the collector uses
+  `<buildRoot>/.vscode-out/Grace.app`.
 - `dsymPath`: matching `.app.dSYM`. If omitted, the collector uses its flow_iOS
-  default: `<projectRoot parent>/.vscode-out/Grace.app.dSYM`. The Workflow does
+  default: `<buildRoot>/.vscode-out/Grace.app.dSYM`. The Workflow does
   not scan for dSYM bundles; pass an absolute `dsymPath` when the build artifact
   lives elsewhere.
 - `timeLimit`: xctrace recording limit, such as `20s`.
 - `skipInstall`: skip installing the `.app` before trace collection.
 - `outputDir`: output directory. Defaults to
-  `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/<runId>`.
+  `/tmp/ios_perf-opt/ios-launch-trace/<runId>`.
 - `htmlReportPath`: report destination. Defaults to
   `<outputDir>/launch-trace-report.html`.
 - `targetBinary`: binary highlighted as app code in the HTML timeline. Defaults

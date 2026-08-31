@@ -748,18 +748,25 @@ compiled.
   numbered fallbacks preserve existing reports.
 - [Blog Writer](../examples/blog-writer/README.md) combines `agent()`,
   `phase()`, `pipeline()`, `log()`, and `WorkflowRunner`.
+- [iOS Cosign and JoJo Install](../examples/ios-cosign-jojo-install/README.md)
+  runs `Scripts/cosign.sh` and `jojoInstall.sh` serially from the iOS project
+  root, persisting diagnostics under `/tmp/ios_perf-opt`.
 - [iOS Build and Install](../examples/ios-build-install/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
   flow-ios-dev build output and install-only devicectl deployment. It returns
   both the main-app dSYM and a recursive symbol search path containing
-  `GraceCore.framework.dSYM`.
+  `GraceCore.framework.dSYM`. Its input separates the Git `repositoryRoot`,
+  iOS `projectRoot`, and JoJo `buildRoot` for monorepo layouts such as Florak.
 - [iOS Launch Trace](../examples/ios-launch-trace/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with a local
-  xctrace collector and HTML timeline renderer.
+  xctrace collector and HTML timeline renderer. It passes `projectRoot` and
+  `buildRoot` separately so default app/dSYM lookup stays under the iOS build
+  root.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
   `xctrace record --attach`, automatic dSYM resolution, `xctrace symbolicate`,
-  Time Profiler XML export, and the shared HTML timeline renderer.
+  Time Profiler XML export, and the shared HTML timeline renderer. Recent build
+  summary reuse is scoped to the explicit iOS source/build roots.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated case assets, serializes every device action, and writes
   per-case evidence plus an HTML report.

@@ -315,6 +315,8 @@ Pi 0.84.1 没有内置操作系统 Sandbox。`PiAgent` 通过非修改型工具 
   并行研究多个独立角度、验证结论，并生成交互式 HTML 报告。
 - [Blog Writer](../examples/blog-writer/README.zh-CN.md) 使用 `pipeline()` 独立
   起草和审阅各个章节。
+- [iOS 签名与 JoJo 依赖安装](../examples/ios-cosign-jojo-install/README.zh-CN.md)
+  按顺序运行仓库原生签名和 JoJo 依赖准备脚本。
 - [iOS Build and Install](../examples/ios-build-install/README.zh-CN.md) 准备
   可用于 trace 的 flow_iOS `.app` 和 dSYM，并只安装不启动。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md) 封装固定的

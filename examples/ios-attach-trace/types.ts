@@ -4,11 +4,16 @@ import type { LaunchTraceSummary } from "../ios-launch-trace/types";
  * Input accepted by the iOS Attach Trace Workflow.
  */
 export interface IosAttachTraceInput {
+  /** Git repository root. Defaults to `projectRoot`. */
+  repositoryRoot?: string;
+
   /**
-   * Root of the target iOS project. For flow_iOS this is usually the
-   * `flow_iOS` checkout, not the optimizer repository.
+   * iOS source root containing Modules/, Flow/, and Podfile.
    */
   projectRoot: string;
+
+  /** Root used by flow-ios-dev/JoJo. Defaults to `projectRoot`. */
+  buildRoot?: string;
 
   /** Real-device UDID used by xctrace. */
   udid: string;
@@ -101,6 +106,8 @@ export interface AttachTargetResolution {
  */
 export interface IosAttachTraceSummary extends LaunchTraceSummary {
   mode: "attach";
+  repository_root?: string;
+  build_root?: string;
   attach_target: string;
   attach_target_resolution?: AttachTargetResolution;
   template: string;
@@ -119,6 +126,9 @@ export interface IosAttachTraceSummary extends LaunchTraceSummary {
  */
 export interface IosAttachTraceResult {
   success: boolean;
+  repositoryRoot: string;
+  projectRoot: string;
+  buildRoot: string;
   exitCode: number;
   command: string[];
   outputDir: string;

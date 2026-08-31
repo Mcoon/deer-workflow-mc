@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import {
+  buildCollectorCommand,
   buildThreadTimelines,
   buildTraceTimelineFromSamples,
   parseTraceTimeline,
@@ -12,6 +13,36 @@ import {
 import type { TraceFrame } from "../../examples/ios-launch-trace/types";
 
 describe("iOS Launch Trace report", () => {
+  test("passes the Florak iOS build root to the collector", () => {
+    const command = buildCollectorCommand({
+      repositoryRoot: "/repo/Florak",
+      projectRoot: "/repo/Florak/flow/ios",
+      buildRoot: "/repo/Florak/flow/ios",
+      udid: "device-1",
+      bundleId: "com.bot.doubao",
+      collectorScriptPath: "/tmp/collect_trace.py",
+      python: "python3",
+      appPath: "",
+      dsymPath: "",
+      timeLimit: "20s",
+      skipInstall: false,
+      outputDir: "/tmp/ios_perf-opt/ios-launch-trace/test",
+      targetBinary: "Grace",
+      htmlReportPath: "/tmp/report.html",
+      maxSamples: 12000,
+      maxDepth: 72,
+    });
+
+    expect(command).toContain("--project-root");
+    expect(command[command.indexOf("--project-root") + 1]).toBe(
+      "/repo/Florak/flow/ios",
+    );
+    expect(command).toContain("--build-root");
+    expect(command[command.indexOf("--build-root") + 1]).toBe(
+      "/repo/Florak/flow/ios",
+    );
+  });
+
   test("merges adjacent frame samples into timeline spans", () => {
     const main = frame("main", "Grace", true);
     const boot = frame("FlowBootManager.start", "Grace", true);
@@ -465,6 +496,41 @@ describe("iOS Launch Trace report", () => {
     );
     // Main-thread compatibility fields still describe the main thread only.
     expect(timeline.spans.map((span) => span.name)).toContain("main");
+  });
+
+  test("classifies Florak iOS source paths as app frames", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "ios-launch-trace-florak-"));
+    const xmlPath = join(dir, "time_profile.xml");
+    await writeFile(
+      xmlPath,
+      `<?xml version="1.0"?>
+      <trace-query-result>
+        <row>
+          <sample-time id="time-1" fmt="00:00.001">1000000</sample-time>
+          <weight id="weight-1" fmt="1.00 ms">1000000</weight>
+          <thread id="t1" fmt="Main Thread  0x1"></thread>
+          <backtrace id="bt1">
+            <frame id="leaf" name="FlowFeature.render()">
+              <binary id="b-feature" name="FlowFeature" path="/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios/DerivedData/FlowFeature.framework/FlowFeature"/>
+              <source line="42"><path>./flow/ios/Modules/FlowFeature/Render.swift</path></source>
+            </frame>
+          </backtrace>
+        </row>
+      </trace-query-result>`,
+      "utf8",
+    );
+
+    const timeline = await parseTraceTimeline({
+      timeProfilePath: xmlPath,
+      targetBinary: "Grace",
+      maxSamples: 10,
+      maxDepth: 10,
+      python: "python3",
+    });
+
+    expect(timeline.spans[0]).toEqual(
+      expect.objectContaining({ name: "FlowFeature.render()", appFrame: true }),
+    );
   });
 });
 

@@ -18,12 +18,18 @@ It does not call `flow-ios-dev deploy.py`, `ios-deploy`, or any install-and-run
 wrapper. The install phase is install-only so the first launch can still be the
 later Time Profiler collection.
 
+If signing or `.jojo` dependencies have not been prepared in a fresh checkout,
+run [iOS Cosign and JoJo Install](../ios-cosign-jojo-install/README.md) first.
+This Workflow deliberately does not initialize them implicitly.
+
 ## Run
 
 ```bash
 deer-workflow run ./examples/ios-build-install/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "mode": "Debug"
   }'
@@ -50,7 +56,9 @@ Then run launch trace with the returned paths:
 ```bash
 deer-workflow run ./examples/ios-launch-trace/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "appPath": "<appPath from ios-build-install>",
@@ -65,14 +73,20 @@ install used the same returned `appPath`.
 
 ## Inputs
 
-- `projectRoot`: target iOS project root.
+- `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
+- `projectRoot`: iOS source root containing `Modules/`, `Flow/`, and `Podfile`.
+- `buildRoot`: root passed to `flow-ios-dev`; defaults to `projectRoot`. For
+  Florak it is also `flow/ios`, because there is no MBox workspace root.
 - `udid`: real-device UDID used for install-only deployment.
 - `buildScriptPath`: path to `build_app.py`. Defaults to the installed
   `flow-ios-dev` Skill path.
+- `existingBuildSummaryPath`: reuse a successful `build_app.py` JSON summary
+  and continue at validation/install without rebuilding.
 - `mode`: `Debug` or `Release`. Defaults to `Debug`.
 - `symbolsRequired`: defaults to `true`; keep it enabled for Time Profiler.
-- `requireReadySymbols`: defaults to `true`; fails if dSYM metadata is missing
-  or partial.
+- `requireReadySymbols`: defaults to `true`; requires the main app dSYM and
+  `symbolication_status: ready`. `GraceCore.framework.dSYM` remains optional
+  and is only needed for source-level attach-trace analysis.
 - `noKeepGoing`: passes `--no-keep-going` to `build_app.py`.
 - `outputDir`: output directory. Defaults to `/tmp/ios_perf-opt`.
 - `installTimeoutSeconds`: devicectl install timeout. Defaults to `180`.

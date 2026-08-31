@@ -6,7 +6,7 @@
 
 ## 功能
 
-1. 在 `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/` 下准备输出目录；
+1. 在 `/tmp/ios_perf-opt/ios-launch-trace/` 下准备输出目录；
 2. 以 `launch` 模式运行已有的 `flow-ios-trace-collection`
    `collect_trace.py` 脚本；
 3. 读取 `summary.json` 和 `time_profile.xml`；
@@ -21,7 +21,9 @@ Workflow 不会修改 `ios-perf-optimizer` 或目标 App。除非设置 `skipIns
 ```bash
 deer-workflow run ./examples/ios-launch-trace/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "timeLimit": "20s"
@@ -33,21 +35,23 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 
 ## 输入
 
-- `projectRoot`：目标 iOS 工程根目录。
+- `repositoryRoot`：Git 仓库根；Florak 下是 monorepo 根。
+- `projectRoot`：目标 iOS 源码根。
+- `buildRoot`：包含 `.vscode-out` 的构建根，默认等于 `projectRoot`。
 - `udid`：传给 `xctrace` 的真机 UDID。
 - `bundleId`：Time Profiler 启动的 bundle identifier，默认
   `com.bot.doubao`。
 - `collectorScriptPath`：`collect_trace.py` 路径，默认指向本机
   `ios-perf-optimizer` checkout。
-- `appPath`：已有 `.app` bundle。不传时使用 collector 的 flow_iOS 默认值：
-  `<projectRoot parent>/.vscode-out/Grace.app`。
-- `dsymPath`：匹配的 `.app.dSYM`。不传时使用 collector 的 flow_iOS 默认值：
-  `<projectRoot parent>/.vscode-out/Grace.app.dSYM`。Workflow 不会主动扫描
+- `appPath`：已有 `.app` bundle。不传时使用 collector 默认值：
+  `<buildRoot>/.vscode-out/Grace.app`。
+- `dsymPath`：匹配的 `.app.dSYM`。不传时使用 collector 默认值：
+  `<buildRoot>/.vscode-out/Grace.app.dSYM`。Workflow 不会主动扫描
   dSYM；如果构建产物在别处，需要显式传绝对路径 `dsymPath`。
 - `timeLimit`：xctrace 采集时长，例如 `20s`。
 - `skipInstall`：采集前跳过安装 `.app`。
 - `outputDir`：输出目录，默认是
-  `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/<runId>`。
+  `/tmp/ios_perf-opt/ios-launch-trace/<runId>`。
 - `htmlReportPath`：HTML 报告目标路径，默认是
   `<outputDir>/launch-trace-report.html`。
 - `targetBinary`：HTML 中高亮为业务代码的 binary，默认 `Grace`。

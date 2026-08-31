@@ -6,7 +6,7 @@ Workflow，在录制阶段操作手机，等 `xctrace` 到达时间上限后自�
 
 ## 功能
 
-1. 在 `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/` 下准备输出目录；
+1. 在 `/tmp/ios_perf-opt/ios-attach-trace/` 下准备输出目录；
 2. 按指定时长运行 `xcrun xctrace record --template "Time Profiler" --attach <target>`；
 3. 从显式输入或最近一次匹配的 `ios-build-install` summary 解析完整 dSYM 目录，
    执行 `xctrace symbolicate`；
@@ -23,7 +23,9 @@ Workflow 不会安装、启动、终止或控制 App。进入 Collect 阶段前�
 ```bash
 deer-workflow run ./examples/ios-attach-trace/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "attachTarget": "Grace",
@@ -38,7 +40,10 @@ Workflow 会导出 XML 并生成 HTML 报告。
 
 ## 输入
 
-- `projectRoot`：目标 iOS 工程根目录。
+- `repositoryRoot`：Git 仓库根；Florak 下是 monorepo 根。
+- `projectRoot`：目标 iOS 源码根。
+- `buildRoot`：flow-ios-dev/JoJo 构建根，用于约束匹配构建产物，默认等于
+  `projectRoot`。
 - `udid`：传给 `xctrace` 的真机 UDID。
 - `bundleId`：写入 summary 和报告的 bundle identifier，默认
   `com.bot.doubao`。
@@ -49,7 +54,7 @@ Workflow 会导出 XML 并生成 HTML 报告。
 - `template`：xctrace template 名称或路径，默认 `Time Profiler`。
 - `timeLimit`：录制时长，默认 `30s`。
 - `outputDir`：输出目录，默认
-  `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/<runId>`。
+  `/tmp/ios_perf-opt/ios-attach-trace/<runId>`。
 - `htmlReportPath`：HTML 报告目标路径，默认
   `<outputDir>/attach-trace-report.html`。
 - `targetBinary`：HTML 中高亮为业务代码的 binary，默认 `Grace`。

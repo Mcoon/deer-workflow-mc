@@ -97,6 +97,45 @@ describe("iOS Attach Trace workflow helpers", () => {
     );
   });
 
+  test("matches Florak build summaries against the explicit iOS build root", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ios-attach-florak-symbols-"));
+    const repositoryRoot = join(root, "Florak");
+    const projectRoot = join(repositoryRoot, "flow", "ios");
+    const buildArtifactRoot = join(root, "builds");
+    const runDir = join(buildArtifactRoot, "run");
+    const symbolRoot = join(projectRoot, "DerivedData", "Debug-iphoneos");
+    const businessDsym = join(symbolRoot, "GraceCore.framework.dSYM");
+    await mkdir(businessDsym, { recursive: true });
+    await mkdir(runDir, { recursive: true });
+    await writeFile(
+      join(runDir, "build-summary.json"),
+      JSON.stringify({
+        success: true,
+        repository_root: repositoryRoot,
+        project_root: projectRoot,
+        build_root: projectRoot,
+        app_path: join(projectRoot, ".vscode-out", "Grace.app"),
+        dsym_metadata: [{ path: businessDsym, binary_name: "GraceCore" }],
+      }),
+      "utf8",
+    );
+
+    await expect(
+      resolveAttachSymbolContext({
+        projectRoot,
+        buildRoot: projectRoot,
+        targetBinary: "Grace",
+        businessBinary: "GraceCore",
+        buildArtifactRoot,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        searchPath: symbolRoot,
+        source: "recent-build-summary",
+      }),
+    );
+  });
+
   test("ignores a newer build summary from another project", async () => {
     const root = await mkdtemp(join(tmpdir(), "ios-attach-project-match-"));
     const projectRoot = join(root, "Dbao", "flow_iOS");

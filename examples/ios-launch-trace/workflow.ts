@@ -14,7 +14,7 @@ import type {
   TraceFrameSpan,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/Users/bytedance/.ios_pref_optimizer";
+const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
 const DEFAULT_COLLECTOR_SCRIPT_PATH =
   "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/skills/collection/flow-ios-trace-collection/scripts/collect_trace.py";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
@@ -39,7 +39,9 @@ export const meta = {
     { title: "Report" },
   ],
   exampleArgs: {
-    projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     udid: "00008030-001A286A2229802E",
     bundleId: "com.bot.doubao",
     timeLimit: "20s",
@@ -62,7 +64,9 @@ export default async function iosLaunchTrace(
   log(
     [
       "## Preparing iOS launch trace collection",
-      `- **Project:** \`${input.projectRoot}\``,
+      `- **Repository:** \`${input.repositoryRoot}\``,
+      `- **iOS source:** \`${input.projectRoot}\``,
+      `- **Build root:** \`${input.buildRoot}\``,
       `- **Device:** \`${input.udid}\``,
       `- **Bundle:** \`${input.bundleId}\``,
       `- **Output:** \`${input.outputDir}\``,
@@ -86,6 +90,14 @@ export default async function iosLaunchTrace(
   const summary = await readCollectorSummary(
     expectedSummaryPath,
     collection.stdout,
+  );
+  summary.repository_root = input.repositoryRoot;
+  summary.project_root = input.projectRoot;
+  summary.build_root = input.buildRoot;
+  await writeFile(
+    expectedSummaryPath,
+    JSON.stringify(summary, null, 2),
+    "utf8",
   );
   const summaryPath = summary.summary_path ?? expectedSummaryPath;
   const tracePath =
@@ -148,6 +160,9 @@ export default async function iosLaunchTrace(
 
   return {
     success: true,
+    repositoryRoot: input.repositoryRoot,
+    projectRoot: input.projectRoot,
+    buildRoot: input.buildRoot,
     exitCode: collection.exitCode,
     command,
     outputDir: input.outputDir,
@@ -167,7 +182,9 @@ export default async function iosLaunchTrace(
 }
 
 interface NormalizedInput {
+  repositoryRoot: string;
   projectRoot: string;
+  buildRoot: string;
   udid: string;
   bundleId: string;
   collectorScriptPath: string;
@@ -231,6 +248,8 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
   }
 
   const projectRoot = resolve(requiredText(args.projectRoot, "projectRoot"));
+  const repositoryRoot = resolve(args.repositoryRoot?.trim() || projectRoot);
+  const buildRoot = resolve(args.buildRoot?.trim() || projectRoot);
   const udid = requiredText(args.udid, "udid");
   const runId = safeSegment(args.runId?.trim() || timestampForPath());
   const outputDir = resolve(
@@ -242,7 +261,9 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
   );
 
   return {
+    repositoryRoot,
     projectRoot,
+    buildRoot,
     udid,
     bundleId: args.bundleId?.trim() || DEFAULT_BUNDLE_ID,
     collectorScriptPath: resolve(
@@ -261,7 +282,7 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
   };
 }
 
-function buildCollectorCommand(input: NormalizedInput): string[] {
+export function buildCollectorCommand(input: NormalizedInput): string[] {
   const command = [
     input.python,
     input.collectorScriptPath,
@@ -269,6 +290,8 @@ function buildCollectorCommand(input: NormalizedInput): string[] {
     "launch",
     "--project-root",
     input.projectRoot,
+    "--build-root",
+    input.buildRoot,
     "--udid",
     input.udid,
     "--bundle-id",
@@ -2912,6 +2935,7 @@ def is_app_frame(binary_name, binary_path, source_path):
     if target_binary and binary_name in (target_binary, target_binary + "Core"):
         return True
     local_markers = (
+        "/Florak/flow/ios/",
         "/BDWorkSpace/Dbao/",
         "/flow_iOS/",
         "/.jojo/repos/",
@@ -2919,7 +2943,7 @@ def is_app_frame(binary_name, binary_path, source_path):
     )
     if any(marker in binary_path for marker in local_markers):
         return True
-    if source_path.startswith("./flow_iOS/"):
+    if source_path.startswith(("./flow/ios/", "./flow_iOS/")):
         return True
     return False
 

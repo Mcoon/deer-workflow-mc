@@ -84,6 +84,8 @@ Want to understand or edit the generated module? Continue with the
   interactive HTML report.
 - [Blog Writer](./examples/blog-writer/README.md) plans an article, drafts its
   sections through a pipeline, reviews them, and returns structured output.
+- [iOS Cosign and JoJo Install](./examples/ios-cosign-jojo-install/README.md)
+  prepares signing and dependencies through the repository-native Florak iOS scripts.
 - [iOS Build and Install](./examples/ios-build-install/README.md) builds a
   flow_iOS app with dSYM artifacts and installs it without launching.
 - [iOS Launch Trace](./examples/ios-launch-trace/README.md) runs a deterministic

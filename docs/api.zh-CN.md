@@ -694,17 +694,22 @@ path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
   Present 阶段通过操作系统打开生成的 HTML 文件。
 - [Blog Writer](../examples/blog-writer/README.zh-CN.md)：组合使用
   `agent()`、`phase()`、`pipeline()`、`log()` 和 `WorkflowRunner`。
+- [iOS 签名与 JoJo 依赖安装](../examples/ios-cosign-jojo-install/README.zh-CN.md)：
+  从 iOS 工程根串行执行 `Scripts/cosign.sh` 和 `jojoInstall.sh`，诊断产物统一
+  落到 `/tmp/ios_perf-opt`。
 - [iOS Build and Install](../examples/ios-build-install/README.zh-CN.md)：组合
   确定性 TypeScript 编排、`phase()`、`log()`、flow-ios-dev 构建输出和
   install-only devicectl 安装；同时返回主壳 dSYM 与包含
-  `GraceCore.framework.dSYM` 的递归符号搜索目录。
+  `GraceCore.framework.dSYM` 的递归符号搜索目录；输入显式区分 Git
+  `repositoryRoot`、iOS `projectRoot` 和 JoJo `buildRoot`，适配 Florak。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、本地 xctrace collector 和 HTML 时间线
-  renderer。
+  renderer；分开传递 `projectRoot` 与 `buildRoot`，默认 app/dSYM 从 iOS
+  构建根解析。
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、`xctrace record --attach`、自动 dSYM
   解析、`xctrace symbolicate`、Time Profiler XML 导出和共享 HTML 时间线
-  renderer。
+  renderer；最近 build summary 的复用限制在显式 iOS 源码/构建根内。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)：
   消费验证通过的 case 资产，串行执行设备动作，并输出逐 case 证据和 HTML 报告。
 - [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md)、

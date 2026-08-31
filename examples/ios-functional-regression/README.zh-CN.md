@@ -30,7 +30,7 @@ action，或在导航时显式允许 `mutation`。
 ```bash
 deer-workflow run /Users/bytedance/Documents/deer-workflow-mc/examples/ios-functional-regression/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "caseSetPath": "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/assets/app-regression/com.bot.doubao/cases/doubao-message-regression.cases.json",

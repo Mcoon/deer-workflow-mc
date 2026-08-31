@@ -2,11 +2,16 @@
  * Input accepted by the iOS Launch Trace Workflow.
  */
 export interface IosLaunchTraceInput {
+  /** Git repository root. Defaults to `projectRoot`. */
+  repositoryRoot?: string;
+
   /**
-   * Root of the target iOS project. For flow_iOS this is usually the
-   * `flow_iOS` checkout, not the optimizer repository.
+   * iOS source root containing Modules/, Flow/, and Podfile.
    */
   projectRoot: string;
+
+  /** Root containing flow-ios-dev `.vscode-out`; defaults to `projectRoot`. */
+  buildRoot?: string;
 
   /** Real-device UDID used by xctrace. */
   udid: string;
@@ -57,7 +62,9 @@ export interface IosLaunchTraceInput {
 export interface LaunchTraceSummary {
   success?: boolean;
   mode?: string;
+  repository_root?: string;
   project_root?: string;
+  build_root?: string;
   udid?: string;
   bundle_id?: string;
   app_path?: string;
@@ -116,6 +123,9 @@ export interface LaunchTraceSymbolSample {
  */
 export interface IosLaunchTraceResult {
   success: boolean;
+  repositoryRoot: string;
+  projectRoot: string;
+  buildRoot: string;
   exitCode: number;
   command: string[];
   outputDir: string;

@@ -31,7 +31,9 @@ export const meta = {
     { title: "Summarize" },
   ],
   exampleArgs: {
-    projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     udid: "00008030-001A286A2229802E",
     mode: "Debug",
   },
@@ -54,7 +56,9 @@ export default async function iosBuildInstall(
   log(
     [
       "## Preparing trace-ready iOS build",
-      `- **Project:** \`${input.projectRoot}\``,
+      `- **Repository:** \`${input.repositoryRoot}\``,
+      `- **iOS source:** \`${input.projectRoot}\``,
+      `- **Build root:** \`${input.buildRoot}\``,
       `- **Device:** \`${input.udid}\``,
       `- **Mode:** \`${input.mode}\``,
       `- **Output:** \`${input.outputDir}\``,
@@ -62,22 +66,41 @@ export default async function iosBuildInstall(
   );
 
   phase("Build");
-  const buildCommand = buildAppCommand(input);
+  const buildCommand = input.existingBuildSummaryPath
+    ? []
+    : buildAppCommand(input);
+  const build = input.existingBuildSummaryPath
+    ? {
+        stdout: await readFile(input.existingBuildSummaryPath, "utf8"),
+        stderr: "",
+        exitCode: 0,
+      }
+    : await runBuild(input, buildCommand);
   log(
-    [
-      "## Building app with dSYM artifacts",
-      `- **Script:** \`${input.buildScriptPath}\``,
-      `- **Symbols required:** ${input.symbolsRequired ? "yes" : "no"}`,
-      "- Build output is captured under the workflow output directory",
-    ].join("\n"),
+    input.existingBuildSummaryPath
+      ? [
+          "## Reusing existing build artifacts",
+          `- **Build summary:** \`${input.existingBuildSummaryPath}\``,
+        ].join("\n")
+      : [
+          "## Building app with dSYM artifacts",
+          `- **Script:** \`${input.buildScriptPath}\``,
+          `- **Symbols required:** ${input.symbolsRequired ? "yes" : "no"}`,
+          "- Build output is captured under the workflow output directory",
+        ].join("\n"),
   );
-  const build = await runCommand(buildCommand, input.projectRoot);
   await writeFile(input.buildStdoutPath, build.stdout, "utf8");
   await writeFile(input.buildStderrPath, build.stderr, "utf8");
-  const buildOutput = parseJsonObject<FlowIosBuildOutput>(build.stdout, {
+  const parsedBuildOutput = parseJsonObject<FlowIosBuildOutput>(build.stdout, {
     success: false,
     error: "build_output_parse_failed",
   });
+  const buildOutput: FlowIosBuildOutput = {
+    ...parsedBuildOutput,
+    repository_root: input.repositoryRoot,
+    project_root: input.projectRoot,
+    build_root: input.buildRoot,
+  };
   await writeJson(input.buildSummaryPath, buildOutput);
 
   phase("Validate symbols");
@@ -112,7 +135,6 @@ export default async function iosBuildInstall(
     buildOutput,
     appPath,
     dsymPath,
-    businessDsymPath: symbolPaths.business,
     requireReadySymbols: input.requireReadySymbols,
     symbolicationStatus,
     buildSummaryPath: input.buildSummaryPath,
@@ -135,7 +157,7 @@ export default async function iosBuildInstall(
       `- **Install log:** \`${installPaths.logPath}\``,
     ].join("\n"),
   );
-  const install = await runCommand(installCommand, input.projectRoot);
+  const install = await runCommand(installCommand, input.buildRoot);
   if (install.stdout.trim()) {
     await writeFile(
       join(input.outputDir, "install-stdout.txt"),
@@ -175,7 +197,9 @@ export default async function iosBuildInstall(
 
   return {
     success: true,
+    repositoryRoot: input.repositoryRoot,
     projectRoot: input.projectRoot,
+    buildRoot: input.buildRoot,
     udid: input.udid,
     outputDir: input.outputDir,
     appPath,
@@ -185,6 +209,7 @@ export default async function iosBuildInstall(
     symbolSearchPath: symbolPaths.searchRoot,
     exportedDsymPath: buildOutput.exported_dsym_path ?? "",
     symbolicationStatus,
+    buildReused: Boolean(input.existingBuildSummaryPath),
     buildCommand,
     installCommand,
     buildExitCode: build.exitCode,
@@ -201,9 +226,12 @@ export default async function iosBuildInstall(
 }
 
 interface NormalizedInput {
+  repositoryRoot: string;
   projectRoot: string;
+  buildRoot: string;
   udid: string;
   buildScriptPath: string;
+  existingBuildSummaryPath: string;
   python: string;
   mode: "Debug" | "Release";
   noKeepGoing: boolean;
@@ -228,6 +256,8 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
   }
 
   const projectRoot = resolve(requiredText(args.projectRoot, "projectRoot"));
+  const repositoryRoot = resolve(args.repositoryRoot?.trim() || projectRoot);
+  const buildRoot = resolve(args.buildRoot?.trim() || projectRoot);
   const udid = requiredText(args.udid, "udid");
   const runId = safeSegment(args.runId?.trim() || timestampForPath());
   const outputDir = resolve(
@@ -236,11 +266,16 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
   );
 
   return {
+    repositoryRoot,
     projectRoot,
+    buildRoot,
     udid,
     buildScriptPath: resolve(
       args.buildScriptPath?.trim() || DEFAULT_BUILD_SCRIPT_PATH,
     ),
+    existingBuildSummaryPath: args.existingBuildSummaryPath?.trim()
+      ? resolve(args.existingBuildSummaryPath)
+      : "",
     python: args.python?.trim() || "python3",
     mode: args.mode ?? DEFAULT_MODE,
     noKeepGoing: args.noKeepGoing === true,
@@ -259,11 +294,27 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
   };
 }
 
+async function runBuild(
+  input: NormalizedInput,
+  buildCommand: string[],
+): Promise<CommandResult> {
+  log(
+    [
+      "## Building app with dSYM artifacts",
+      `- **Script:** \`${input.buildScriptPath}\``,
+      `- **Symbols required:** ${input.symbolsRequired ? "yes" : "no"}`,
+      "- Build output is captured under the workflow output directory",
+    ].join("\n"),
+  );
+  return runCommand(buildCommand, input.buildRoot);
+}
+
 /** @internal */
 export function buildAppCommand(input: {
   python: string;
   buildScriptPath: string;
-  projectRoot: string;
+  buildRoot?: string;
+  projectRoot?: string;
   mode: "Debug" | "Release";
   noKeepGoing: boolean;
   symbolsRequired: boolean;
@@ -272,7 +323,7 @@ export function buildAppCommand(input: {
     input.python,
     input.buildScriptPath,
     "--project-root",
-    input.projectRoot,
+    input.buildRoot ?? requiredText(input.projectRoot, "buildRoot"),
     "--mode",
     input.mode,
   ];
@@ -330,12 +381,11 @@ async function runCommand(
   return { stdout, stderr, exitCode };
 }
 
-async function assertBuildReady(options: {
+export async function assertBuildReady(options: {
   buildExitCode: number;
   buildOutput: FlowIosBuildOutput;
   appPath: string;
   dsymPath: string;
-  businessDsymPath: string;
   requireReadySymbols: boolean;
   symbolicationStatus: string;
   buildSummaryPath: string;
@@ -349,14 +399,6 @@ async function assertBuildReady(options: {
   }
   if (!(await pathExists(options.dsymPath))) {
     issues.push(`dSYM is missing or does not exist: ${options.dsymPath}`);
-  }
-  if (
-    options.requireReadySymbols &&
-    !(await pathExists(options.businessDsymPath))
-  ) {
-    issues.push(
-      `business dSYM is missing or does not exist: ${options.businessDsymPath}`,
-    );
   }
   if (options.requireReadySymbols && options.symbolicationStatus !== "ready") {
     issues.push(

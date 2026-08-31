@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  assertBuildReady,
   buildAppCommand,
   installOnlyCommand,
   resolveSymbolPaths,
 } from "../../examples/ios-build-install/workflow";
+import { mkdir, mkdtemp } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 describe("iOS Build and Install workflow helpers", () => {
   test("builds a flow-ios-dev command that requests dSYM output", () => {
@@ -13,7 +17,7 @@ describe("iOS Build and Install workflow helpers", () => {
         python: "python3",
         buildScriptPath:
           "/Users/bytedance/.agents/skills/flow-ios-dev/scripts/build_app.py",
-        projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+        buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
         mode: "Debug",
         noKeepGoing: false,
         symbolsRequired: true,
@@ -22,11 +26,24 @@ describe("iOS Build and Install workflow helpers", () => {
       "python3",
       "/Users/bytedance/.agents/skills/flow-ios-dev/scripts/build_app.py",
       "--project-root",
-      "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+      "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
       "--mode",
       "Debug",
       "--symbols-required",
     ]);
+  });
+
+  test("keeps projectRoot as the legacy build root fallback", () => {
+    const command = buildAppCommand({
+      python: "python3",
+      buildScriptPath: "/tmp/build_app.py",
+      projectRoot: "/legacy/flow_iOS",
+      mode: "Release",
+      noKeepGoing: true,
+      symbolsRequired: false,
+    });
+
+    expect(command).toContain("/legacy/flow_iOS");
   });
 
   test("builds an install-only devicectl command without launching the app", () => {
@@ -86,5 +103,25 @@ describe("iOS Build and Install workflow helpers", () => {
       business: "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
       searchRoot: "/tmp/Debug-iphoneos",
     });
+  });
+
+  test("accepts a ready main app dSYM when the optional business dSYM is absent", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ios-build-main-dsym-"));
+    const appPath = join(root, "Grace.app");
+    const dsymPath = join(root, "Grace.app.dSYM");
+    await mkdir(appPath);
+    await mkdir(dsymPath);
+
+    await expect(
+      assertBuildReady({
+        buildExitCode: 0,
+        buildOutput: { success: true },
+        appPath,
+        dsymPath,
+        requireReadySymbols: true,
+        symbolicationStatus: "ready",
+        buildSummaryPath: join(root, "build-summary.json"),
+      }),
+    ).resolves.toBeUndefined();
   });
 });

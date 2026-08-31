@@ -336,6 +336,8 @@ the complete Agent Loop to a single model completion.
   interactive HTML report.
 - [Blog Writer](../examples/blog-writer/README.md) uses `pipeline()` to draft
   and review sections independently.
+- [iOS Cosign and JoJo Install](../examples/ios-cosign-jojo-install/README.md)
+  runs the repository-native signing and JoJo dependency setup in order.
 - [iOS Build and Install](../examples/ios-build-install/README.md) prepares a
   trace-ready flow_iOS `.app` and dSYM, then installs without launching.
 - [iOS Launch Trace](../examples/ios-launch-trace/README.md) wraps a fixed iOS

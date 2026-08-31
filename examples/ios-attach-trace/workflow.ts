@@ -27,7 +27,7 @@ import type {
   IosAttachTraceSummary,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/Users/bytedance/.ios_pref_optimizer";
+const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const DEFAULT_TARGET_BINARY = "Grace";
 const DEFAULT_TEMPLATE = "Time Profiler";
@@ -61,7 +61,9 @@ export const meta = {
     { title: "Report" },
   ],
   exampleArgs: {
-    projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     udid: "00008030-001A286A2229802E",
     bundleId: "com.bot.doubao",
     attachTarget: "Grace",
@@ -85,7 +87,9 @@ export default async function iosAttachTrace(
   log(
     [
       "## Preparing iOS attach trace collection",
-      `- **Project:** \`${input.projectRoot}\``,
+      `- **Repository:** \`${input.repositoryRoot}\``,
+      `- **iOS source:** \`${input.projectRoot}\``,
+      `- **Build root:** \`${input.buildRoot}\``,
       `- **Device:** \`${input.udid}\``,
       `- **Bundle:** \`${input.bundleId}\``,
       `- **Attach target:** \`${input.attachTarget}\``,
@@ -146,6 +150,7 @@ export default async function iosAttachTrace(
   summary.trace_settle = await waitForTraceTreeToSettle(input.tracePath);
   const symbolContext = await resolveAttachSymbolContext({
     projectRoot: input.projectRoot,
+    buildRoot: input.buildRoot,
     targetBinary: input.targetBinary,
     businessBinary: input.businessBinary,
     explicitDsymPath: input.dsymPath,
@@ -311,6 +316,9 @@ export default async function iosAttachTrace(
 
   return {
     success: true,
+    repositoryRoot: input.repositoryRoot,
+    projectRoot: input.projectRoot,
+    buildRoot: input.buildRoot,
     exitCode: 0,
     command: recordCommand,
     outputDir: input.outputDir,
@@ -331,7 +339,9 @@ export default async function iosAttachTrace(
 }
 
 interface NormalizedInput {
+  repositoryRoot: string;
   projectRoot: string;
+  buildRoot: string;
   udid: string;
   bundleId: string;
   attachTarget: string;
@@ -401,6 +411,9 @@ interface AttachSymbolContext {
 
 interface BuildSymbolSummary {
   success?: boolean;
+  repository_root?: string;
+  project_root?: string;
+  build_root?: string;
   app_path?: string;
   dsym_path?: string;
   exported_dsym_path?: string;
@@ -436,6 +449,8 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
   }
 
   const projectRoot = resolve(requiredText(args.projectRoot, "projectRoot"));
+  const repositoryRoot = resolve(args.repositoryRoot?.trim() || projectRoot);
+  const buildRoot = resolve(args.buildRoot?.trim() || projectRoot);
   const udid = requiredText(args.udid, "udid");
   const runId = safeSegment(args.runId?.trim() || timestampForPath());
   const outputDir = resolve(
@@ -448,7 +463,9 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
   );
 
   return {
+    repositoryRoot,
     projectRoot,
+    buildRoot,
     udid,
     bundleId: args.bundleId?.trim() || DEFAULT_BUNDLE_ID,
     attachTarget: args.attachTarget?.trim() || targetBinary,
@@ -552,6 +569,7 @@ export function buildXctraceSymbolicateCommand(input: {
 /** Resolves a recursive dSYM search root for an attach trace. */
 export async function resolveAttachSymbolContext(input: {
   projectRoot: string;
+  buildRoot?: string;
   targetBinary: string;
   businessBinary: string;
   explicitDsymPath?: string;
@@ -569,6 +587,7 @@ export async function resolveAttachSymbolContext(input: {
 
   const buildSummary = await findLatestBuildSymbolSummary({
     projectRoot: input.projectRoot,
+    buildRoot: input.buildRoot,
     targetBinary: input.targetBinary,
     businessBinary: input.businessBinary,
     buildArtifactRoot: input.buildArtifactRoot ?? DEFAULT_BUILD_ARTIFACT_ROOT,
@@ -600,6 +619,7 @@ export async function resolveAttachSymbolContext(input: {
 
 async function findLatestBuildSymbolSummary(input: {
   projectRoot: string;
+  buildRoot?: string;
   targetBinary: string;
   businessBinary: string;
   buildArtifactRoot: string;
@@ -628,7 +648,7 @@ async function findLatestBuildSymbolSummary(input: {
 
   summaries.sort((left, right) => right.mtimeMs - left.mtimeMs);
   const projectRoot = resolve(input.projectRoot);
-  const workspaceRoot = dirname(projectRoot);
+  const buildRoot = resolve(input.buildRoot?.trim() || dirname(projectRoot));
   for (const summary of summaries) {
     let payload: BuildSymbolSummary;
     try {
@@ -642,7 +662,9 @@ async function findLatestBuildSymbolSummary(input: {
       payload.success !== true ||
       !payload.app_path ||
       basename(payload.app_path) !== `${input.targetBinary}.app` ||
-      !isPathWithin(resolve(payload.app_path), workspaceRoot)
+      !isPathWithin(resolve(payload.app_path), buildRoot) ||
+      (payload.project_root && resolve(payload.project_root) !== projectRoot) ||
+      (payload.build_root && resolve(payload.build_root) !== buildRoot)
     ) {
       continue;
     }
@@ -1181,7 +1203,9 @@ function baseSummary(input: NormalizedInput): IosAttachTraceSummary {
   return {
     success: false,
     mode: "attach",
+    repository_root: input.repositoryRoot,
     project_root: input.projectRoot,
+    build_root: input.buildRoot,
     udid: input.udid,
     bundle_id: input.bundleId,
     attach_target: input.attachTarget,

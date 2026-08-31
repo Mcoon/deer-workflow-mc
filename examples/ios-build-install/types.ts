@@ -1,13 +1,22 @@
 /** Input accepted by the iOS Build and Install Workflow. */
 export interface IosBuildInstallInput {
-  /** Root of the target iOS project, usually the flow_iOS checkout. */
+  /** Git repository root. Defaults to `projectRoot` for standalone repositories. */
+  repositoryRoot?: string;
+
+  /** iOS source root containing Modules/, Flow/, and Podfile. */
   projectRoot: string;
+
+  /** Root passed to flow-ios-dev/JoJo. Defaults to `projectRoot`. */
+  buildRoot?: string;
 
   /** Real-device UDID used for install-only devicectl deployment. */
   udid: string;
 
   /** Path to the flow-ios-dev `build_app.py` script. */
   buildScriptPath?: string;
+
+  /** Existing successful build_app summary to reuse instead of rebuilding. */
+  existingBuildSummaryPath?: string;
 
   /** Python executable used to run the build script. */
   python?: string;
@@ -58,6 +67,9 @@ export interface FlowIosBuildOutput {
   dsym_paths?: string[];
   symbolication_status?: string;
   dsym_metadata?: FlowIosDsymMetadata[];
+  repository_root?: string;
+  project_root?: string;
+  build_root?: string;
 }
 
 /** Metadata reported for one generated dSYM bundle. */
@@ -72,7 +84,9 @@ export interface FlowIosDsymMetadata {
 /** Result returned by the build-install Workflow. */
 export interface IosBuildInstallResult {
   success: boolean;
+  repositoryRoot: string;
   projectRoot: string;
+  buildRoot: string;
   udid: string;
   outputDir: string;
   appPath: string;
@@ -84,6 +98,7 @@ export interface IosBuildInstallResult {
   symbolSearchPath: string;
   exportedDsymPath: string;
   symbolicationStatus: string;
+  buildReused: boolean;
   buildCommand: string[];
   installCommand: string[];
   buildExitCode: number;

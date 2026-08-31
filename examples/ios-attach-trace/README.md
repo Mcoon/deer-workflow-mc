@@ -9,7 +9,7 @@ run the Workflow, operate the phone while the recording is active, and let
 ## What It Does
 
 1. prepares an output directory under
-   `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/`;
+   `/tmp/ios_perf-opt/ios-attach-trace/`;
 2. runs `xcrun xctrace record --template "Time Profiler" --attach <target>` for
    the requested duration;
 3. resolves a recursive dSYM search path from explicit input or the newest
@@ -28,7 +28,9 @@ phase starts.
 ```bash
 deer-workflow run ./examples/ios-attach-trace/workflow.ts \
   --input '{
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Dbao/flow_iOS",
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "attachTarget": "Grace",
@@ -44,7 +46,10 @@ The Workflow then exports and renders the report.
 
 ## Inputs
 
-- `projectRoot`: target iOS project root.
+- `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
+- `projectRoot`: target iOS source root.
+- `buildRoot`: flow-ios-dev/JoJo root used to validate matching build outputs;
+  defaults to `projectRoot`.
 - `udid`: real-device UDID passed to `xctrace`.
 - `bundleId`: bundle identifier recorded in the summary and report. Defaults to
   `com.bot.doubao`.
@@ -57,7 +62,7 @@ The Workflow then exports and renders the report.
 - `template`: xctrace template name or path. Defaults to `Time Profiler`.
 - `timeLimit`: recording limit, defaults to `30s`.
 - `outputDir`: output directory. Defaults to
-  `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/<runId>`.
+  `/tmp/ios_perf-opt/ios-attach-trace/<runId>`.
 - `htmlReportPath`: report destination. Defaults to
   `<outputDir>/attach-trace-report.html`.
 - `targetBinary`: binary highlighted as app code in the HTML timeline. Defaults

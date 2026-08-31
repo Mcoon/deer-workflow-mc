@@ -83,6 +83,8 @@ deer-workflow run ./workflow.ts \
   并行调查、验证结论，并生成交互式 HTML 报告。
 - [Blog Writer](./examples/blog-writer/README.zh-CN.md) 会规划文章、通过 Pipeline
   起草各节、执行审阅，并返回结构化结果。
+- [iOS 签名与 JoJo 依赖安装](./examples/ios-cosign-jojo-install/README.zh-CN.md)
+  通过 Florak iOS 仓库原生脚本依次完成真机签名和依赖安装。
 - [iOS Build and Install](./examples/ios-build-install/README.zh-CN.md) 会构建
   带 dSYM 的 flow_iOS App，并只安装不启动。
 - [iOS Launch Trace](./examples/ios-launch-trace/README.zh-CN.md) 会运行确定性的
