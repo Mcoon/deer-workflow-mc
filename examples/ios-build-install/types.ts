@@ -18,6 +18,19 @@ export interface IosBuildInstallInput {
   /** Existing successful build_app summary to reuse instead of rebuilding. */
   existingBuildSummaryPath?: string;
 
+  /**
+   * Skip building and install the artifacts already exported under
+   * `<buildRoot>/.vscode-out` (e.g. `Grace.app`). Use this when the code has
+   * not changed and you only want to reinstall the last build.
+   */
+  reuseExistingArtifacts?: boolean;
+
+  /**
+   * Build target used to locate reused artifacts (`Grace.app` / `Cici.app`).
+   * Defaults to `Grace`. Only affects reuse resolution.
+   */
+  target?: "Grace" | "Cici";
+
   /** Python executable used to run the build script. */
   python?: string;
 

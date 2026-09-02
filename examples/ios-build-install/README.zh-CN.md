@@ -67,6 +67,28 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 如果你确认前一步安装的就是同一个 `appPath`，trace 步骤可以使用
 `skipInstall: true`。
 
+## 代码没变，只想重装上次的产物
+
+如果代码没有改动，只想把上次构建好的 App 重新装到手机，直接用
+`reuseExistingArtifacts: true`。它会跳过 `build_app.py`，直接安装
+`<buildRoot>/.vscode-out/<target>.app`（默认 `Grace.app`），不用再去找哪个
+`build-summary.json`：
+
+```bash
+deer-workflow run ./examples/ios-build-install/workflow.ts \
+  --input '{
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "udid": "00008030-001A286A2229802E",
+    "reuseExistingArtifacts": true
+  }'
+```
+
+产物路径是固定的：主 App 在 `.vscode-out/Grace.app`，主壳 dSYM 在
+`.vscode-out/Grace.app.dSYM`。海外版传 `"target": "Cici"` 即可换成
+`Cici.app`。如果 `.vscode-out` 下没有对应 `.app`，会明确报错提示先构建一次。
+
 ## 输入
 
 - `repositoryRoot`：Git 仓库根；Florak 下是 monorepo 根。
@@ -76,8 +98,12 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 - `udid`：只安装到真机时使用的设备 UDID。
 - `buildScriptPath`：`build_app.py` 路径，默认指向已安装的 `flow-ios-dev`
   Skill。
+- `reuseExistingArtifacts`：默认 `false`。设为 `true` 时跳过构建，直接安装
+  `<buildRoot>/.vscode-out/<target>.app`；代码没变、只想重装时用它。
+- `target`：`Grace` 或 `Cici`，默认 `Grace`。只影响复用产物时定位哪个 `.app`。
 - `existingBuildSummaryPath`：复用一次成功的 `build_app.py` JSON summary，跳过
-  重建并直接进入校验和 install-only。
+  重建并直接进入校验和 install-only。（更省心的做法通常是
+  `reuseExistingArtifacts`，不用记 summary 路径。）
 - `mode`：`Debug` 或 `Release`，默认 `Debug`。
 - `symbolsRequired`：默认 `true`；Time Profiler 场景应保持开启。
 - `requireReadySymbols`：默认 `true`；要求主 App dSYM 存在且

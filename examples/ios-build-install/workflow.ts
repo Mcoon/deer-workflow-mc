@@ -15,8 +15,10 @@ const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
 const DEFAULT_BUILD_SCRIPT_PATH =
   "/Users/bytedance/.agents/skills/flow-ios-dev/scripts/build_app.py";
 const DEFAULT_MODE = "Debug";
+const DEFAULT_TARGET = "Grace";
 const DEFAULT_INSTALL_TIMEOUT_SECONDS = 180;
 const OUTPUT_TAIL_LENGTH = 4000;
+const REUSE_ARTIFACT_DIR = ".vscode-out";
 
 /** Declares the Workflow's identity and observable phase plan. */
 export const meta = {
@@ -66,29 +68,35 @@ export default async function iosBuildInstall(
   );
 
   phase("Build");
-  const buildCommand = input.existingBuildSummaryPath
-    ? []
-    : buildAppCommand(input);
-  const build = input.existingBuildSummaryPath
-    ? {
-        stdout: await readFile(input.existingBuildSummaryPath, "utf8"),
-        stderr: "",
-        exitCode: 0,
-      }
-    : await runBuild(input, buildCommand);
-  log(
-    input.existingBuildSummaryPath
-      ? [
-          "## Reusing existing build artifacts",
-          `- **Build summary:** \`${input.existingBuildSummaryPath}\``,
-        ].join("\n")
-      : [
-          "## Building app with dSYM artifacts",
-          `- **Script:** \`${input.buildScriptPath}\``,
-          `- **Symbols required:** ${input.symbolsRequired ? "yes" : "no"}`,
-          "- Build output is captured under the workflow output directory",
-        ].join("\n"),
-  );
+  let buildCommand: string[] = [];
+  let build: CommandResult;
+  if (input.reuseExistingArtifacts) {
+    const synthesized = await reusedArtifactOutput(input);
+    build = { stdout: JSON.stringify(synthesized), stderr: "", exitCode: 0 };
+    log(
+      [
+        "## Reusing existing build artifacts",
+        `- **Artifacts dir:** \`${join(input.buildRoot, REUSE_ARTIFACT_DIR)}\``,
+        `- **Target:** \`${input.target}\``,
+        "- Skipping build_app.py and installing the last exported `.app`",
+      ].join("\n"),
+    );
+  } else if (input.existingBuildSummaryPath) {
+    build = {
+      stdout: await readFile(input.existingBuildSummaryPath, "utf8"),
+      stderr: "",
+      exitCode: 0,
+    };
+    log(
+      [
+        "## Reusing existing build artifacts",
+        `- **Build summary:** \`${input.existingBuildSummaryPath}\``,
+      ].join("\n"),
+    );
+  } else {
+    buildCommand = buildAppCommand(input);
+    build = await runBuild(input, buildCommand);
+  }
   await writeFile(input.buildStdoutPath, build.stdout, "utf8");
   await writeFile(input.buildStderrPath, build.stderr, "utf8");
   const parsedBuildOutput = parseJsonObject<FlowIosBuildOutput>(build.stdout, {
@@ -209,7 +217,9 @@ export default async function iosBuildInstall(
     symbolSearchPath: symbolPaths.searchRoot,
     exportedDsymPath: buildOutput.exported_dsym_path ?? "",
     symbolicationStatus,
-    buildReused: Boolean(input.existingBuildSummaryPath),
+    buildReused: Boolean(
+      input.reuseExistingArtifacts || input.existingBuildSummaryPath,
+    ),
     buildCommand,
     installCommand,
     buildExitCode: build.exitCode,
@@ -232,6 +242,8 @@ interface NormalizedInput {
   udid: string;
   buildScriptPath: string;
   existingBuildSummaryPath: string;
+  reuseExistingArtifacts: boolean;
+  target: "Grace" | "Cici";
   python: string;
   mode: "Debug" | "Release";
   noKeepGoing: boolean;
@@ -276,6 +288,8 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
     existingBuildSummaryPath: args.existingBuildSummaryPath?.trim()
       ? resolve(args.existingBuildSummaryPath)
       : "",
+    reuseExistingArtifacts: args.reuseExistingArtifacts === true,
+    target: args.target ?? DEFAULT_TARGET,
     python: args.python?.trim() || "python3",
     mode: args.mode ?? DEFAULT_MODE,
     noKeepGoing: args.noKeepGoing === true,
@@ -307,6 +321,40 @@ async function runBuild(
     ].join("\n"),
   );
   return runCommand(buildCommand, input.buildRoot);
+}
+
+/**
+ * Synthesizes a build_app-style output from the artifacts already exported
+ * under `<buildRoot>/.vscode-out`, so install-only can run without rebuilding.
+ * The exported layout is stable per target (`Grace.app` / `Cici.app`).
+ *
+ * @internal
+ */
+export async function reusedArtifactOutput(input: {
+  buildRoot: string;
+  target: "Grace" | "Cici";
+}): Promise<FlowIosBuildOutput> {
+  const artifactDir = join(input.buildRoot, REUSE_ARTIFACT_DIR);
+  const appPath = join(artifactDir, `${input.target}.app`);
+  const dsymPath = join(artifactDir, `${input.target}.app.dSYM`);
+  if (!(await pathExists(appPath))) {
+    throw new Error(
+      [
+        `Cannot reuse artifacts: ${appPath} does not exist.`,
+        "Run the Workflow once without reuseExistingArtifacts to build it,",
+        "or drop reuseExistingArtifacts to trigger a fresh build.",
+      ].join("\n"),
+    );
+  }
+  const hasDsym = await pathExists(dsymPath);
+  return {
+    success: true,
+    app_path: appPath,
+    exported_dsym_path: hasDsym ? dsymPath : undefined,
+    dsym_path: hasDsym ? dsymPath : undefined,
+    dsym_paths: hasDsym ? [dsymPath] : [],
+    symbolication_status: hasDsym ? "ready" : "unknown",
+  };
 }
 
 /** @internal */

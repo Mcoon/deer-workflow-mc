@@ -5,6 +5,7 @@ import {
   buildAppCommand,
   installOnlyCommand,
   resolveSymbolPaths,
+  reusedArtifactOutput,
 } from "../../examples/ios-build-install/workflow";
 import { mkdir, mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
@@ -123,5 +124,40 @@ describe("iOS Build and Install workflow helpers", () => {
         buildSummaryPath: join(root, "build-summary.json"),
       }),
     ).resolves.toBeUndefined();
+  });
+
+  test("reuses the exported .vscode-out artifacts without rebuilding", async () => {
+    const buildRoot = await mkdtemp(join(tmpdir(), "ios-build-reuse-"));
+    const artifactDir = join(buildRoot, ".vscode-out");
+    await mkdir(join(artifactDir, "Grace.app"), { recursive: true });
+    await mkdir(join(artifactDir, "Grace.app.dSYM"), { recursive: true });
+
+    const output = await reusedArtifactOutput({ buildRoot, target: "Grace" });
+
+    expect(output.success).toBe(true);
+    expect(output.app_path).toBe(join(artifactDir, "Grace.app"));
+    expect(output.exported_dsym_path).toBe(join(artifactDir, "Grace.app.dSYM"));
+    expect(output.symbolication_status).toBe("ready");
+  });
+
+  test("reports unknown symbolication when the reused dSYM is absent", async () => {
+    const buildRoot = await mkdtemp(join(tmpdir(), "ios-build-reuse-nodsym-"));
+    await mkdir(join(buildRoot, ".vscode-out", "Grace.app"), {
+      recursive: true,
+    });
+
+    const output = await reusedArtifactOutput({ buildRoot, target: "Grace" });
+
+    expect(output.success).toBe(true);
+    expect(output.exported_dsym_path).toBeUndefined();
+    expect(output.symbolication_status).toBe("unknown");
+  });
+
+  test("fails clearly when reuse is requested but no artifact exists", async () => {
+    const buildRoot = await mkdtemp(join(tmpdir(), "ios-build-reuse-missing-"));
+
+    await expect(
+      reusedArtifactOutput({ buildRoot, target: "Grace" }),
+    ).rejects.toThrow(/does not exist/u);
   });
 });

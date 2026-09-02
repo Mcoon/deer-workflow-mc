@@ -71,6 +71,29 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 Use `skipInstall: true` in the trace step when you trust that the preceding
 install used the same returned `appPath`.
 
+## Reinstall the last build without rebuilding
+
+When the code has not changed and you only want to reinstall the previously
+built app, pass `reuseExistingArtifacts: true`. It skips `build_app.py` and
+installs `<buildRoot>/.vscode-out/<target>.app` (defaults to `Grace.app`), so
+you never have to locate a `build-summary.json`:
+
+```bash
+deer-workflow run ./examples/ios-build-install/workflow.ts \
+  --input '{
+    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
+    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "udid": "00008030-001A286A2229802E",
+    "reuseExistingArtifacts": true
+  }'
+```
+
+The artifact layout is stable: the main app is `.vscode-out/Grace.app` and the
+main dSYM is `.vscode-out/Grace.app.dSYM`. Pass `"target": "Cici"` for the
+overseas build. If no `.app` exists under `.vscode-out`, the Workflow fails with
+a clear message telling you to build once first.
+
 ## Inputs
 
 - `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
@@ -80,8 +103,15 @@ install used the same returned `appPath`.
 - `udid`: real-device UDID used for install-only deployment.
 - `buildScriptPath`: path to `build_app.py`. Defaults to the installed
   `flow-ios-dev` Skill path.
+- `reuseExistingArtifacts`: defaults to `false`. When `true`, skips the build
+  and installs `<buildRoot>/.vscode-out/<target>.app`; use it to reinstall the
+  last build when the code has not changed.
+- `target`: `Grace` or `Cici`, defaults to `Grace`. Only affects which `.app`
+  is located when reusing artifacts.
 - `existingBuildSummaryPath`: reuse a successful `build_app.py` JSON summary
-  and continue at validation/install without rebuilding.
+  and continue at validation/install without rebuilding. (Prefer
+  `reuseExistingArtifacts` when you just want to reinstall — no summary path
+  to track.)
 - `mode`: `Debug` or `Release`. Defaults to `Debug`.
 - `symbolsRequired`: defaults to `true`; keep it enabled for Time Profiler.
 - `requireReadySymbols`: defaults to `true`; requires the main app dSYM and
