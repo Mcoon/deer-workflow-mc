@@ -26,6 +26,7 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
     "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "developerDir": "/Applications/Xcode_26.app/Contents/Developer",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "timeLimit": "20s"
@@ -39,7 +40,11 @@ collector summary, and the HTML report path.
 
 - `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
 - `projectRoot`: target iOS source root.
-- `buildRoot`: root containing `.vscode-out`; defaults to `projectRoot`.
+- `buildRoot`: BitSky root containing `.vscode-out`; defaults to `projectRoot`.
+- `developerDir`: optional full Xcode Developer directory used through
+  `DEVELOPER_DIR`, without changing system `xcode-select`. Defaults to
+  `/Applications/Xcode_26.app/Contents/Developer`; set it explicitly for other
+  Xcode installations.
 - `udid`: real-device UDID passed to `xctrace`.
 - `bundleId`: bundle identifier launched under Time Profiler. Defaults to
   `com.bot.doubao`.
@@ -47,10 +52,10 @@ collector summary, and the HTML report path.
   `ios-perf-optimizer` checkout.
 - `appPath`: existing `.app` bundle. If omitted, the collector uses
   `<buildRoot>/.vscode-out/Grace.app`.
-- `dsymPath`: matching `.app.dSYM`. If omitted, the collector uses its flow_iOS
-  default: `<buildRoot>/.vscode-out/Grace.app.dSYM`. The Workflow does
-  not scan for dSYM bundles; pass an absolute `dsymPath` when the build artifact
-  lives elsewhere.
+- `dsymPath`: matching `.app.dSYM`. If omitted, the collector uses the BitSky
+  default `<buildRoot>/.vscode-out/dSYM/Grace.app.dSYM`.
+- `symbolSearchPath`: directory recursively supplied to `xctrace symbolicate`;
+  defaults to the parent of `dsymPath`, normally `.vscode-out/dSYM`.
 - `timeLimit`: xctrace recording limit, such as `20s`.
 - `skipInstall`: skip installing the `.app` before trace collection.
 - `outputDir`: output directory. Defaults to
@@ -68,6 +73,7 @@ collector summary, and the HTML report path.
 For a normal launch collection, the output directory contains:
 
 - `launch_target.trace`
+- `symbolicated.trace`
 - `toc.xml`
 - `time_profile.xml`
 - `summary.json`

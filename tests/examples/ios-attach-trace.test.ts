@@ -136,6 +136,179 @@ describe("iOS Attach Trace workflow helpers", () => {
     );
   });
 
+  test("discovers BitSky symbols from the normalized build summary", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ios-attach-bitsky-symbols-"));
+    const projectRoot = join(root, "Florak", "flow", "ios");
+    const artifactRoot = join(root, "ios-build-install");
+    const runDir = join(artifactRoot, "run");
+    const appPath = join(projectRoot, ".vscode-out", "Grace.app");
+    const symbolRoot = join(projectRoot, ".vscode-out", "dSYM");
+    const appDsym = join(symbolRoot, "Grace.app.dSYM");
+    const businessDsym = join(
+      symbolRoot,
+      "FlowDebugBasicDynamic.framework.dSYM",
+    );
+    await mkdir(appPath, { recursive: true });
+    await mkdir(appDsym, { recursive: true });
+    await mkdir(businessDsym, { recursive: true });
+    await mkdir(runDir, { recursive: true });
+    await writeFile(
+      join(runDir, "build-summary.json"),
+      JSON.stringify({
+        success: true,
+        project_root: projectRoot,
+        build_root: projectRoot,
+        app_path: appPath,
+        exported_dsym_path: appDsym,
+        business_dsym_path: businessDsym,
+        symbol_search_path: symbolRoot,
+        dsym_paths: [appDsym, businessDsym],
+      }),
+      "utf8",
+    );
+
+    await expect(
+      resolveAttachSymbolContext({
+        projectRoot,
+        buildRoot: projectRoot,
+        targetBinary: "Grace",
+        businessBinary: "FlowDebugBasicDynamic",
+        buildArtifactRoot: artifactRoot,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        dsymPath: appDsym,
+        searchPath: symbolRoot,
+        source: "recent-build-summary",
+      }),
+    );
+  });
+
+  test("discovers symbols from a flow-ios-bitsky summary", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ios-attach-bitsky-run-"));
+    const projectRoot = join(root, "Florak", "flow", "ios");
+    const buildArtifactRoot = join(root, "ios-build-install");
+    const bitskyArtifactRoot = join(root, "flow-ios-bitsky");
+    const runDir = join(bitskyArtifactRoot, "run");
+    const productsDir = join(runDir, "products");
+    const appPath = join(productsDir, "Grace.app");
+    const symbolRoot = join(productsDir, "dSYM");
+    const appDsym = join(symbolRoot, "Grace.app.dSYM");
+    const businessDsym = join(
+      symbolRoot,
+      "FlowDebugBasicDynamic.framework.dSYM",
+    );
+    await mkdir(projectRoot, { recursive: true });
+    await mkdir(appPath, { recursive: true });
+    await mkdir(appDsym, { recursive: true });
+    await mkdir(businessDsym, { recursive: true });
+    await writeFile(
+      join(runDir, "summary.json"),
+      JSON.stringify({
+        status: "success",
+        project_root: projectRoot,
+        target: "Grace",
+        products_dir: productsDir,
+        app_path: appPath,
+        matched_dsym_path: appDsym,
+      }),
+      "utf8",
+    );
+
+    await expect(
+      resolveAttachSymbolContext({
+        projectRoot,
+        buildRoot: projectRoot,
+        targetBinary: "Grace",
+        businessBinary: "FlowDebugBasicDynamic",
+        buildArtifactRoot,
+        bitskyArtifactRoot,
+      }),
+    ).resolves.toEqual({
+      dsymPath: appDsym,
+      searchPath: symbolRoot,
+      source: "recent-bitsky-summary",
+      buildSummaryPath: join(runDir, "summary.json"),
+    });
+  });
+
+  test("rejects a flow-ios-bitsky summary without the business dSYM", async () => {
+    const root = await mkdtemp(
+      join(tmpdir(), "ios-attach-bitsky-no-business-"),
+    );
+    const projectRoot = join(root, "Florak", "flow", "ios");
+    const bitskyArtifactRoot = join(root, "flow-ios-bitsky");
+    const runDir = join(bitskyArtifactRoot, "run");
+    const productsDir = join(runDir, "products");
+    const appPath = join(productsDir, "Grace.app");
+    const appDsym = join(productsDir, "dSYM", "Grace.app.dSYM");
+    await mkdir(projectRoot, { recursive: true });
+    await mkdir(appPath, { recursive: true });
+    await mkdir(appDsym, { recursive: true });
+    await writeFile(
+      join(runDir, "summary.json"),
+      JSON.stringify({
+        status: "success",
+        project_root: projectRoot,
+        target: "Grace",
+        products_dir: productsDir,
+        app_path: appPath,
+        matched_dsym_path: appDsym,
+      }),
+      "utf8",
+    );
+
+    await expect(
+      resolveAttachSymbolContext({
+        projectRoot,
+        targetBinary: "Grace",
+        businessBinary: "FlowDebugBasicDynamic",
+        buildArtifactRoot: join(root, "missing-builds"),
+        bitskyArtifactRoot,
+      }),
+    ).resolves.toEqual({ dsymPath: "", searchPath: "", source: "none" });
+  });
+
+  test("treats BitSky business dylib source rows as ready", () => {
+    const sourceSpan = {
+      name: "MessagingInputViewComponent.sendButtonAction(_:)",
+      binary: "FlowDebugBasicDynamic",
+      sourcePath: "./flow/ios/Modules/FlowInput/Input.swift",
+      line: "931",
+      appFrame: true,
+      depth: 0,
+      startSample: 0,
+      endSample: 1,
+      startTimeSeconds: 1,
+      endTimeSeconds: 1.001,
+      weightMs: 1,
+      color: "#fff",
+    };
+    const timeline = {
+      totalMainThreadRows: 1,
+      renderedSamples: 1,
+      sampleStride: 1,
+      sampleTimesSeconds: [1],
+      sampleWeightsMs: [1],
+      maxDepth: 1,
+      sampleDepths: [1],
+      spans: [sourceSpan],
+      topFrames: [],
+      threads: [],
+      traceStartSeconds: 1,
+      traceEndSeconds: 1.001,
+      warnings: [],
+    };
+
+    expect(
+      summarizeTimelineSymbolication(
+        timeline,
+        "Grace",
+        "FlowDebugBasicDynamic",
+      ),
+    ).toEqual({ status: "ready", appRows: 1, businessSourceRows: 1 });
+  });
+
   test("ignores a newer build summary from another project", async () => {
     const root = await mkdtemp(join(tmpdir(), "ios-attach-project-match-"));
     const projectRoot = join(root, "Dbao", "flow_iOS");

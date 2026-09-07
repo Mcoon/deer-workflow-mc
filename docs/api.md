@@ -748,25 +748,31 @@ compiled.
   numbered fallbacks preserve existing reports.
 - [Blog Writer](../examples/blog-writer/README.md) combines `agent()`,
   `phase()`, `pipeline()`, `log()`, and `WorkflowRunner`.
-- [iOS Cosign and JoJo Install](../examples/ios-cosign-jojo-install/README.md)
-  runs `Scripts/cosign.sh` and `jojoInstall.sh` serially from the iOS project
-  root, persisting diagnostics under `/tmp/ios_perf-opt`.
+- [iOS Cosign and BitSky Install](../examples/ios-cosign-bitsky-install/README.md)
+  runs `Scripts/cosign.sh`, `orbit bundle install`, and `bitsky_install` serially
+  from the iOS project root, persisting diagnostics under `/tmp/ios_perf-opt`.
 - [iOS Build and Install](../examples/ios-build-install/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
-  flow-ios-dev build output and install-only devicectl deployment. It returns
-  both the main-app dSYM and a recursive symbol search path containing
-  `GraceCore.framework.dSYM`. Its input separates the Git `repositoryRoot`,
-  iOS `projectRoot`, and JoJo `buildRoot` for monorepo layouts such as Florak.
+  BitSky device build output and install-only devicectl deployment. It exports
+  the App and dSYMs to `<buildRoot>/.vscode-out`, returns the main-app dSYM and
+  recursive symbol search path, and defaults the business binary to
+  `FlowDebugBasicDynamic`.
 - [iOS Launch Trace](../examples/ios-launch-trace/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with a local
   xctrace collector and HTML timeline renderer. It passes `projectRoot` and
   `buildRoot` separately so default app/dSYM lookup stays under the iOS build
-  root.
+  root. Its `developerDir` defaults to
+  `/Applications/Xcode_26.app/Contents/Developer` and accepts an input override.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
   `xctrace record --attach`, automatic dSYM resolution, `xctrace symbolicate`,
   Time Profiler XML export, and the shared HTML timeline renderer. Recent build
-  summary reuse is scoped to the explicit iOS source/build roots.
+  summary reuse is scoped to the explicit iOS source/build roots. It discovers
+  both `ios-build-install/*/build-summary.json` and
+  `flow-ios-bitsky/*/summary.json`; missing matching symbols are a hard failure
+  after the raw trace is preserved, not a successful partial report.
+  Its `developerDir` defaults to `/Applications/Xcode_26.app/Contents/Developer`
+  and can be overridden through the input.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated case assets, serializes every device action, and writes
   per-case evidence plus an HTML report.

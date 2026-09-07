@@ -12,8 +12,14 @@ export interface IosAttachTraceInput {
    */
   projectRoot: string;
 
-  /** Root used by flow-ios-dev/JoJo. Defaults to `projectRoot`. */
+  /** Root containing BitSky `.vscode-out`; defaults to `projectRoot`. */
   buildRoot?: string;
+
+  /**
+   * Full Xcode Developer directory exported as DEVELOPER_DIR.
+   * Defaults to `/Applications/Xcode_26.app/Contents/Developer`.
+   */
+  developerDir?: string;
 
   /** Real-device UDID used by xctrace. */
   udid: string;
@@ -42,7 +48,7 @@ export interface IosAttachTraceInput {
 
   /**
    * Directory recursively searched by `xctrace symbolicate`. When omitted,
-   * the Workflow tries the most recent matching ios-build-install summary.
+   * the Workflow tries matching ios-build-install and flow-ios-bitsky summaries.
    */
   symbolSearchPath?: string;
 

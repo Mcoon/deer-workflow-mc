@@ -28,6 +28,7 @@ import type {
 } from "./types";
 
 const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+const DEFAULT_DEVELOPER_DIR = "/Applications/Xcode_26.app/Contents/Developer";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const DEFAULT_TARGET_BINARY = "Grace";
 const DEFAULT_TEMPLATE = "Time Profiler";
@@ -39,6 +40,8 @@ const DEFAULT_EXPORT_RETRY_DELAY_MS = 1000;
 const DEFAULT_TRACE_SETTLE_ATTEMPTS = 10;
 const DEFAULT_TRACE_SETTLE_DELAY_MS = 500;
 const DEFAULT_BUILD_ARTIFACT_ROOT = "/tmp/ios_perf-opt/ios-build-install";
+const DEFAULT_BITSKY_ARTIFACT_ROOT = "/tmp/ios_perf-opt/flow-ios-bitsky";
+const DEFAULT_BUSINESS_BINARY = "FlowDebugBasicDynamic";
 const OUTPUT_TAIL_LENGTH = 4000;
 const TIME_PROFILE_XPATH =
   '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]';
@@ -64,6 +67,7 @@ export const meta = {
     repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
     projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
     udid: "00008030-001A286A2229802E",
     bundleId: "com.bot.doubao",
     attachTarget: "Grace",
@@ -124,7 +128,11 @@ export default async function iosAttachTrace(
       .filter(Boolean)
       .join("\n"),
   );
-  const record = await runAttachRecordCommand(recordCommand, input.projectRoot);
+  const record = await runAttachRecordCommand(
+    recordCommand,
+    input.projectRoot,
+    input.developerDir,
+  );
   summary.record = processSummary(record);
   summary.trace_path = input.tracePath;
 
@@ -156,13 +164,13 @@ export default async function iosAttachTrace(
     explicitDsymPath: input.dsymPath,
     explicitSymbolSearchPath: input.symbolSearchPath,
     buildArtifactRoot: DEFAULT_BUILD_ARTIFACT_ROOT,
+    bitskyArtifactRoot: DEFAULT_BITSKY_ARTIFACT_ROOT,
   });
   summary.dsym_path = symbolContext.dsymPath || input.dsymPath;
   summary.symbol_search_path = symbolContext.searchPath;
   summary.symbol_search_source = symbolContext.source;
   summary.build_summary_path = symbolContext.buildSummaryPath;
 
-  let exportTracePath = input.tracePath;
   if (symbolContext.searchPath) {
     log(
       [
@@ -177,7 +185,11 @@ export default async function iosAttachTrace(
       outputPath: input.symbolicatedTracePath,
       symbolSearchPath: symbolContext.searchPath,
     });
-    const symbolicate = await runCommand(symbolicateCommand, input.projectRoot);
+    const symbolicate = await runCommand(
+      symbolicateCommand,
+      input.projectRoot,
+      input.developerDir,
+    );
     summary.symbolicate = processSummary(symbolicate);
     if (symbolicate.exitCode !== 0) {
       summary.error = "symbolication_failed";
@@ -189,18 +201,19 @@ export default async function iosAttachTrace(
         input,
       );
     }
-    exportTracePath = input.symbolicatedTracePath;
     summary.symbolicated_trace_path = input.symbolicatedTracePath;
   } else {
-    summary.warning =
-      "No dSYM symbol search path was found; exporting the unsymbolicated trace.";
-    log(
-      [
-        "## Skipping attach trace symbolication",
-        "- No explicit or recent build-install symbol search path was found.",
-      ].join("\n"),
+    summary.error = "missing_symbol_search_path";
+    summary.message =
+      "No matching dSYM symbol search path was found. Pass dsymPath/symbolSearchPath or run the BitSky-backed ios-build-install workflow first.";
+    await writeSummary(input.summaryPath, summary);
+    throw collectionError(
+      "iOS attach trace symbolication prerequisites are missing",
+      summary,
+      input,
     );
   }
+  const exportTracePath = input.symbolicatedTracePath;
 
   phase("Export");
   log(
@@ -217,6 +230,7 @@ export default async function iosAttachTrace(
     command: buildTocExportCommand(exportTracePath, input.tocPath),
     cwd: input.projectRoot,
     outputDir: input.outputDir,
+    runner: (command, cwd) => runCommand(command, cwd, input.developerDir),
   });
   summary.export_attempts = {
     ...(summary.export_attempts ?? {}),
@@ -246,6 +260,7 @@ export default async function iosAttachTrace(
     ),
     cwd: input.projectRoot,
     outputDir: input.outputDir,
+    runner: (command, cwd) => runCommand(command, cwd, input.developerDir),
   });
   summary.export_attempts = {
     ...(summary.export_attempts ?? {}),
@@ -342,6 +357,7 @@ interface NormalizedInput {
   repositoryRoot: string;
   projectRoot: string;
   buildRoot: string;
+  developerDir: string;
   udid: string;
   bundleId: string;
   attachTarget: string;
@@ -404,6 +420,7 @@ interface AttachSymbolContext {
   source:
     | "explicit-symbol-search-path"
     | "recent-build-summary"
+    | "recent-bitsky-summary"
     | "explicit-dsym"
     | "none";
   buildSummaryPath?: string;
@@ -418,10 +435,21 @@ interface BuildSymbolSummary {
   dsym_path?: string;
   exported_dsym_path?: string;
   dsym_paths?: string[];
+  symbol_search_path?: string;
+  business_dsym_path?: string;
   dsym_metadata?: Array<{
     path?: string;
     binary_name?: string;
   }>;
+}
+
+interface BitskyBuildSummary {
+  status?: string;
+  project_root?: string;
+  target?: string;
+  app_path?: string;
+  products_dir?: string;
+  matched_dsym_path?: string;
 }
 
 export interface AttachRecordObservation {
@@ -466,6 +494,9 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
     repositoryRoot,
     projectRoot,
     buildRoot,
+    developerDir: args.developerDir?.trim()
+      ? resolve(args.developerDir.trim())
+      : DEFAULT_DEVELOPER_DIR,
     udid,
     bundleId: args.bundleId?.trim() || DEFAULT_BUNDLE_ID,
     attachTarget: args.attachTarget?.trim() || targetBinary,
@@ -482,7 +513,7 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
     timeProfilePath: join(outputDir, "time_profile.xml"),
     summaryPath: join(outputDir, "summary.json"),
     targetBinary,
-    businessBinary: args.businessBinary?.trim() || `${targetBinary}Core`,
+    businessBinary: args.businessBinary?.trim() || DEFAULT_BUSINESS_BINARY,
     htmlReportPath,
     maxSamples: boundedInteger(args.maxSamples, 40, 50000, DEFAULT_MAX_SAMPLES),
     maxDepth: boundedInteger(args.maxDepth, 4, 120, DEFAULT_MAX_DEPTH),
@@ -575,6 +606,7 @@ export async function resolveAttachSymbolContext(input: {
   explicitDsymPath?: string;
   explicitSymbolSearchPath?: string;
   buildArtifactRoot?: string;
+  bitskyArtifactRoot?: string;
 }): Promise<AttachSymbolContext> {
   const explicitSearchPath = input.explicitSymbolSearchPath?.trim();
   if (explicitSearchPath && (await pathExists(explicitSearchPath))) {
@@ -599,9 +631,26 @@ export async function resolveAttachSymbolContext(input: {
         buildSummary.payload.exported_dsym_path ||
         buildSummary.payload.dsym_path ||
         "",
-      searchPath: dirname(buildSummary.businessDsymPath),
+      searchPath:
+        buildSummary.payload.symbol_search_path ||
+        dirname(buildSummary.businessDsymPath),
       source: "recent-build-summary",
       buildSummaryPath: buildSummary.path,
+    };
+  }
+
+  const bitskySummary = await findLatestBitskySymbolSummary({
+    projectRoot: input.projectRoot,
+    targetBinary: input.targetBinary,
+    businessBinary: input.businessBinary,
+    artifactRoot: input.bitskyArtifactRoot ?? DEFAULT_BITSKY_ARTIFACT_ROOT,
+  });
+  if (bitskySummary) {
+    return {
+      dsymPath: input.explicitDsymPath?.trim() || bitskySummary.appDsymPath,
+      searchPath: bitskySummary.symbolSearchPath,
+      source: "recent-bitsky-summary",
+      buildSummaryPath: bitskySummary.path,
     };
   }
 
@@ -615,6 +664,84 @@ export async function resolveAttachSymbolContext(input: {
   }
 
   return { dsymPath: "", searchPath: "", source: "none" };
+}
+
+async function findLatestBitskySymbolSummary(input: {
+  projectRoot: string;
+  targetBinary: string;
+  businessBinary: string;
+  artifactRoot: string;
+}): Promise<{
+  path: string;
+  appDsymPath: string;
+  symbolSearchPath: string;
+} | null> {
+  let entries: string[];
+  try {
+    entries = await readdir(input.artifactRoot);
+  } catch {
+    return null;
+  }
+
+  const summaries: Array<{ path: string; mtimeMs: number }> = [];
+  for (const entry of entries) {
+    const path = join(input.artifactRoot, entry, "summary.json");
+    try {
+      const stats = await stat(path);
+      summaries.push({ path, mtimeMs: stats.mtimeMs });
+    } catch {
+      continue;
+    }
+  }
+  summaries.sort((left, right) => right.mtimeMs - left.mtimeMs);
+
+  const projectRoot = resolve(input.projectRoot);
+  for (const summary of summaries) {
+    let payload: BitskyBuildSummary;
+    try {
+      payload = JSON.parse(
+        await readFile(summary.path, "utf8"),
+      ) as BitskyBuildSummary;
+    } catch {
+      continue;
+    }
+    if (
+      payload.status !== "success" ||
+      resolve(payload.project_root ?? "") !== projectRoot ||
+      payload.target !== input.targetBinary ||
+      !payload.app_path ||
+      basename(payload.app_path) !== `${input.targetBinary}.app` ||
+      !(await pathExists(payload.app_path)) ||
+      !payload.products_dir ||
+      !payload.matched_dsym_path ||
+      !isPathWithin(resolve(payload.app_path), resolve(payload.products_dir)) ||
+      !isPathWithin(
+        resolve(payload.matched_dsym_path),
+        resolve(payload.products_dir),
+      ) ||
+      !(await pathExists(payload.matched_dsym_path))
+    ) {
+      continue;
+    }
+
+    const symbolSearchPath = join(payload.products_dir, "dSYM");
+    const businessDsymPath = join(
+      symbolSearchPath,
+      `${input.businessBinary}.framework.dSYM`,
+    );
+    if (
+      !(await pathExists(symbolSearchPath)) ||
+      !(await pathExists(businessDsymPath))
+    ) {
+      continue;
+    }
+    return {
+      path: summary.path,
+      appDsymPath: resolve(payload.matched_dsym_path),
+      symbolSearchPath: resolve(symbolSearchPath),
+    };
+  }
+  return null;
 }
 
 async function findLatestBuildSymbolSummary(input: {
@@ -669,6 +796,7 @@ async function findLatestBuildSymbolSummary(input: {
       continue;
     }
     const businessDsymPath =
+      payload.business_dsym_path ??
       payload.dsym_metadata?.find(
         (metadata) => metadata.binary_name === input.businessBinary,
       )?.path ??
@@ -745,9 +873,14 @@ function isPathWithin(path: string, parent: string): boolean {
 async function runCommand(
   command: readonly string[],
   cwd: string,
+  developerDir = "",
 ): Promise<CommandResult> {
+  const env = developerDir
+    ? { ...process.env, DEVELOPER_DIR: developerDir }
+    : undefined;
   const subprocess = Bun.spawn([...command], {
     cwd,
+    env,
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -764,6 +897,7 @@ async function runCommand(
 export async function runAttachRecordCommand(
   command: readonly string[],
   cwd: string,
+  developerDir = "",
 ): Promise<CommandResult> {
   const startedAt = new Date();
   const observation: AttachRecordObservation = {
@@ -775,6 +909,9 @@ export async function runAttachRecordCommand(
 
   const subprocess = Bun.spawn([...command], {
     cwd,
+    env: developerDir
+      ? { ...process.env, DEVELOPER_DIR: developerDir }
+      : undefined,
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -960,6 +1097,7 @@ async function listDeviceProcesses(
       "--quiet",
     ],
     input.projectRoot,
+    input.developerDir,
   );
   if (result.exitCode !== 0) {
     return [];

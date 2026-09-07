@@ -15,6 +15,7 @@ import type {
 } from "./types";
 
 const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+const DEFAULT_DEVELOPER_DIR = "/Applications/Xcode_26.app/Contents/Developer";
 const DEFAULT_COLLECTOR_SCRIPT_PATH =
   "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/skills/collection/flow-ios-trace-collection/scripts/collect_trace.py";
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
@@ -42,6 +43,7 @@ export const meta = {
     repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
     projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
     udid: "00008030-001A286A2229802E",
     bundleId: "com.bot.doubao",
     timeLimit: "20s",
@@ -84,7 +86,11 @@ export default async function iosLaunchTrace(
       `- **Limit:** \`${input.timeLimit}\``,
     ].join("\n"),
   );
-  const collection = await runCommand(command, input.projectRoot);
+  const collection = await runCommand(
+    command,
+    input.projectRoot,
+    input.developerDir,
+  );
 
   const expectedSummaryPath = join(input.outputDir, "summary.json");
   const summary = await readCollectorSummary(
@@ -185,12 +191,14 @@ interface NormalizedInput {
   repositoryRoot: string;
   projectRoot: string;
   buildRoot: string;
+  developerDir: string;
   udid: string;
   bundleId: string;
   collectorScriptPath: string;
   python: string;
   appPath: string;
   dsymPath: string;
+  symbolSearchPath: string;
   timeLimit: string;
   skipInstall: boolean;
   outputDir: string;
@@ -264,6 +272,9 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
     repositoryRoot,
     projectRoot,
     buildRoot,
+    developerDir: args.developerDir?.trim()
+      ? resolve(args.developerDir.trim())
+      : DEFAULT_DEVELOPER_DIR,
     udid,
     bundleId: args.bundleId?.trim() || DEFAULT_BUNDLE_ID,
     collectorScriptPath: resolve(
@@ -272,6 +283,7 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
     python: args.python?.trim() || "python3",
     appPath: args.appPath?.trim() || "",
     dsymPath: args.dsymPath?.trim() || "",
+    symbolSearchPath: args.symbolSearchPath?.trim() || "",
     timeLimit: args.timeLimit?.trim() || DEFAULT_TIME_LIMIT,
     skipInstall: args.skipInstall === true,
     outputDir,
@@ -308,6 +320,10 @@ export function buildCollectorCommand(input: NormalizedInput): string[] {
   if (input.dsymPath) {
     command.push("--dsym-path", input.dsymPath);
   }
+  if (input.symbolSearchPath) {
+    command.push("--symbol-search-path", input.symbolSearchPath);
+  }
+  command.push("--target-binary", input.targetBinary);
   if (input.skipInstall) {
     command.push("--skip-install");
   }
@@ -318,9 +334,14 @@ export function buildCollectorCommand(input: NormalizedInput): string[] {
 async function runCommand(
   command: readonly string[],
   cwd: string,
+  developerDir = "",
 ): Promise<CommandResult> {
+  const env = developerDir
+    ? { ...process.env, DEVELOPER_DIR: developerDir }
+    : undefined;
   const subprocess = Bun.spawn([...command], {
     cwd,
+    env,
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -2932,7 +2953,12 @@ def binary_info(binary_element):
     return {}
 
 def is_app_frame(binary_name, binary_path, source_path):
-    if target_binary and binary_name in (target_binary, target_binary + "Core"):
+    if target_binary and binary_name in (
+        target_binary,
+        target_binary + ".debug.dylib",
+        target_binary + "Core",
+        "FlowDebugBasicDynamic",
+    ):
         return True
     local_markers = (
         "/Florak/flow/ios/",

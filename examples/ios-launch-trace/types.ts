@@ -10,8 +10,14 @@ export interface IosLaunchTraceInput {
    */
   projectRoot: string;
 
-  /** Root containing flow-ios-dev `.vscode-out`; defaults to `projectRoot`. */
+  /** Root containing BitSky `.vscode-out`; defaults to `projectRoot`. */
   buildRoot?: string;
+
+  /**
+   * Full Xcode Developer directory exported as DEVELOPER_DIR.
+   * Defaults to `/Applications/Xcode_26.app/Contents/Developer`.
+   */
+  developerDir?: string;
 
   /** Real-device UDID used by xctrace. */
   udid: string;
@@ -30,6 +36,9 @@ export interface IosLaunchTraceInput {
 
   /** Matching `.app.dSYM` bundle for source-level symbolication. */
   dsymPath?: string;
+
+  /** Directory recursively searched for BitSky dSYMs before XML export. */
+  symbolSearchPath?: string;
 
   /** xctrace time limit, such as `20s` or `15000ms`. */
   timeLimit?: string;
@@ -69,14 +78,23 @@ export interface LaunchTraceSummary {
   bundle_id?: string;
   app_path?: string;
   dsym_path?: string;
+  symbol_search_path?: string;
+  symbolicated_trace_path?: string;
+  target_binary?: string;
   output_dir?: string;
   trace_path?: string;
   toc_path?: string;
   time_profile_path?: string;
   summary_path?: string;
   symbolication_status?: string;
+  symbolicate?: {
+    returncode?: number;
+    stdout_tail?: string;
+    stderr_tail?: string;
+  };
   dsym_uuid?: string | null;
   trace_grace_uuid?: string | null;
+  trace_target_uuids?: Record<string, string>;
   main_thread_rows?: number;
   main_thread_grace_rows?: number;
   main_thread_grace_source_rows?: number;

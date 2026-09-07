@@ -24,6 +24,7 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
     "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "developerDir": "/Applications/Xcode_26.app/Contents/Developer",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "timeLimit": "20s"
@@ -37,7 +38,10 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 
 - `repositoryRoot`：Git 仓库根；Florak 下是 monorepo 根。
 - `projectRoot`：目标 iOS 源码根。
-- `buildRoot`：包含 `.vscode-out` 的构建根，默认等于 `projectRoot`。
+- `buildRoot`：包含 `.vscode-out` 的 BitSky 构建根，默认等于 `projectRoot`。
+- `developerDir`：可选完整 Xcode Developer 目录，通过 `DEVELOPER_DIR` 注入，
+  不修改系统 `xcode-select`。默认是
+  `/Applications/Xcode_26.app/Contents/Developer`；其他 Xcode 安装路径需显式传入。
 - `udid`：传给 `xctrace` 的真机 UDID。
 - `bundleId`：Time Profiler 启动的 bundle identifier，默认
   `com.bot.doubao`。
@@ -45,9 +49,10 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
   `ios-perf-optimizer` checkout。
 - `appPath`：已有 `.app` bundle。不传时使用 collector 默认值：
   `<buildRoot>/.vscode-out/Grace.app`。
-- `dsymPath`：匹配的 `.app.dSYM`。不传时使用 collector 默认值：
-  `<buildRoot>/.vscode-out/Grace.app.dSYM`。Workflow 不会主动扫描
-  dSYM；如果构建产物在别处，需要显式传绝对路径 `dsymPath`。
+- `dsymPath`：匹配的 `.app.dSYM`。不传时使用 BitSky 默认路径
+  `<buildRoot>/.vscode-out/dSYM/Grace.app.dSYM`。
+- `symbolSearchPath`：递归传给 `xctrace symbolicate` 的目录；默认使用
+  `dsymPath` 的父目录，通常为 `.vscode-out/dSYM`。
 - `timeLimit`：xctrace 采集时长，例如 `20s`。
 - `skipInstall`：采集前跳过安装 `.app`。
 - `outputDir`：输出目录，默认是
@@ -63,6 +68,7 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 一次正常的 launch 采集会在输出目录里生成：
 
 - `launch_target.trace`
+- `symbolicated.trace`
 - `toc.xml`
 - `time_profile.xml`
 - `summary.json`

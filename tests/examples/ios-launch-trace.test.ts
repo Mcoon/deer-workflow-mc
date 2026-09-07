@@ -18,12 +18,14 @@ describe("iOS Launch Trace report", () => {
       repositoryRoot: "/repo/Florak",
       projectRoot: "/repo/Florak/flow/ios",
       buildRoot: "/repo/Florak/flow/ios",
+      developerDir: "/Applications/Xcode.app/Contents/Developer",
       udid: "device-1",
       bundleId: "com.bot.doubao",
       collectorScriptPath: "/tmp/collect_trace.py",
       python: "python3",
       appPath: "",
       dsymPath: "",
+      symbolSearchPath: "",
       timeLimit: "20s",
       skipInstall: false,
       outputDir: "/tmp/ios_perf-opt/ios-launch-trace/test",
@@ -41,6 +43,7 @@ describe("iOS Launch Trace report", () => {
     expect(command[command.indexOf("--build-root") + 1]).toBe(
       "/repo/Florak/flow/ios",
     );
+    expect(command).toContain("--target-binary");
   });
 
   test("merges adjacent frame samples into timeline spans", () => {
@@ -246,9 +249,9 @@ describe("iOS Launch Trace report", () => {
         success: false,
         error: "missing_dsym",
         message:
-          "Grace.app.dSYM is missing. Run flow-ios-dev build_app --symbols-required first.",
+          "Grace.app.dSYM is missing. Run flow-ios-bitsky --dsym or ios-build-install first.",
         dsym_path:
-          "/Users/bytedance/Documents/BDWorkSpace/Dbao/.vscode-out/Grace.app.dSYM",
+          "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios/.vscode-out/dSYM/Grace.app.dSYM",
       },
       stdoutTail: '{"error":"missing_dsym"}',
       timeline: buildTraceTimelineFromSamples([], {
@@ -530,6 +533,36 @@ describe("iOS Launch Trace report", () => {
 
     expect(timeline.spans[0]).toEqual(
       expect.objectContaining({ name: "FlowFeature.render()", appFrame: true }),
+    );
+  });
+
+  test("classifies the BitSky Debug dylib as an app frame without source metadata", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "ios-launch-trace-bitsky-debug-"));
+    const xmlPath = join(dir, "time_profile.xml");
+    await writeFile(
+      xmlPath,
+      `<?xml version="1.0"?>
+      <trace-query-result><row>
+        <sample-time id="time-1" fmt="00:00.001">1000000</sample-time>
+        <weight id="weight-1" fmt="1.00 ms">1000000</weight>
+        <thread id="t1" fmt="Main Thread 0x1"></thread>
+        <backtrace><frame name="FlowBoot.start()">
+          <binary name="Grace.debug.dylib" path="/private/Grace.app/Grace.debug.dylib"/>
+        </frame></backtrace>
+      </row></trace-query-result>`,
+      "utf8",
+    );
+
+    const timeline = await parseTraceTimeline({
+      timeProfilePath: xmlPath,
+      targetBinary: "Grace",
+      maxSamples: 10,
+      maxDepth: 10,
+      python: "python3",
+    });
+
+    expect(timeline.spans[0]).toEqual(
+      expect.objectContaining({ binary: "Grace.debug.dylib", appFrame: true }),
     );
   });
 });

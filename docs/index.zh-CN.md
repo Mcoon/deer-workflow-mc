@@ -315,15 +315,15 @@ Pi 0.84.1 没有内置操作系统 Sandbox。`PiAgent` 通过非修改型工具 
   并行研究多个独立角度、验证结论，并生成交互式 HTML 报告。
 - [Blog Writer](../examples/blog-writer/README.zh-CN.md) 使用 `pipeline()` 独立
   起草和审阅各个章节。
-- [iOS 签名与 JoJo 依赖安装](../examples/ios-cosign-jojo-install/README.zh-CN.md)
-  按顺序运行仓库原生签名和 JoJo 依赖准备脚本。
+- [iOS 签名与 BitSky Install](../examples/ios-cosign-bitsky-install/README.zh-CN.md)
+  按顺序完成签名、Ruby 依赖和 BitSky 构建物料准备。
 - [iOS Build and Install](../examples/ios-build-install/README.zh-CN.md) 准备
-  可用于 trace 的 flow_iOS `.app` 和 dSYM，并只安装不启动。
+  `.vscode-out` 下可用于 trace 的 BitSky `.app` 和 dSYM，并只安装不启动。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md) 封装固定的
   iOS 启动 Time Profiler 采集，并渲染本地 HTML 时间线。
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md) 通过
-  `xctrace --attach` 记录已经运行中的 iOS App，适合手动操作采集，并渲染同款
-  HTML 时间线。
+  `xctrace --attach` 记录已经运行中的 iOS App，自动发现匹配的
+  `ios-build-install` 或 `flow-ios-bitsky` dSYM，并渲染带业务源码符号的 HTML 时间线。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)
   消费校验通过的 case，并保持设备执行确定性。
 - [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md) 编译不依赖坐标

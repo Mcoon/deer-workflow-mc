@@ -84,16 +84,17 @@ Want to understand or edit the generated module? Continue with the
   interactive HTML report.
 - [Blog Writer](./examples/blog-writer/README.md) plans an article, drafts its
   sections through a pipeline, reviews them, and returns structured output.
-- [iOS Cosign and JoJo Install](./examples/ios-cosign-jojo-install/README.md)
-  prepares signing and dependencies through the repository-native Florak iOS scripts.
+- [iOS Cosign and BitSky Install](./examples/ios-cosign-bitsky-install/README.md)
+  prepares signing, Ruby dependencies, and BitSky build materials.
 - [iOS Build and Install](./examples/ios-build-install/README.md) builds a
-  flow_iOS app with dSYM artifacts and installs it without launching.
+  Flow iOS device App and optional dSYMs with BitSky, exports them to
+  `.vscode-out`, and installs without launching.
 - [iOS Launch Trace](./examples/ios-launch-trace/README.md) runs a deterministic
   launch Time Profiler collection and renders an Instruments-style HTML
   timeline.
 - [iOS Attach Trace](./examples/ios-attach-trace/README.md) attaches Time
-  Profiler to a running app for manual interaction capture and renders the same
-  HTML timeline.
+  Profiler to a running app, auto-discovers matching `ios-build-install` or
+  `flow-ios-bitsky` dSYMs, and renders a source-symbolicated HTML timeline.
 - [iOS Functional Regression](./examples/ios-functional-regression/README.md)
   executes validated cases serially with `mobilecli` and renders an evidence
   report.

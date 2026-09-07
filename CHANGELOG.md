@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replaced the legacy Flow iOS JoJo preparation and build paths with BitSky,
+  exported trace-ready App/dSYM artifacts to `.vscode-out`, and taught launch
+  and attach traces to consume BitSky Debug symbols.
+- Made attach trace discover matching `flow-ios-bitsky` summaries directly and
+  fail clearly when no dSYM search directory is available instead of reporting
+  an unsymbolicated export as a successful run.
 - Fixed iOS attach traces to consume the complete dSYM set from the latest
   matching build, run `xctrace symbolicate` before export, and validate
   GraceCore source coverage instead of treating the main app dSYM as sufficient.

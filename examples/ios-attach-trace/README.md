@@ -12,8 +12,9 @@ run the Workflow, operate the phone while the recording is active, and let
    `/tmp/ios_perf-opt/ios-attach-trace/`;
 2. runs `xcrun xctrace record --template "Time Profiler" --attach <target>` for
    the requested duration;
-3. resolves a recursive dSYM search path from explicit input or the newest
-   matching `ios-build-install` summary, then runs `xctrace symbolicate`;
+3. resolves a recursive dSYM search path from explicit input, the newest
+   matching `ios-build-install` summary, or a `flow-ios-bitsky` summary, then
+   runs `xctrace symbolicate`;
 4. exports `toc.xml` and `time_profile.xml` from the symbolicated trace;
 5. parses the exported Time Profiler rows with the launch trace parser;
 6. renders `attach-trace-report.html` with the same zoomable timeline, frame
@@ -31,6 +32,7 @@ deer-workflow run ./examples/ios-attach-trace/workflow.ts \
     "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+    "developerDir": "/Applications/Xcode_26.app/Contents/Developer",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "attachTarget": "Grace",
@@ -48,8 +50,11 @@ The Workflow then exports and renders the report.
 
 - `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
 - `projectRoot`: target iOS source root.
-- `buildRoot`: flow-ios-dev/JoJo root used to validate matching build outputs;
-  defaults to `projectRoot`.
+- `buildRoot`: BitSky root containing `.vscode-out`; defaults to `projectRoot`.
+- `developerDir`: optional full Xcode Developer directory used through
+  `DEVELOPER_DIR`, without changing system `xcode-select`. Defaults to
+  `/Applications/Xcode_26.app/Contents/Developer`; set it explicitly for other
+  Xcode installations.
 - `udid`: real-device UDID passed to `xctrace`.
 - `bundleId`: bundle identifier recorded in the summary and report. Defaults to
   `com.bot.doubao`.
@@ -68,11 +73,11 @@ The Workflow then exports and renders the report.
 - `targetBinary`: binary highlighted as app code in the HTML timeline. Defaults
   to `Grace`.
 - `symbolSearchPath`: directory recursively searched by `xctrace symbolicate`.
-  If omitted, the Workflow discovers the newest matching
-  `/tmp/ios_perf-opt/ios-build-install/*/build-summary.json` and uses the
-  directory containing `GraceCore.framework.dSYM`.
+  If omitted, the Workflow first discovers the newest matching
+  `/tmp/ios_perf-opt/ios-build-install/*/build-summary.json`, then falls back
+  to `/tmp/ios_perf-opt/flow-ios-bitsky/*/summary.json` and its `products/dSYM`.
 - `businessBinary`: business framework used for source-coverage validation.
-  Defaults to `<targetBinary>Core`, normally `GraceCore`.
+  Defaults to `FlowDebugBasicDynamic` for current BitSky Debug builds.
 - `maxSamples` / `maxDepth`: rendering limits for large traces.
 
 ## Output
@@ -96,5 +101,27 @@ separately from wall-clock range.
 whether a long-looking `Collect` phase was actual Time Profiler recording time
 or setup time before `xctrace` attached.
 It also records the selected symbol search path, its resolution source, and
-source-level `GraceCore` coverage. `symbolicationStatus=ready` now means the
-exported main-thread stacks actually contain `GraceCore` source locations.
+source-level `FlowDebugBasicDynamic` coverage. `symbolicationStatus=ready` means
+the exported main-thread stacks actually contain business source locations.
+If no matching dSYM directory is found, the Workflow preserves the raw trace
+and fails clearly instead of reporting an unsymbolicated export as success.
+
+## Symbolication diagnostics
+
+Do not treat a completed `Symbolicate` phase alone as proof that source symbols
+were applied. A valid source-level result has all of these fields in
+`summary.json`:
+
+- non-empty `symbol_search_path`;
+- `symbol_search_source` equal to `explicit-symbol-search-path`,
+  `recent-build-summary`, or `recent-bitsky-summary`;
+- non-empty `symbolicated_trace_path`;
+- `symbolication_status=ready`;
+- `main_thread_grace_source_rows > 0`.
+
+Older Workflow versions could finish successfully with
+`symbol_search_source=none`, an empty `symbolicated_trace_path`, and
+`symbolication_status=partial`. That means the raw trace was exported without
+running `xctrace symbolicate`. The raw `.trace` remains recoverable: rerun
+`xctrace symbolicate` with the matching BitSky `products/dSYM` directory, then
+export XML from the recovered trace.

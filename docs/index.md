@@ -336,15 +336,16 @@ the complete Agent Loop to a single model completion.
   interactive HTML report.
 - [Blog Writer](../examples/blog-writer/README.md) uses `pipeline()` to draft
   and review sections independently.
-- [iOS Cosign and JoJo Install](../examples/ios-cosign-jojo-install/README.md)
-  runs the repository-native signing and JoJo dependency setup in order.
+- [iOS Cosign and BitSky Install](../examples/ios-cosign-bitsky-install/README.md)
+  runs signing, Ruby dependency setup, and BitSky material generation in order.
 - [iOS Build and Install](../examples/ios-build-install/README.md) prepares a
-  trace-ready flow_iOS `.app` and dSYM, then installs without launching.
+  trace-ready BitSky `.app` and dSYM under `.vscode-out`, then installs without launching.
 - [iOS Launch Trace](../examples/ios-launch-trace/README.md) wraps a fixed iOS
   Time Profiler launch collection and renders a local HTML timeline.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) records an
   already-running iOS app with `xctrace --attach` for manual interaction
-  captures and renders the same HTML timeline.
+  captures, discovers matching `ios-build-install` or `flow-ios-bitsky` dSYMs,
+  and renders the same source-symbolicated HTML timeline.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated cases and keeps device execution deterministic.
 - [App Graph v2 Plan](../examples/app-graph-plan/README.md) compiles a

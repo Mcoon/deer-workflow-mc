@@ -1,28 +1,14 @@
+English | [简体中文](./README.zh-CN.md)
+
 # iOS Build and Install
 
-This example builds a flow_iOS app with dSYM artifacts and installs the built
-`.app` on a real device without launching it. It is designed as the preparation
-Workflow for [iOS Launch Trace](../ios-launch-trace/README.md).
+This Workflow builds a physical-device Flow iOS app through BitSky, exports the
+App and dSYMs into `<buildRoot>/.vscode-out`, verifies code signing and matching
+UUIDs, then installs the App without launching it. dSYM generation is enabled
+by default for trace-ready builds.
 
-## What it does
-
-1. runs `flow-ios-dev/scripts/build_app.py --symbols-required`;
-2. validates that the build returned an `.app`, a `.app.dSYM`, and
-   `symbolication_status: "ready"`;
-3. installs the app with `xcrun devicectl device install app`;
-4. returns `appPath` and the main-app `dsymPath` for launch traces, plus
-   `businessDsymPath` and `symbolSearchPath` for recursively symbolicating
-   attach traces that execute inside `GraceCore`.
-
-It does not call `flow-ios-dev deploy.py`, `ios-deploy`, or any install-and-run
-wrapper. The install phase is install-only so the first launch can still be the
-later Time Profiler collection.
-
-If signing or `.jojo` dependencies have not been prepared in a fresh checkout,
-run [iOS Cosign and JoJo Install](../ios-cosign-jojo-install/README.md) first.
-This Workflow deliberately does not initialize them implicitly.
-
-## Run
+Prepare a fresh checkout first with
+[`ios-cosign-bitsky-install`](../ios-cosign-bitsky-install/README.md).
 
 ```bash
 deer-workflow run ./examples/ios-build-install/workflow.ts \
@@ -31,98 +17,33 @@ deer-workflow run ./examples/ios-build-install/workflow.ts \
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
-    "mode": "Debug"
+    "target": "Grace",
+    "mode": "Debug",
+    "developerDir": "/Applications/Xcode_26.app/Contents/Developer"
   }'
 ```
 
-The returned JSON includes:
-
-- `appPath`
-- `dsymPath`
-- `businessDsymPath`
-- `symbolSearchPath`
-- `symbolicationStatus`
-- `buildSummaryPath`
-- `installJsonPath`
-- `installLogPath`
-
-`dsymPath` remains the main `Grace.app.dSYM` for compatibility with the launch
-collector's main-executable UUID check. Pass `symbolSearchPath` to
-`ios-attach-trace` when invoking it explicitly; if omitted, that Workflow
-automatically discovers the newest matching `ios-build-install` summary.
-
-Then run launch trace with the returned paths:
+The build command is equivalent to:
 
 ```bash
-deer-workflow run ./examples/ios-launch-trace/workflow.ts \
-  --input '{
-    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    "udid": "00008030-001A286A2229802E",
-    "bundleId": "com.bot.doubao",
-    "appPath": "<appPath from ios-build-install>",
-    "dsymPath": "<dsymPath from ios-build-install>",
-    "timeLimit": "10s",
-    "skipInstall": true
-  }'
+orbit bundle exec bitsky_build \
+  --target grace --configuration Debug --sdk os --archs arm64 --dsym \
+  --output <buildRoot>/.vscode-out
 ```
 
-Use `skipInstall: true` in the trace step when you trust that the preceding
-install used the same returned `appPath`.
+Stable artifacts:
 
-## Reinstall the last build without rebuilding
+- App: `.vscode-out/Grace.app`
+- Main dSYM: `.vscode-out/dSYM/Grace.app.dSYM`
+- Recursive symbols: `.vscode-out/dSYM`
+- Workflow summary: `/tmp/ios_perf-opt/ios-build-install/<runId>/build-summary.json`
 
-When the code has not changed and you only want to reinstall the previously
-built app, pass `reuseExistingArtifacts: true`. It skips `build_app.py` and
-installs `<buildRoot>/.vscode-out/<target>.app` (defaults to `Grace.app`), so
-you never have to locate a `build-summary.json`:
+For Debug builds, the main dSYM matches `Grace.debug.dylib`; the Workflow checks
+both the app stub and Debug dylib UUIDs. The default business binary for attach
+trace is `FlowDebugBasicDynamic`. Set `symbolsRequired: false` for an ordinary
+device build without dSYM; `requireReadySymbols` then defaults to false. Use
+`reuseExistingArtifacts: true` to validate and reinstall current `.vscode-out`
+artifacts without rebuilding.
 
-```bash
-deer-workflow run ./examples/ios-build-install/workflow.ts \
-  --input '{
-    "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
-    "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    "udid": "00008030-001A286A2229802E",
-    "reuseExistingArtifacts": true
-  }'
-```
-
-The artifact layout is stable: the main app is `.vscode-out/Grace.app` and the
-main dSYM is `.vscode-out/Grace.app.dSYM`. Pass `"target": "Cici"` for the
-overseas build. If no `.app` exists under `.vscode-out`, the Workflow fails with
-a clear message telling you to build once first.
-
-## Inputs
-
-- `repositoryRoot`: Git repository root. For Florak, this is the monorepo root.
-- `projectRoot`: iOS source root containing `Modules/`, `Flow/`, and `Podfile`.
-- `buildRoot`: root passed to `flow-ios-dev`; defaults to `projectRoot`. For
-  Florak it is also `flow/ios`, because there is no MBox workspace root.
-- `udid`: real-device UDID used for install-only deployment.
-- `buildScriptPath`: path to `build_app.py`. Defaults to the installed
-  `flow-ios-dev` Skill path.
-- `reuseExistingArtifacts`: defaults to `false`. When `true`, skips the build
-  and installs `<buildRoot>/.vscode-out/<target>.app`; use it to reinstall the
-  last build when the code has not changed.
-- `target`: `Grace` or `Cici`, defaults to `Grace`. Only affects which `.app`
-  is located when reusing artifacts.
-- `existingBuildSummaryPath`: reuse a successful `build_app.py` JSON summary
-  and continue at validation/install without rebuilding. (Prefer
-  `reuseExistingArtifacts` when you just want to reinstall — no summary path
-  to track.)
-- `mode`: `Debug` or `Release`. Defaults to `Debug`.
-- `symbolsRequired`: defaults to `true`; keep it enabled for Time Profiler.
-- `requireReadySymbols`: defaults to `true`; requires the main app dSYM and
-  `symbolication_status: ready`. `GraceCore.framework.dSYM` remains optional
-  and is only needed for source-level attach-trace analysis.
-- `noKeepGoing`: passes `--no-keep-going` to `build_app.py`.
-- `outputDir`: output directory. Defaults to `/tmp/ios_perf-opt`.
-- `installTimeoutSeconds`: devicectl install timeout. Defaults to `180`.
-
-## Failure behavior
-
-Build failures stop before install. Common actions such as `need_cosign` are
-preserved in `build-summary.json` so the caller can run the normal signing
-repair flow before retrying.
+The install phase only invokes `xcrun devicectl device install app`; it never
+launches the App.

@@ -1,4 +1,4 @@
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
@@ -12,19 +12,16 @@ import type {
 } from "./types";
 
 const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
-const DEFAULT_BUILD_SCRIPT_PATH =
-  "/Users/bytedance/.agents/skills/flow-ios-dev/scripts/build_app.py";
 const DEFAULT_MODE = "Debug";
 const DEFAULT_TARGET = "Grace";
 const DEFAULT_INSTALL_TIMEOUT_SECONDS = 180;
 const OUTPUT_TAIL_LENGTH = 4000;
 const REUSE_ARTIFACT_DIR = ".vscode-out";
 
-/** Declares the Workflow's identity and observable phase plan. */
 export const meta = {
   name: "ios-build-install",
   description:
-    "Builds a flow_iOS app with dSYM artifacts and installs it without launching.",
+    "Builds a Flow iOS device app and dSYMs with BitSky, exports them to .vscode-out, and installs without launching.",
   phases: [
     { title: "Prepare" },
     { title: "Build" },
@@ -37,219 +34,28 @@ export const meta = {
     projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     udid: "00008030-001A286A2229802E",
+    target: "Grace",
     mode: "Debug",
+    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
   },
 };
-
-/**
- * Builds the target app with dSYM output and installs the `.app` without
- * launching it.
- *
- * @param args - Build target, device UDID, and output settings.
- * @returns Trace-ready app and dSYM paths plus build/install diagnostics.
- */
-export default async function iosBuildInstall(
-  args: IosBuildInstallInput,
-): Promise<IosBuildInstallResult> {
-  const input = normalizeInput(args);
-
-  phase("Prepare");
-  await mkdir(input.outputDir, { recursive: true });
-  log(
-    [
-      "## Preparing trace-ready iOS build",
-      `- **Repository:** \`${input.repositoryRoot}\``,
-      `- **iOS source:** \`${input.projectRoot}\``,
-      `- **Build root:** \`${input.buildRoot}\``,
-      `- **Device:** \`${input.udid}\``,
-      `- **Mode:** \`${input.mode}\``,
-      `- **Output:** \`${input.outputDir}\``,
-    ].join("\n"),
-  );
-
-  phase("Build");
-  let buildCommand: string[] = [];
-  let build: CommandResult;
-  if (input.reuseExistingArtifacts) {
-    const synthesized = await reusedArtifactOutput(input);
-    build = { stdout: JSON.stringify(synthesized), stderr: "", exitCode: 0 };
-    log(
-      [
-        "## Reusing existing build artifacts",
-        `- **Artifacts dir:** \`${join(input.buildRoot, REUSE_ARTIFACT_DIR)}\``,
-        `- **Target:** \`${input.target}\``,
-        "- Skipping build_app.py and installing the last exported `.app`",
-      ].join("\n"),
-    );
-  } else if (input.existingBuildSummaryPath) {
-    build = {
-      stdout: await readFile(input.existingBuildSummaryPath, "utf8"),
-      stderr: "",
-      exitCode: 0,
-    };
-    log(
-      [
-        "## Reusing existing build artifacts",
-        `- **Build summary:** \`${input.existingBuildSummaryPath}\``,
-      ].join("\n"),
-    );
-  } else {
-    buildCommand = buildAppCommand(input);
-    build = await runBuild(input, buildCommand);
-  }
-  await writeFile(input.buildStdoutPath, build.stdout, "utf8");
-  await writeFile(input.buildStderrPath, build.stderr, "utf8");
-  const parsedBuildOutput = parseJsonObject<FlowIosBuildOutput>(build.stdout, {
-    success: false,
-    error: "build_output_parse_failed",
-  });
-  const buildOutput: FlowIosBuildOutput = {
-    ...parsedBuildOutput,
-    repository_root: input.repositoryRoot,
-    project_root: input.projectRoot,
-    build_root: input.buildRoot,
-  };
-  await writeJson(input.buildSummaryPath, buildOutput);
-
-  phase("Validate symbols");
-  const symbolPaths = resolveSymbolPaths(buildOutput);
-  const appPath = buildOutput.app_path ?? "";
-  const dsymPath = symbolPaths.primary;
-  const symbolicationStatus = buildOutput.symbolication_status ?? "unknown";
-  const compileErrors = formatBuildErrors(buildOutput);
-  log(
-    [
-      "## Validating build artifacts",
-      `- **App:** \`${appPath || "missing"}\``,
-      `- **dSYM:** \`${dsymPath || "missing"}\``,
-      `- **Business dSYM:** \`${symbolPaths.business || "missing"}\``,
-      `- **Symbol search path:** \`${symbolPaths.searchRoot || "missing"}\``,
-      `- **Symbolication:** \`${symbolicationStatus}\``,
-      `- **Build log:** \`${buildOutput.log_file ?? ""}\``,
-      ...(compileErrors.length > 0
-        ? [
-            "",
-            `### Compile errors (${buildOutput.error_count ?? compileErrors.length})`,
-            ...compileErrors.map((line) => `- ${line}`),
-            ...(buildOutput.truncated === true
-              ? ["- _…error list truncated; see build log for the rest._"]
-              : []),
-          ]
-        : []),
-    ].join("\n"),
-  );
-  await assertBuildReady({
-    buildExitCode: build.exitCode,
-    buildOutput,
-    appPath,
-    dsymPath,
-    requireReadySymbols: input.requireReadySymbols,
-    symbolicationStatus,
-    buildSummaryPath: input.buildSummaryPath,
-  });
-
-  phase("Install");
-  const installPaths = installOutputPaths(input.outputDir, appPath);
-  const installCommand = installOnlyCommand({
-    appPath,
-    udid: input.udid,
-    timeoutSeconds: input.installTimeoutSeconds,
-    jsonPath: installPaths.jsonPath,
-    logPath: installPaths.logPath,
-  });
-  log(
-    [
-      "## Installing app without launch",
-      `- **Command:** \`${installCommand.map(shellQuote).join(" ")}\``,
-      `- **Install JSON:** \`${installPaths.jsonPath}\``,
-      `- **Install log:** \`${installPaths.logPath}\``,
-    ].join("\n"),
-  );
-  const install = await runCommand(installCommand, input.buildRoot);
-  if (install.stdout.trim()) {
-    await writeFile(
-      join(input.outputDir, "install-stdout.txt"),
-      install.stdout,
-      "utf8",
-    );
-  }
-  if (install.stderr.trim()) {
-    await writeFile(
-      join(input.outputDir, "install-stderr.txt"),
-      install.stderr,
-      "utf8",
-    );
-  }
-  const installOutput = await readOptionalJson(installPaths.jsonPath);
-
-  if (install.exitCode !== 0) {
-    throw new Error(
-      [
-        "Install-only devicectl command failed.",
-        `Exit code: ${install.exitCode}`,
-        `Install log: ${installPaths.logPath}`,
-        `stderr tail: ${tail(install.stderr)}`,
-      ].join("\n"),
-    );
-  }
-
-  phase("Summarize");
-  log(
-    [
-      "## Build and install ready",
-      `- **appPath:** \`${appPath}\``,
-      `- **dsymPath:** \`${dsymPath}\``,
-      "- Pass these paths into `ios-launch-trace` to avoid default dSYM lookup.",
-    ].join("\n"),
-  );
-
-  return {
-    success: true,
-    repositoryRoot: input.repositoryRoot,
-    projectRoot: input.projectRoot,
-    buildRoot: input.buildRoot,
-    udid: input.udid,
-    outputDir: input.outputDir,
-    appPath,
-    dsymPath,
-    dsymPaths: symbolPaths.all,
-    businessDsymPath: symbolPaths.business,
-    symbolSearchPath: symbolPaths.searchRoot,
-    exportedDsymPath: buildOutput.exported_dsym_path ?? "",
-    symbolicationStatus,
-    buildReused: Boolean(
-      input.reuseExistingArtifacts || input.existingBuildSummaryPath,
-    ),
-    buildCommand,
-    installCommand,
-    buildExitCode: build.exitCode,
-    installExitCode: install.exitCode,
-    buildSummaryPath: input.buildSummaryPath,
-    buildStdoutPath: input.buildStdoutPath,
-    buildStderrPath: input.buildStderrPath,
-    buildLogFile: buildOutput.log_file ?? "",
-    installJsonPath: installPaths.jsonPath,
-    installLogPath: installPaths.logPath,
-    buildOutput,
-    installOutput,
-  };
-}
 
 interface NormalizedInput {
   repositoryRoot: string;
   projectRoot: string;
   buildRoot: string;
+  developerDir: string;
   udid: string;
-  buildScriptPath: string;
   existingBuildSummaryPath: string;
   reuseExistingArtifacts: boolean;
   target: "Grace" | "Cici";
-  python: string;
-  mode: "Debug" | "Release";
-  noKeepGoing: boolean;
+  mode: NonNullable<IosBuildInstallInput["mode"]>;
+  keepGoing: boolean;
   symbolsRequired: boolean;
   requireReadySymbols: boolean;
+  businessBinary: string;
   outputDir: string;
+  artifactDir: string;
   installTimeoutSeconds: number;
   buildSummaryPath: string;
   buildStdoutPath: string;
@@ -262,11 +68,187 @@ interface CommandResult {
   exitCode: number;
 }
 
+interface SymbolPaths {
+  primary: string;
+  all: string[];
+  business: string;
+  searchRoot: string;
+}
+
+export default async function iosBuildInstall(
+  args: IosBuildInstallInput,
+): Promise<IosBuildInstallResult> {
+  const input = normalizeInput(args);
+
+  phase("Prepare");
+  await mkdir(input.outputDir, { recursive: true });
+  log(
+    [
+      "## Preparing trace-ready BitSky build",
+      `- **Repository:** \`${input.repositoryRoot}\``,
+      `- **iOS source:** \`${input.projectRoot}\``,
+      `- **BitSky root:** \`${input.buildRoot}\``,
+      `- **Artifacts:** \`${input.artifactDir}\``,
+      `- **Device:** \`${input.udid}\``,
+      `- **Target/configuration:** \`${input.target}/${input.mode}\``,
+    ].join("\n"),
+  );
+
+  phase("Build");
+  let buildCommand: string[] = [];
+  let build: CommandResult = { stdout: "", stderr: "", exitCode: 0 };
+  let buildOutput: FlowIosBuildOutput;
+  if (input.reuseExistingArtifacts) {
+    buildOutput = await reusedArtifactOutput(input);
+    log(
+      `## Reusing BitSky artifacts\n- **Artifacts:** \`${input.artifactDir}\``,
+    );
+  } else if (input.existingBuildSummaryPath) {
+    buildOutput = normalizeBuildSummary(
+      parseJsonObject(
+        await readFile(input.existingBuildSummaryPath, "utf8"),
+        {},
+      ),
+      input,
+    );
+    log(
+      `## Reusing build summary\n- **Summary:** \`${input.existingBuildSummaryPath}\``,
+    );
+  } else {
+    buildCommand = buildBitskyCommand(input);
+    log(
+      [
+        "## Building app with BitSky",
+        `- **Command:** \`${buildCommand.map(shellQuote).join(" ")}\``,
+        `- **dSYM:** ${input.symbolsRequired ? "enabled" : "disabled"}`,
+      ].join("\n"),
+    );
+    build = await runCommand(buildCommand, input.buildRoot, input.developerDir);
+    buildOutput = await inspectBitSkyArtifacts(input, build);
+  }
+
+  await writeFile(input.buildStdoutPath, build.stdout, "utf8");
+  await writeFile(input.buildStderrPath, build.stderr, "utf8");
+  await writeJson(input.buildSummaryPath, buildOutput);
+
+  phase("Validate symbols");
+  const symbolPaths = resolveSymbolPaths(buildOutput, input.businessBinary);
+  const appPath = buildOutput.app_path ?? "";
+  const dsymPath = symbolPaths.primary;
+  let symbolicationStatus = buildOutput.symbolication_status ?? "unknown";
+  let matchedUuids: string[] = [];
+
+  await assertBuildReady({
+    buildExitCode: build.exitCode,
+    buildOutput,
+    appPath,
+    dsymPath,
+    requireReadySymbols: false,
+    symbolicationStatus,
+    buildSummaryPath: input.buildSummaryPath,
+  });
+  await verifyCodeSignature(appPath, input);
+  if (input.symbolsRequired) {
+    matchedUuids = await matchingAppDsymUuids({ appPath, dsymPath, input });
+    symbolicationStatus = matchedUuids.length > 0 ? "ready" : "missing";
+  }
+  buildOutput.symbolication_status = symbolicationStatus;
+  buildOutput.matched_uuids = matchedUuids;
+  await writeJson(input.buildSummaryPath, buildOutput);
+  await assertBuildReady({
+    buildExitCode: build.exitCode,
+    buildOutput,
+    appPath,
+    dsymPath,
+    requireReadySymbols: input.requireReadySymbols,
+    symbolicationStatus,
+    buildSummaryPath: input.buildSummaryPath,
+  });
+
+  log(
+    [
+      "## Validating BitSky artifacts",
+      `- **App:** \`${appPath}\``,
+      `- **dSYM:** \`${dsymPath || "missing"}\``,
+      `- **Business dSYM:** \`${symbolPaths.business || "missing"}\``,
+      `- **Symbol search path:** \`${symbolPaths.searchRoot || "missing"}\``,
+      `- **Symbolication:** \`${symbolicationStatus}\``,
+      `- **Matched UUIDs:** \`${matchedUuids.join(", ") || "none"}\``,
+    ].join("\n"),
+  );
+
+  phase("Install");
+  const installPaths = installOutputPaths(input.outputDir, appPath);
+  const installCommand = installOnlyCommand({
+    appPath,
+    udid: input.udid,
+    timeoutSeconds: input.installTimeoutSeconds,
+    jsonPath: installPaths.jsonPath,
+    logPath: installPaths.logPath,
+  });
+  const install = await runCommand(
+    installCommand,
+    input.buildRoot,
+    input.developerDir,
+  );
+  const installOutput = await readOptionalJson(installPaths.jsonPath);
+  if (install.exitCode !== 0) {
+    throw new Error(
+      `Install-only devicectl command failed (${install.exitCode}). See ${installPaths.logPath}.\n${tail(install.stderr)}`,
+    );
+  }
+
+  phase("Summarize");
+  const result: IosBuildInstallResult = {
+    success: true,
+    repositoryRoot: input.repositoryRoot,
+    projectRoot: input.projectRoot,
+    buildRoot: input.buildRoot,
+    developerDir: input.developerDir,
+    udid: input.udid,
+    target: input.target,
+    mode: input.mode,
+    outputDir: input.outputDir,
+    artifactDir: input.artifactDir,
+    appPath,
+    dsymPath,
+    dsymPaths: symbolPaths.all,
+    businessDsymPath: symbolPaths.business,
+    symbolSearchPath: symbolPaths.searchRoot,
+    exportedDsymPath: buildOutput.exported_dsym_path ?? "",
+    symbolicationStatus,
+    buildReused:
+      input.reuseExistingArtifacts || Boolean(input.existingBuildSummaryPath),
+    buildCommand,
+    installCommand,
+    buildExitCode: build.exitCode,
+    installExitCode: install.exitCode,
+    buildSummaryPath: input.buildSummaryPath,
+    buildStdoutPath: input.buildStdoutPath,
+    buildStderrPath: input.buildStderrPath,
+    buildLogFile: buildOutput.log_file ?? "",
+    installJsonPath: installPaths.jsonPath,
+    installLogPath: installPaths.logPath,
+    launchPerformed: false,
+    buildOutput,
+    installOutput,
+  };
+  log(
+    [
+      "## BitSky build and install ready",
+      `- **App:** \`${appPath}\``,
+      `- **dSYM:** \`${dsymPath}\``,
+      `- **Symbol search path:** \`${symbolPaths.searchRoot}\``,
+      "- **Launch performed:** no",
+    ].join("\n"),
+  );
+  return result;
+}
+
 function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
   if (!args) {
     throw new TypeError("iOS Build Install requires input arguments.");
   }
-
   const projectRoot = resolve(requiredText(args.projectRoot, "projectRoot"));
   const repositoryRoot = resolve(args.repositoryRoot?.trim() || projectRoot);
   const buildRoot = resolve(args.buildRoot?.trim() || projectRoot);
@@ -276,26 +258,25 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
     args.outputDir?.trim() ||
       join(DEFAULT_ARTIFACT_ROOT, "ios-build-install", runId),
   );
-
+  const symbolsRequired = args.symbolsRequired !== false;
   return {
     repositoryRoot,
     projectRoot,
     buildRoot,
+    developerDir: args.developerDir?.trim() ? resolve(args.developerDir) : "",
     udid,
-    buildScriptPath: resolve(
-      args.buildScriptPath?.trim() || DEFAULT_BUILD_SCRIPT_PATH,
-    ),
     existingBuildSummaryPath: args.existingBuildSummaryPath?.trim()
       ? resolve(args.existingBuildSummaryPath)
       : "",
     reuseExistingArtifacts: args.reuseExistingArtifacts === true,
     target: args.target ?? DEFAULT_TARGET,
-    python: args.python?.trim() || "python3",
     mode: args.mode ?? DEFAULT_MODE,
-    noKeepGoing: args.noKeepGoing === true,
-    symbolsRequired: args.symbolsRequired !== false,
-    requireReadySymbols: args.requireReadySymbols !== false,
+    keepGoing: args.keepGoing === true && args.noKeepGoing !== true,
+    symbolsRequired,
+    requireReadySymbols: args.requireReadySymbols ?? symbolsRequired,
+    businessBinary: args.businessBinary?.trim() || "FlowDebugBasicDynamic",
     outputDir,
+    artifactDir: join(buildRoot, REUSE_ARTIFACT_DIR),
     installTimeoutSeconds: boundedInteger(
       args.installTimeoutSeconds,
       30,
@@ -303,88 +284,142 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
       DEFAULT_INSTALL_TIMEOUT_SECONDS,
     ),
     buildSummaryPath: join(outputDir, "build-summary.json"),
-    buildStdoutPath: join(outputDir, "build-stdout.json"),
+    buildStdoutPath: join(outputDir, "build-stdout.txt"),
     buildStderrPath: join(outputDir, "build-stderr.txt"),
   };
 }
 
-async function runBuild(
-  input: NormalizedInput,
-  buildCommand: string[],
-): Promise<CommandResult> {
-  log(
-    [
-      "## Building app with dSYM artifacts",
-      `- **Script:** \`${input.buildScriptPath}\``,
-      `- **Symbols required:** ${input.symbolsRequired ? "yes" : "no"}`,
-      "- Build output is captured under the workflow output directory",
-    ].join("\n"),
-  );
-  return runCommand(buildCommand, input.buildRoot);
-}
-
-/**
- * Synthesizes a build_app-style output from the artifacts already exported
- * under `<buildRoot>/.vscode-out`, so install-only can run without rebuilding.
- * The exported layout is stable per target (`Grace.app` / `Cici.app`).
- *
- * @internal
- */
-export async function reusedArtifactOutput(input: {
+/** Builds a Flow BitSky command for a physical arm64 device. */
+export function buildBitskyCommand(input: {
   buildRoot: string;
   target: "Grace" | "Cici";
-}): Promise<FlowIosBuildOutput> {
-  const artifactDir = join(input.buildRoot, REUSE_ARTIFACT_DIR);
-  const appPath = join(artifactDir, `${input.target}.app`);
-  const dsymPath = join(artifactDir, `${input.target}.app.dSYM`);
-  if (!(await pathExists(appPath))) {
-    throw new Error(
-      [
-        `Cannot reuse artifacts: ${appPath} does not exist.`,
-        "Run the Workflow once without reuseExistingArtifacts to build it,",
-        "or drop reuseExistingArtifacts to trigger a fresh build.",
-      ].join("\n"),
-    );
-  }
-  const hasDsym = await pathExists(dsymPath);
-  return {
-    success: true,
-    app_path: appPath,
-    exported_dsym_path: hasDsym ? dsymPath : undefined,
-    dsym_path: hasDsym ? dsymPath : undefined,
-    dsym_paths: hasDsym ? [dsymPath] : [],
-    symbolication_status: hasDsym ? "ready" : "unknown",
-  };
-}
-
-/** @internal */
-export function buildAppCommand(input: {
-  python: string;
-  buildScriptPath: string;
-  buildRoot?: string;
-  projectRoot?: string;
-  mode: "Debug" | "Release";
-  noKeepGoing: boolean;
+  mode: string;
   symbolsRequired: boolean;
+  keepGoing: boolean;
 }): string[] {
   const command = [
-    input.python,
-    input.buildScriptPath,
-    "--project-root",
-    input.buildRoot ?? requiredText(input.projectRoot, "buildRoot"),
-    "--mode",
+    "orbit",
+    "bundle",
+    "exec",
+    "bitsky_build",
+    "--target",
+    input.target.toLowerCase(),
+    "--configuration",
     input.mode,
+    "--sdk",
+    "os",
+    "--archs",
+    "arm64",
   ];
-  if (input.noKeepGoing) {
-    command.push("--no-keep-going");
-  }
   if (input.symbolsRequired) {
-    command.push("--symbols-required");
+    command.push("--dsym");
   }
+  if (input.keepGoing) {
+    command.push("--keep_going");
+  }
+  command.push("--output", join(input.buildRoot, REUSE_ARTIFACT_DIR));
   return command;
 }
 
-/** @internal */
+/** Reads the stable BitSky `.vscode-out` artifact layout without rebuilding. */
+export async function reusedArtifactOutput(input: {
+  repositoryRoot?: string;
+  projectRoot?: string;
+  buildRoot: string;
+  target: "Grace" | "Cici";
+  businessBinary?: string;
+}): Promise<FlowIosBuildOutput> {
+  const artifactDir = join(input.buildRoot, REUSE_ARTIFACT_DIR);
+  const appPath = join(artifactDir, `${input.target}.app`);
+  if (!(await pathExists(appPath))) {
+    throw new Error(
+      `Cannot reuse artifacts: ${appPath} does not exist. Run a BitSky build first.`,
+    );
+  }
+  const dsymRoot = join(artifactDir, "dSYM");
+  const dsymPath = await firstExistingPath([
+    join(dsymRoot, `${input.target}.app.dSYM`),
+    join(artifactDir, `${input.target}.app.dSYM`),
+  ]);
+  const dsymPaths = await listDsymBundles(dsymRoot);
+  if (dsymPath && !dsymPaths.includes(dsymPath)) {
+    dsymPaths.unshift(dsymPath);
+  }
+  const businessBinary = input.businessBinary || "FlowDebugBasicDynamic";
+  const businessDsym = dsymPaths.find(
+    (path) => basename(path) === `${businessBinary}.framework.dSYM`,
+  );
+  return {
+    success: true,
+    status: "success",
+    repository_root: input.repositoryRoot,
+    project_root: input.projectRoot,
+    build_root: input.buildRoot,
+    app_path: appPath,
+    exported_dsym_path: dsymPath || undefined,
+    dsym_path: dsymPath || undefined,
+    dsym_paths: dsymPaths,
+    symbol_search_path: dsymPaths.length > 0 ? dsymRoot : undefined,
+    symbolication_status: dsymPath ? "ready" : "unknown",
+    dsym_metadata: dsymPaths.map((path) => ({
+      path,
+      bundle_name: basename(path),
+      binary_name:
+        path === dsymPath
+          ? input.target
+          : basename(path).replace(/\.(framework|appex)\.dSYM$/u, ""),
+    })),
+    ...(businessDsym ? { business_dsym_path: businessDsym } : {}),
+  };
+}
+
+async function inspectBitSkyArtifacts(
+  input: NormalizedInput,
+  build: CommandResult,
+): Promise<FlowIosBuildOutput> {
+  const output = await reusedArtifactOutput(input).catch(() => ({
+    success: false,
+    app_path: join(input.artifactDir, `${input.target}.app`),
+  }));
+  return {
+    ...output,
+    success: build.exitCode === 0 && output.success === true,
+    status:
+      build.exitCode === 0 && output.success === true ? "success" : "failed",
+    error:
+      build.exitCode === 0 ? undefined : tail(build.stderr || build.stdout),
+    log_file: join(input.artifactDir, "bazel_build.raw.log"),
+    build_config: {
+      system: "bitsky",
+      target: input.target,
+      configuration: input.mode,
+      sdk: "os",
+      archs: "arm64",
+      dsym: input.symbolsRequired,
+    },
+  };
+}
+
+function normalizeBuildSummary(
+  value: Record<string, unknown>,
+  input: NormalizedInput,
+): FlowIosBuildOutput {
+  const normalized = value as FlowIosBuildOutput & {
+    matched_dsym_path?: string;
+    status?: string;
+  };
+  return {
+    ...normalized,
+    success: normalized.success === true || normalized.status === "success",
+    app_path:
+      normalized.app_path || join(input.artifactDir, `${input.target}.app`),
+    exported_dsym_path:
+      normalized.exported_dsym_path || normalized.matched_dsym_path,
+    dsym_path: normalized.dsym_path || normalized.matched_dsym_path,
+  };
+}
+
+/** Builds a devicectl install command that never launches the App. */
 export function installOnlyCommand(options: {
   appPath: string;
   udid: string;
@@ -413,22 +448,88 @@ export function installOnlyCommand(options: {
 async function runCommand(
   command: readonly string[],
   cwd: string,
+  developerDir: string,
 ): Promise<CommandResult> {
+  const env = developerDir
+    ? { ...process.env, DEVELOPER_DIR: developerDir }
+    : undefined;
   const subprocess = Bun.spawn([...command], {
     cwd,
+    env,
     stdout: "pipe",
     stderr: "pipe",
   });
-
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(subprocess.stdout).text(),
     new Response(subprocess.stderr).text(),
     subprocess.exited,
   ]);
-
   return { stdout, stderr, exitCode };
 }
 
+async function verifyCodeSignature(
+  appPath: string,
+  input: NormalizedInput,
+): Promise<void> {
+  const result = await runCommand(
+    ["codesign", "--verify", "--deep", "--strict", appPath],
+    input.buildRoot,
+    input.developerDir,
+  );
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `App code signature verification failed: ${tail(result.stderr || result.stdout)}`,
+    );
+  }
+}
+
+async function matchingAppDsymUuids(options: {
+  appPath: string;
+  dsymPath: string;
+  input: NormalizedInput;
+}): Promise<string[]> {
+  const binaries = [join(options.appPath, options.input.target)];
+  if (options.input.mode === "Debug") {
+    binaries.push(join(options.appPath, `${options.input.target}.debug.dylib`));
+  }
+  const appUuids = new Set<string>();
+  for (const binary of binaries) {
+    if (await pathExists(binary)) {
+      for (const uuid of await readMachOUuids(binary, options.input)) {
+        appUuids.add(uuid);
+      }
+    }
+  }
+  const dsymUuids = await readMachOUuids(options.dsymPath, options.input);
+  const matched = dsymUuids.filter((uuid) => appUuids.has(uuid));
+  if (matched.length === 0) {
+    throw new Error(
+      `No dSYM UUID matches the App executable images. app=${[...appUuids].join(",")} dsym=${dsymUuids.join(",")}`,
+    );
+  }
+  return matched;
+}
+
+async function readMachOUuids(
+  path: string,
+  input: NormalizedInput,
+): Promise<string[]> {
+  const result = await runCommand(
+    ["xcrun", "dwarfdump", "--uuid", path],
+    input.buildRoot,
+    input.developerDir,
+  );
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `Unable to read Mach-O UUIDs from ${path}: ${tail(result.stderr)}`,
+    );
+  }
+  return [...result.stdout.matchAll(/UUID:\s+([A-Fa-f0-9-]+)/gu)].map((match) =>
+    match[1]!.toUpperCase(),
+  );
+}
+
+/** Enforces the App and optional ready-symbol gates before installation. */
 export async function assertBuildReady(options: {
   buildExitCode: number;
   buildOutput: FlowIosBuildOutput;
@@ -445,7 +546,7 @@ export async function assertBuildReady(options: {
   if (!(await pathExists(options.appPath))) {
     issues.push(`app_path is missing or does not exist: ${options.appPath}`);
   }
-  if (!(await pathExists(options.dsymPath))) {
+  if (options.requireReadySymbols && !(await pathExists(options.dsymPath))) {
     issues.push(`dSYM is missing or does not exist: ${options.dsymPath}`);
   }
   if (options.requireReadySymbols && options.symbolicationStatus !== "ready") {
@@ -453,85 +554,48 @@ export async function assertBuildReady(options: {
       `symbolication_status is ${options.symbolicationStatus}; expected ready`,
     );
   }
-
   if (issues.length > 0) {
-    const compileErrors = formatBuildErrors(options.buildOutput);
     throw new Error(
       [
         "Build did not produce installable trace-ready artifacts.",
         ...issues.map((issue) => `- ${issue}`),
-        ...(compileErrors.length > 0
-          ? [
-              `Compile errors (${options.buildOutput.error_count ?? compileErrors.length}):`,
-              ...compileErrors.map((line) => `  - ${line}`),
-              ...(options.buildOutput.truncated === true
-                ? ["  - …error list truncated; see build log for the rest."]
-                : []),
-            ]
-          : []),
         `Build summary: ${options.buildSummaryPath}`,
-        ...(options.buildOutput.log_file
-          ? [`Build log: ${options.buildOutput.log_file}`]
-          : []),
       ].join("\n"),
     );
   }
 }
 
-/**
- * Renders `build_app.py` compile diagnostics into human-readable lines like
- * `path/to/File.swift:550:27 message`. Returns an empty array when the build
- * output carries no structured error entries.
- *
- * @internal
- */
+/** Formats structured build diagnostics when a reused legacy summary provides them. */
 export function formatBuildErrors(output: FlowIosBuildOutput): string[] {
-  const errors = output.errors;
-  if (!Array.isArray(errors)) {
-    return [];
-  }
-  return errors
+  return (output.errors ?? [])
     .map((entry) => formatBuildError(entry))
     .filter((line): line is string => line.length > 0);
 }
 
 function formatBuildError(entry: FlowIosBuildError | undefined): string {
-  if (!entry || typeof entry !== "object") {
-    return "";
-  }
+  if (!entry || typeof entry !== "object") return "";
   const location = [entry.file, entry.line, entry.column]
     .filter((part) => part !== undefined && part !== null && part !== "")
     .join(":");
   const message = entry.message?.trim() ?? "";
-  if (location && message) {
-    return `${location} ${message}`;
-  }
-  return location || message;
+  return location && message ? `${location} ${message}` : location || message;
 }
 
 function buildFailureReason(
   output: FlowIosBuildOutput,
   exitCode: number,
 ): string {
-  if (output.action) {
+  if (output.action)
     return `action=${output.action}: ${output.error ?? "build failed"}`;
-  }
-  if (output.error) {
-    return output.error;
-  }
-  if (output.error_count !== undefined) {
-    return `build produced ${output.error_count} errors`;
-  }
-  return `build_app.py exited with status ${exitCode}`;
+  if (output.error) return output.error;
+  return `bitsky_build exited with status ${exitCode}`;
 }
 
-/** @internal */
-export function resolveSymbolPaths(output: FlowIosBuildOutput): {
-  primary: string;
-  all: string[];
-  business: string;
-  searchRoot: string;
-} {
+/** Resolves the main and business dSYMs plus the recursive search directory. */
+export function resolveSymbolPaths(
+  output: FlowIosBuildOutput,
+  businessBinary = "FlowDebugBasicDynamic",
+): SymbolPaths {
   const paths = [
     output.exported_dsym_path,
     output.dsym_path,
@@ -540,16 +604,33 @@ export function resolveSymbolPaths(output: FlowIosBuildOutput): {
   const all = [...new Set(paths)];
   const business =
     output.dsym_metadata?.find(
-      (metadata) => metadata.binary_name === "GraceCore",
+      (metadata) => metadata.binary_name === businessBinary,
     )?.path ??
-    all.find((path) => basename(path) === "GraceCore.framework.dSYM") ??
+    all.find((path) => basename(path) === `${businessBinary}.framework.dSYM`) ??
     "";
   return {
     primary: output.exported_dsym_path ?? output.dsym_path ?? all[0] ?? "",
     all,
     business,
-    searchRoot: business ? dirname(business) : "",
+    searchRoot:
+      output.symbol_search_path ??
+      (business ? dirname(business) : all[0] ? dirname(all[0]) : ""),
   };
+}
+
+async function listDsymBundles(root: string): Promise<string[]> {
+  if (!(await pathExists(root))) return [];
+  return (await readdir(root, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory() && entry.name.endsWith(".dSYM"))
+    .map((entry) => join(root, entry.name))
+    .sort();
+}
+
+async function firstExistingPath(paths: string[]): Promise<string> {
+  for (const path of paths) {
+    if (await pathExists(path)) return path;
+  }
+  return "";
 }
 
 function installOutputPaths(
@@ -568,9 +649,7 @@ async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 async function readOptionalJson(path: string): Promise<unknown> {
-  if (!(await pathExists(path))) {
-    return null;
-  }
+  if (!(await pathExists(path))) return null;
   return parseJsonObject(await readFile(path, "utf8"), null);
 }
 
@@ -583,22 +662,15 @@ function parseJsonObject<T>(text: string, fallback: T): T {
 }
 
 async function pathExists(path: string): Promise<boolean> {
-  if (!path) {
-    return false;
-  }
+  if (!path) return false;
   try {
     await stat(path);
     return true;
   } catch (cause) {
-    if (isNotFoundError(cause)) {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT")
       return false;
-    }
     throw cause;
   }
-}
-
-function isNotFoundError(value: unknown): boolean {
-  return value instanceof Error && "code" in value && value.code === "ENOENT";
 }
 
 function boundedInteger(
@@ -607,18 +679,13 @@ function boundedInteger(
   maximum: number,
   fallback: number,
 ): number {
-  if (value === undefined || !Number.isFinite(value)) {
-    return fallback;
-  }
-  const integer = Math.trunc(value);
-  return Math.min(maximum, Math.max(minimum, integer));
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.min(maximum, Math.max(minimum, Math.trunc(value)));
 }
 
 function requiredText(value: string | undefined, name: string): string {
   const trimmed = value?.trim();
-  if (!trimmed) {
-    throw new TypeError(`iOS Build Install requires ${name}.`);
-  }
+  if (!trimmed) throw new TypeError(`iOS Build Install requires ${name}.`);
   return trimmed;
 }
 
@@ -641,8 +708,6 @@ function tail(value: string): string {
 }
 
 function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_./:=+-]+$/u.test(value)) {
-    return value;
-  }
+  if (/^[A-Za-z0-9_./:=+-]+$/u.test(value)) return value;
   return `'${value.replaceAll("'", "'\\''")}'`;
 }

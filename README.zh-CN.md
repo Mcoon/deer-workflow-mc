@@ -83,14 +83,15 @@ deer-workflow run ./workflow.ts \
   并行调查、验证结论，并生成交互式 HTML 报告。
 - [Blog Writer](./examples/blog-writer/README.zh-CN.md) 会规划文章、通过 Pipeline
   起草各节、执行审阅，并返回结构化结果。
-- [iOS 签名与 JoJo 依赖安装](./examples/ios-cosign-jojo-install/README.zh-CN.md)
-  通过 Florak iOS 仓库原生脚本依次完成真机签名和依赖安装。
-- [iOS Build and Install](./examples/ios-build-install/README.zh-CN.md) 会构建
-  带 dSYM 的 flow_iOS App，并只安装不启动。
+- [iOS 签名与 BitSky Install](./examples/ios-cosign-bitsky-install/README.zh-CN.md)
+  依次完成真机签名、Ruby 依赖和 BitSky 构建物料准备。
+- [iOS Build and Install](./examples/ios-build-install/README.zh-CN.md) 使用 BitSky
+  构建真机 App 和可选 dSYM，导出到 `.vscode-out` 后只安装不启动。
 - [iOS Launch Trace](./examples/ios-launch-trace/README.zh-CN.md) 会运行确定性的
   启动 Time Profiler 采集，并生成接近 Instruments 的 HTML 时间线。
 - [iOS Attach Trace](./examples/ios-attach-trace/README.zh-CN.md) 会 attach 到
-  已运行的 App，采集手动操作阶段的 Time Profiler，并生成同款 HTML 时间线。
+  已运行的 App，自动发现匹配的 `ios-build-install` 或 `flow-ios-bitsky` dSYM，
+  并生成带业务源码符号的 HTML 时间线。
 - [iOS Functional Regression](./examples/ios-functional-regression/README.zh-CN.md)
   使用 `mobilecli` 串行执行已验证 case，并生成证据报告。
 - [iOS UI Graph 控制台](./examples/ios-ui-graph-console/README.zh-CN.md)

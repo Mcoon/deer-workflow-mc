@@ -246,6 +246,11 @@ interface WorkflowExecutionContext<TArgs = unknown> {
 
 Most Workflows need only their first `args` parameter.
 
+The repository's `ios-attach-trace` and `ios-launch-trace` examples default
+`developerDir` to
+`/Applications/Xcode_26.app/Contents/Developer` and accepts an explicit input
+override for other Xcode installations.
+
 ## Repository App Graph example contract
 
 The repository's App Graph examples use versioned, evidence-backed execution:

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   assertBuildReady,
-  buildAppCommand,
+  buildBitskyCommand,
   installOnlyCommand,
   resolveSymbolPaths,
   reusedArtifactOutput,
@@ -12,39 +12,46 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 describe("iOS Build and Install workflow helpers", () => {
-  test("builds a flow-ios-dev command that requests dSYM output", () => {
+  test("builds a BitSky device command that requests dSYM output", () => {
     expect(
-      buildAppCommand({
-        python: "python3",
-        buildScriptPath:
-          "/Users/bytedance/.agents/skills/flow-ios-dev/scripts/build_app.py",
+      buildBitskyCommand({
         buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
+        target: "Grace",
         mode: "Debug",
-        noKeepGoing: false,
         symbolsRequired: true,
+        keepGoing: false,
       }),
     ).toEqual([
-      "python3",
-      "/Users/bytedance/.agents/skills/flow-ios-dev/scripts/build_app.py",
-      "--project-root",
-      "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-      "--mode",
+      "orbit",
+      "bundle",
+      "exec",
+      "bitsky_build",
+      "--target",
+      "grace",
+      "--configuration",
       "Debug",
-      "--symbols-required",
+      "--sdk",
+      "os",
+      "--archs",
+      "arm64",
+      "--dsym",
+      "--output",
+      "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios/.vscode-out",
     ]);
   });
 
-  test("keeps projectRoot as the legacy build root fallback", () => {
-    const command = buildAppCommand({
-      python: "python3",
-      buildScriptPath: "/tmp/build_app.py",
-      projectRoot: "/legacy/flow_iOS",
+  test("omits dSYM unless requested and supports keep-going", () => {
+    const command = buildBitskyCommand({
+      buildRoot: "/repo/flow/ios",
+      target: "Cici",
       mode: "Release",
-      noKeepGoing: true,
       symbolsRequired: false,
+      keepGoing: true,
     });
 
-    expect(command).toContain("/legacy/flow_iOS");
+    expect(command).toContain("cici");
+    expect(command).toContain("--keep_going");
+    expect(command).not.toContain("--dsym");
   });
 
   test("builds an install-only devicectl command without launching the app", () => {
@@ -76,42 +83,40 @@ describe("iOS Build and Install workflow helpers", () => {
     expect(command).not.toContain("deploy.py");
   });
 
-  test("returns the main dSYM and a recursive business symbol search path", () => {
+  test("returns the BitSky app dSYM and recursive business symbol path", () => {
     expect(
       resolveSymbolPaths({
-        exported_dsym_path:
-          "/Users/bytedance/Documents/BDWorkSpace/Dbao/.vscode-out/Grace.app.dSYM",
-        dsym_path: "/private/var/tmp/bazel-out/bin/flow_iOS/Grace.app.dSYM",
+        exported_dsym_path: "/repo/flow/ios/.vscode-out/dSYM/Grace.app.dSYM",
+        dsym_path: "/repo/flow/ios/.vscode-out/dSYM/Grace.app.dSYM",
         dsym_paths: [
-          "/private/var/tmp/bazel-out/bin/flow_iOS/Grace.app.dSYM",
-          "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
+          "/repo/flow/ios/.vscode-out/dSYM/Grace.app.dSYM",
+          "/repo/flow/ios/.vscode-out/dSYM/FlowDebugBasicDynamic.framework.dSYM",
         ],
         dsym_metadata: [
           {
-            path: "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
-            binary_name: "GraceCore",
+            path: "/repo/flow/ios/.vscode-out/dSYM/FlowDebugBasicDynamic.framework.dSYM",
+            binary_name: "FlowDebugBasicDynamic",
           },
         ],
       }),
     ).toEqual({
-      primary:
-        "/Users/bytedance/Documents/BDWorkSpace/Dbao/.vscode-out/Grace.app.dSYM",
+      primary: "/repo/flow/ios/.vscode-out/dSYM/Grace.app.dSYM",
       all: [
-        "/Users/bytedance/Documents/BDWorkSpace/Dbao/.vscode-out/Grace.app.dSYM",
-        "/private/var/tmp/bazel-out/bin/flow_iOS/Grace.app.dSYM",
-        "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
+        "/repo/flow/ios/.vscode-out/dSYM/Grace.app.dSYM",
+        "/repo/flow/ios/.vscode-out/dSYM/FlowDebugBasicDynamic.framework.dSYM",
       ],
-      business: "/tmp/Debug-iphoneos/GraceCore.framework.dSYM",
-      searchRoot: "/tmp/Debug-iphoneos",
+      business:
+        "/repo/flow/ios/.vscode-out/dSYM/FlowDebugBasicDynamic.framework.dSYM",
+      searchRoot: "/repo/flow/ios/.vscode-out/dSYM",
     });
   });
 
   test("accepts a ready main app dSYM when the optional business dSYM is absent", async () => {
     const root = await mkdtemp(join(tmpdir(), "ios-build-main-dsym-"));
     const appPath = join(root, "Grace.app");
-    const dsymPath = join(root, "Grace.app.dSYM");
+    const dsymPath = join(root, "dSYM", "Grace.app.dSYM");
     await mkdir(appPath);
-    await mkdir(dsymPath);
+    await mkdir(dsymPath, { recursive: true });
 
     await expect(
       assertBuildReady({
@@ -130,13 +135,25 @@ describe("iOS Build and Install workflow helpers", () => {
     const buildRoot = await mkdtemp(join(tmpdir(), "ios-build-reuse-"));
     const artifactDir = join(buildRoot, ".vscode-out");
     await mkdir(join(artifactDir, "Grace.app"), { recursive: true });
-    await mkdir(join(artifactDir, "Grace.app.dSYM"), { recursive: true });
+    await mkdir(join(artifactDir, "dSYM", "Grace.app.dSYM"), {
+      recursive: true,
+    });
+    await mkdir(
+      join(artifactDir, "dSYM", "FlowDebugBasicDynamic.framework.dSYM"),
+      { recursive: true },
+    );
 
     const output = await reusedArtifactOutput({ buildRoot, target: "Grace" });
 
     expect(output.success).toBe(true);
     expect(output.app_path).toBe(join(artifactDir, "Grace.app"));
-    expect(output.exported_dsym_path).toBe(join(artifactDir, "Grace.app.dSYM"));
+    expect(output.exported_dsym_path).toBe(
+      join(artifactDir, "dSYM", "Grace.app.dSYM"),
+    );
+    expect(output.symbol_search_path).toBe(join(artifactDir, "dSYM"));
+    expect(output.dsym_paths).toContain(
+      join(artifactDir, "dSYM", "FlowDebugBasicDynamic.framework.dSYM"),
+    );
     expect(output.symbolication_status).toBe("ready");
   });
 
