@@ -253,13 +253,3 @@ Launch trace runs `devicectl` and
 `xctrace` directly without an external collector checkout; it rejects verified
 image/dSYM UUID mismatches and missing symbols while preserving the raw trace for recovery. Both launch and attach report partial
 coverage while raw-address main-thread frames remain.
-
-## Repository App Graph example contract
-
-The repository's App Graph examples use versioned, evidence-backed execution:
-device runs resolve the installed App version before planning; Plan exposes
-Task candidates and `fresh | guarded | stale | invalid` health; and Exec permits
-coordinate Binding fallback only when runtime, Graph, and Binding-evidence
-versions agree. Stale navigation-only recipes may be replanned through the
-current Graph, while stale mutating recipes fail closed. These are example
-Workflow contracts rather than additions to the core `WorkflowRunner` API.

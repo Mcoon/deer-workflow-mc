@@ -326,20 +326,6 @@ Pi 0.84.1 没有内置操作系统 Sandbox。`PiAgent` 通过非修改型工具 
   `ios-build-install` 或 `flow-ios-bitsky` dSYM，并渲染带业务源码符号的 HTML 时间线。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)
   消费校验通过的 case，并保持设备执行确定性。
-- [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md) 编译不依赖坐标
-  也能理解的语义 Plan。
-- [App Graph v2 Exec](../examples/app-graph-exec/README.zh-CN.md) 优先解析当前
-  Selectors，只在策略允许时回退同 profile Binding，并验证 typed Oracles。
-- [App Graph v2 Discovery](../examples/app-graph-discovery/README.zh-CN.md) 消费
-  结构化执行缺口；必须带用户 goal 和明确 Element，每次只执行一个深度 0 的目标动作，
-  合成有证据的 candidate patch。
-- [App Graph v2 Accept](../examples/app-graph-accept/README.zh-CN.md) 使用完整
-  Plan-to-Exec 契约串行验收结构化用例。
-- [App Graph v2 Map](../examples/app-graph-map-report/README.zh-CN.md) 与
-  [Console](../examples/ios-ui-graph-console/README.zh-CN.md) 在同一 canonical Graph
-  上提供可视规划、执行和探索入口。
-- [App Graph 统一入口](../examples/app-graph/README.zh-CN.md) 是单目标用户入口，
-  内部先做严格 PID 重启，再编排 Plan/Exec 和受限恢复；失败不会自动启动全页 crawler。
 - [API 参考](./api.zh-CN.md) 记录每个公共函数、类型、事件和 Runtime 契约。
 - [Workflow Creator Skill](../skills/workflow-creator/SKILL.md) 包含 `create`
   使用的生成指令。

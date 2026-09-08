@@ -675,19 +675,6 @@ Listener。释放后的 Runner 不能启动新的 Workflow。
 
 ## 示例
 
-App Graph 示例 Workflow 还有一层版本化执行契约。`app-graph` 和
-`app-graph-accept` 会在真机 Plan 前按 Graph `bundleId` 查询已安装 App 版本。Plan 结果
-包含 `taskCandidates`、`taskResolution` 和 `runtimeAppVersion`；Exec 结果包含 Graph/真机
-版本与 Task 健康度。坐标 Binding fallback 要求 runtime、Graph、Binding 证据三方版本
-一致。Task recipe 分为 `fresh`、`guarded`、`stale`、`invalid`；只有 fresh 可进入 fast
-path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
-`app-graph-accept` 的 case 可通过 `verify`（推荐）或 `oracles` 提供机器校验条件；
-`verify` 支持单个条件、数组及 `oracles/conditions/assertions/checks` 包装，并兼容
-`all_text_visible`、`any_text_visible`、文本不可见、当前 Scene、前台 Bundle 和视觉变化。
-无法识别的条件会阻断该 case，验收专用 Oracle 仅决定本轮结果，不会写回可复用 Task。
-未显式提供 `verify/oracles` 时，Accept 会尝试从 `expected` 编译验证条件；简单文本走
-确定性解析，复杂条件交给只读 Agent，无法完整编译时不会继续并误报通过。
-
 - [Deep Research](../examples/deep-research/README.zh-CN.md)：在规划前先执行
   探索搜索，再组合使用 `agent()`、`phase()`、`parallel()`、`log()` 和
   `WorkflowRunner`；Planner 会提出文件名，原子编号后缀会保护已有报告，最后的
@@ -718,15 +705,3 @@ path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
   通过输入参数覆盖。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)：
   消费验证通过的 case 资产，串行执行设备动作，并输出逐 case 证据和 HTML 报告。
-- [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md)、
-  [Exec](../examples/app-graph-exec/README.zh-CN.md)、
-  [Discovery](../examples/app-graph-discovery/README.zh-CN.md) 和
-  [Accept](../examples/app-graph-accept/README.zh-CN.md)：展示 typed 语义 Plan、
-  实时 Selector 优先执行、goal + Element 约束的一次性定向补图，以及批量验收中的完整
-  Plan 透传。
-- [App Graph v2 Map](../examples/app-graph-map-report/README.zh-CN.md) 与
-  [Console](../examples/ios-ui-graph-console/README.zh-CN.md)：通过 Graph ID 动作和
-  串行设备队列提供该链路的可视入口。
-- [App Graph 统一入口](../examples/app-graph/README.zh-CN.md)：用一份 typed input
-  和一份最终结果封装严格 PID 重启、Plan、Exec、受限 Agent 恢复、Graph 学习和重试；
-  失败不会自动进入全页 Discovery。

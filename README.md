@@ -98,20 +98,6 @@ Want to understand or edit the generated module? Continue with the
 - [iOS Functional Regression](./examples/ios-functional-regression/README.md)
   executes validated cases serially with `mobilecli` and renders an evidence
   report.
-- [iOS UI Graph Console](./examples/ios-ui-graph-console/README.md) serves that
-  Map with exact Graph-ID execution, scoped exploration, Agent chat, correction
-  proposals, and serialized Workflow event streaming.
-- [App Graph v2 Plan](./examples/app-graph-plan/README.md),
-  [Exec](./examples/app-graph-exec/README.md),
-  [Discovery](./examples/app-graph-discovery/README.md), and
-  [Accept](./examples/app-graph-accept/README.md) form the canonical semantic
-  planning, safe execution, targeted repair, and batch acceptance pipeline.
-  [App Graph v2 Map](./examples/app-graph-map-report/README.md) and Console are
-  its visual control surface.
-- [App Graph Unified Workflow](./examples/app-graph/README.md) is the normal
-  user entry. Give it one goal; it owns strict PID restart, Plan, Exec, bounded
-  goal-driven Agent recovery, evidence-backed Graph updates, and bounded retry.
-  It never starts a full-page crawler automatically.
 
 These examples live in the repository. Clone or download it before running
 their documented commands.

@@ -348,22 +348,6 @@ the complete Agent Loop to a single model completion.
   and renders the same source-symbolicated HTML timeline.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated cases and keeps device execution deterministic.
-- [App Graph v2 Plan](../examples/app-graph-plan/README.md) compiles a
-  coordinate-optional semantic Plan.
-- [App Graph v2 Exec](../examples/app-graph-exec/README.md) resolves current
-  selectors before policy-approved profile Bindings and verifies typed Oracles.
-- [App Graph v2 Discovery](../examples/app-graph-discovery/README.md) consumes
-  structured execution gaps; it requires a user goal plus one explicit Element
-  and performs one depth-zero targeted action before synthesizing evidence-backed
-  candidate patches.
-- [App Graph v2 Accept](../examples/app-graph-accept/README.md) runs structured
-  cases through the complete Plan-to-Exec contract.
-- [App Graph v2 Map](../examples/app-graph-map-report/README.md) and
-  [Console](../examples/ios-ui-graph-console/README.md) expose the same canonical
-  Graph through a visual planning, execution, and discovery surface.
-- [App Graph Unified Workflow](../examples/app-graph/README.md) is the
-  single-goal user entry. It performs strict PID restart, orchestrates Plan/Exec
-  and bounded recovery, and never starts a full-page crawler automatically.
 - [API Reference](./api.md) documents every public function, type, event, and
   runtime contract.
 - [Workflow Creator Skill](../skills/workflow-creator/SKILL.md) contains the

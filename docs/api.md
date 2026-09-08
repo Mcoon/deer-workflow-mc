@@ -721,26 +721,6 @@ values are recursively redacted and oversized text is bounded.
 
 ## Examples
 
-The App Graph example Workflows expose an additional versioned execution
-contract. `app-graph` and `app-graph-accept` resolve the installed App version
-for the Graph `bundleId` before planning device runs. Plan results report
-`taskCandidates`, `taskResolution`, and `runtimeAppVersion`; Exec results report
-Graph/runtime versions and Task health. Coordinate Binding fallback requires
-matching runtime, Graph, and Binding-evidence versions. Task recipes are
-classified as `fresh`, `guarded`, `stale`, or `invalid`; only fresh recipes may
-use the fast path, while stale navigation-only recipes may be replanned from
-the current Graph.
-Cases passed to `app-graph-accept` may provide machine-checkable conditions via
-`verify` (preferred) or `oracles`. `verify` accepts one condition, an array, or
-an `oracles/conditions/assertions/checks` wrapper, including all/any visible
-text, absent text, current Scene, foreground Bundle, and visual-change checks.
-Unsupported conditions block the case, and case-only Oracles affect only that
-run's verdict instead of being learned into reusable Tasks.
-When neither `verify` nor `oracles` is supplied, Accept attempts to compile
-`expected`: simple text checks use deterministic parsing and complex conditions
-use a read-only Agent. It fails closed when the full condition cannot be
-compiled.
-
 - [Deep Research](../examples/deep-research/README.md) runs a scoping search
   before planning, then combines `agent()`, `phase()`, `parallel()`, `log()`,
   and `WorkflowRunner`. Its final Present phase opens the generated HTML file
@@ -779,16 +759,3 @@ compiled.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated case assets, serializes every device action, and writes
   per-case evidence plus an HTML report.
-- [App Graph v2 Plan](../examples/app-graph-plan/README.md),
-  [Exec](../examples/app-graph-exec/README.md),
-  [Discovery](../examples/app-graph-discovery/README.md), and
-  [Accept](../examples/app-graph-accept/README.md) demonstrate a typed semantic
-  Plan contract, live-selector-first execution, one goal-and-Element-scoped
-  repair action, and complete Plan propagation across batch acceptance.
-- [App Graph v2 Map](../examples/app-graph-map-report/README.md) and
-  [Console](../examples/ios-ui-graph-console/README.md) expose that pipeline
-  through Graph-ID actions and a serialized device queue.
-- [App Graph Unified Workflow](../examples/app-graph/README.md) composes Plan,
-  strict PID restart, Exec, bounded runtime Agent recovery, Graph learning, and
-  retry behind one typed input and one final result; failures never launch an
-  exhaustive Discovery crawler automatically.
