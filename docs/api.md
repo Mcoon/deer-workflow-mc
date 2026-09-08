@@ -742,7 +742,9 @@ values are recursively redacted and oversized text is bounded.
   `devicectl`/`xctrace` execution and an HTML timeline renderer. It requires no
   external collector checkout and passes `projectRoot` and
   `buildRoot` separately so default app/dSYM lookup stays under the iOS build
-  root. It preserves the raw trace but fails on a verified image/dSYM UUID mismatch
+  root. It exports target-process `os_signpost` intervals and renders them in a
+  dedicated track on the same time axis as sampled thread stacks. It preserves
+  the raw trace but fails on a verified image/dSYM UUID mismatch
   or missing symbols. Its optional `developerDir` checks `Xcode_26.app` first,
   then falls back to the standard `Xcode.app`, and accepts an input override.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) combines

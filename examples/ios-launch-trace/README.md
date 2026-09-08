@@ -11,10 +11,12 @@ needed for the trace capture itself.
    `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/`;
 2. installs the local App when requested, terminates the old process, and runs
    `xctrace record --launch` directly;
-3. symbolicates the trace, exports `summary.json` and `time_profile.xml`, and
+3. symbolicates the trace, exports `summary.json`, `time_profile.xml`, and
+   `os_signpost.xml`, and
    performs fail-closed atos recovery for unresolved first-party frames;
-4. renders `launch-trace-report.html` with a time ruler, density strip,
-   main-thread flame timeline, top sampled frames, and artifact paths.
+4. renders `launch-trace-report.html` with a time ruler, an `os_signpost`
+   interval track, thread flame timelines, top sampled frames, and artifact
+   paths.
 
 The terminal exposes the Workflow's long-running work as separate phases:
 `Install`, `Launch & Record`, `Symbolicate`, `Export`, and `Backfill Symbols`.
@@ -83,6 +85,7 @@ For a normal launch collection, the output directory contains:
 - `symbolicated.trace`
 - `toc.xml`
 - `time_profile.xml`
+- `os_signpost.xml`
 - `summary.json`
 - `launch-trace-report.html`
 
@@ -92,6 +95,11 @@ as `main` and app wrappers such as `flow_main()` are not mistaken for a single
 method's exclusive runtime. When `time_profile.xml` does not expose precise
 timestamps, samples are laid out in row order with an approximate time ruler
 based on `timeLimit`.
+
+The signpost track shares the flame graph's time axis. Overlapping intervals
+are assigned compact lanes, and clicking an interval shows its name,
+subsystem/category, thread, message, timestamps, and duration. Only signposts
+from the launched target process are rendered.
 
 If preflight fails before `xctrace` starts, such as when the default dSYM is
 missing, the Workflow writes the HTML diagnostics report and then exits with a

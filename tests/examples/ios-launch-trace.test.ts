@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import {
   buildInstallCommand,
   buildLaunchRecordCommand,
+  buildOsSignpostExportCommand,
   buildTerminateCommand,
   buildThreadTimelines,
   buildTraceTimelineFromSamples,
@@ -89,6 +90,14 @@ describe("iOS Launch Trace report", () => {
         symbolSearchPath: "/tmp/dSYM",
       }),
     ).toEqual(expect.arrayContaining(["symbolicate", "--dsym", "/tmp/dSYM"]));
+    expect(
+      buildOsSignpostExportCommand("/tmp/launch.trace", "/tmp/os_signpost.xml"),
+    ).toEqual(
+      expect.arrayContaining([
+        "--xpath",
+        '/trace-toc/run[@number="1"]/data/table[@schema="os-signpost"]',
+      ]),
+    );
   });
 
   test("only treats xctrace 55 missing-image symbolication as recoverable", () => {
@@ -378,6 +387,24 @@ exit 1
       ],
       { totalMainThreadRows: 2, warnings: ["source rows are partial"] },
     );
+    timeline.signposts = [
+      {
+        id: "66",
+        name: "MessagingDataController.refresh",
+        subsystem: "com.bot.doubao",
+        category: "MessagingDataController",
+        message: "messageCount=20",
+        process: "Grace (10)",
+        beginThread: "Main Thread",
+        endThread: "Main Thread",
+        kind: "interval",
+        incomplete: false,
+        startTimeSeconds: 0.2,
+        endTimeSeconds: 0.45,
+        durationMs: 250,
+        lane: 0,
+      },
+    ];
 
     const html = renderLaunchTraceHtml({
       command: [
@@ -412,6 +439,10 @@ exit 1
     expect(html).toContain("Default Workspace");
     expect(html).toContain("Top Sampled Frames");
     expect(html).toContain("Frame Details");
+    expect(html).toContain("os_signpost records");
+    expect(html).toContain("MessagingDataController.refresh");
+    expect(html).toContain("function drawSignpostTrack");
+    expect(html).toContain("function selectSignpost");
     expect(html).toContain("timeline-canvas");
     expect(html).toContain("trace-viewer-data");
     expect(html).toContain(".trace-shell {\n      display: block;");
@@ -653,6 +684,49 @@ exit 1
         startTimeSeconds: 0.55,
       }),
     );
+  });
+
+  test("parses and pairs target-process os_signpost intervals", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "ios-launch-signposts-"));
+    const timeProfilePath = join(dir, "time_profile.xml");
+    const osSignpostPath = join(dir, "os_signpost.xml");
+    await writeFile(
+      timeProfilePath,
+      `<?xml version="1.0"?><trace-query-result><row>
+        <sample-time>1000000000</sample-time><weight>1000000</weight>
+        <thread id="t1" fmt="Main Thread"/><backtrace><frame name="main"><binary name="Grace"/></frame></backtrace>
+      </row></trace-query-result>`,
+    );
+    await writeFile(
+      osSignpostPath,
+      `<?xml version="1.0"?><trace-query-result>
+        <row><event-time id="time-begin">1100000000</event-time><thread id="thread" fmt="Main Thread (Grace, pid: 10)"/><process id="process" fmt="Grace (10)"/><event-type id="begin" fmt="Begin">Begin</event-type><os-signpost-identifier id="identifier" fmt="0x42">66</os-signpost-identifier><signpost-name id="name" fmt="MessagingDataController.refresh">MessagingDataController.refresh</signpost-name><subsystem id="subsystem" fmt="com.bot.doubao">com.bot.doubao</subsystem><category id="category" fmt="MessagingDataController">MessagingDataController</category></row>
+        <row><event-time>1350000000</event-time><thread ref="thread"/><process ref="process"/><event-type id="end" fmt="End">End</event-type><os-signpost-identifier ref="identifier"/><signpost-name ref="name"/><subsystem ref="subsystem"/><category ref="category"/><os-log-metadata fmt="messageCount=20"/></row>
+        <row><event-time>1200000000</event-time><thread fmt="Other"/><process fmt="OtherApp (11)"/><event-type ref="begin"/><os-signpost-identifier fmt="0x9">9</os-signpost-identifier><signpost-name fmt="Ignored">Ignored</signpost-name></row>
+      </trace-query-result>`,
+    );
+
+    const timeline = await parseTraceTimeline({
+      timeProfilePath,
+      osSignpostPath,
+      targetBinary: "Grace",
+      maxSamples: 10,
+      maxDepth: 10,
+      python: "python3",
+    });
+
+    expect(timeline.signposts).toEqual([
+      expect.objectContaining({
+        id: "66",
+        name: "MessagingDataController.refresh",
+        kind: "interval",
+        incomplete: false,
+        startTimeSeconds: 1.1,
+        endTimeSeconds: 1.35,
+        durationMs: 250,
+        lane: 0,
+      }),
+    ]);
   });
 
   test("classifies non-main threads with app frames into the app group", () => {

@@ -691,7 +691,8 @@ Listener。释放后的 Runner 不能启动新的 Workflow。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、直接 `devicectl`/`xctrace` 执行和 HTML 时间线
   renderer；无需外部 collector checkout，分开传递 `projectRoot` 与 `buildRoot`，默认
-  app/dSYM 从 iOS 构建根解析。同一二进制/dSYM UUID 不一致或符号缺失时，保留原始 trace 并报错。
+  app/dSYM 从 iOS 构建根解析。Workflow 会导出目标进程的 `os_signpost` 区间，并在
+  与线程采样共用的时间轴上用独立轨道展示。同一二进制/dSYM UUID 不一致或符号缺失时，保留原始 trace 并报错。
   可选 `developerDir` 优先使用 `Xcode_26.app`，不存在时回退到标准
   `Xcode.app`，也可通过输入参数覆盖。
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md)：组合确定性

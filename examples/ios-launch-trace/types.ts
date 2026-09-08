@@ -85,6 +85,8 @@ export interface LaunchTraceSummary {
   trace_path?: string;
   toc_path?: string;
   time_profile_path?: string;
+  os_signpost_path?: string;
+  os_signpost_count?: number;
   summary_path?: string;
   symbolication_status?: string;
   install?: LaunchTraceProcessSummary;
@@ -194,6 +196,7 @@ export interface IosLaunchTraceResult {
   tracePath: string;
   tocPath: string;
   timeProfilePath: string;
+  osSignpostPath: string;
   htmlReportPath: string;
   symbolicationStatus: string;
   mainThreadRows: number;
@@ -251,6 +254,26 @@ export interface ThreadTimeline {
 }
 
 /**
+ * One os_signpost interval or point event shown on the shared trace time axis.
+ */
+export interface TraceSignpost {
+  id: string;
+  name: string;
+  subsystem: string;
+  category: string;
+  message: string;
+  process: string;
+  beginThread: string;
+  endThread: string;
+  kind: "interval" | "event";
+  incomplete: boolean;
+  startTimeSeconds: number;
+  endTimeSeconds: number;
+  durationMs: number;
+  lane: number;
+}
+
+/**
  * Parsed timeline data used by the HTML renderer.
  *
  * The top-level `spans`/`sampleDepths`/`sampleTimesSeconds` fields describe the
@@ -268,6 +291,7 @@ export interface ParsedTraceTimeline {
   spans: TraceFrameSpan[];
   topFrames: Array<TraceFrame & { samples: number }>;
   threads: ThreadTimeline[];
+  signposts?: TraceSignpost[];
   traceStartSeconds: number;
   traceEndSeconds: number;
   warnings: string[];

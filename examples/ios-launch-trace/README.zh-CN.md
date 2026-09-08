@@ -8,10 +8,10 @@
 
 1. 在 `/Users/bytedance/.ios_pref_optimizer/ios-launch-trace/` 下准备输出目录；
 2. 按需安装本地 App、终止旧进程，并直接执行 `xctrace record --launch`；
-3. 完成 trace 符号化、XML 导出，并对未解析的第一方 frame 执行 fail-closed
+3. 完成 trace 符号化，导出 `time_profile.xml` 与 `os_signpost.xml`，并对未解析的第一方 frame 执行 fail-closed
    atos 恢复；
-4. 生成 `launch-trace-report.html`，包含时间标尺、采样密度条、主线程
-   flame timeline、Top sampled frames 和产物路径。
+4. 生成 `launch-trace-report.html`，包含时间标尺、独立 `os_signpost` 区间轨道、
+   线程 flame timeline、Top sampled frames 和产物路径。
 
 终端会把 Workflow 的长耗时步骤显示为独立阶段：`Install`、
 `Launch & Record`、`Symbolicate`、`Export` 和 `Backfill Symbols`。其中
@@ -76,6 +76,7 @@ deer-workflow run ./examples/ios-launch-trace/workflow.ts \
 - `symbolicated.trace`
 - `toc.xml`
 - `time_profile.xml`
+- `os_signpost.xml`
 - `summary.json`
 - `launch-trace-report.html`
 
@@ -83,6 +84,10 @@ HTML 报告是辅助浏览视图，不能替代 Instruments。点击 frame 时�
 weight 和 wall-clock range 分开显示，避免把 `main` 这类入口 frame 或
 `flow_main()` 这类 App wrapper 误看成单个方法的独占耗时。当 `time_profile.xml`
 不包含精确时间戳时，报告会按采样行顺序铺开，并用 `timeLimit` 生成近似时间标尺。
+
+Signpost 轨道与 flame graph 共用时间轴；重叠区间会自动分配到不同 lane。点击区间
+可以查看名称、subsystem/category、线程、message、起止时间与 duration。报告只展示
+本次被启动目标进程产生的 signpost。
 
 如果前置检查在 `xctrace` 启动前失败，例如默认 dSYM 缺失，Workflow 会先写出
 HTML 诊断报告，然后以失败退出，不再把这类情况展示成成功采集。

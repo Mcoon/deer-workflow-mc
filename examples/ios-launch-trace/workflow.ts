@@ -13,6 +13,7 @@ import type {
   IosLaunchTraceResult,
   LaunchTraceSummary,
   ParsedTraceTimeline,
+  TraceSignpost,
   ThreadTimeline,
   TraceFrame,
   TraceFrameSpan,
@@ -33,6 +34,8 @@ const OUTPUT_TAIL_LENGTH = 4000;
 const TIMELINE_PIXELS_PER_SAMPLE = 2;
 const TIME_PROFILE_XPATH =
   '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]';
+const OS_SIGNPOST_XPATH =
+  '/trace-toc/run[@number="1"]/data/table[@schema="os-signpost"]';
 
 /**
  * Declares the Workflow's identity and observable phase plan.
@@ -192,12 +195,25 @@ export default async function iosLaunchTrace(
       outputDir: input.outputDir,
       developerDir: input.developerDir,
     });
+    const signpostExport = await runXctraceExportWithRetry({
+      label: "os-signpost",
+      command: buildOsSignpostExportCommand(
+        exportTracePath,
+        input.osSignpostPath,
+      ),
+      outputPath: input.osSignpostPath,
+      cwd: input.projectRoot,
+      outputDir: input.outputDir,
+      developerDir: input.developerDir,
+    });
     summary.export_attempts = {
       toc: tocExport.attempts,
       time_profile: profileExport.attempts,
+      os_signpost: signpostExport.attempts,
     };
     summary.toc_path = input.tocPath;
     summary.time_profile_path = input.timeProfilePath;
+    summary.os_signpost_path = input.osSignpostPath;
     if (tocExport.result.exitCode !== 0) {
       lastResult = tocExport.result;
       failCollection(summary, "toc_export_failed", "TOC export failed.");
@@ -208,6 +224,19 @@ export default async function iosLaunchTrace(
         summary,
         "time_profile_export_failed",
         "Time Profiler XML export failed.",
+      );
+    }
+    if (signpostExport.result.exitCode !== 0) {
+      summary.warning = [
+        summary.warning,
+        "os_signpost XML export failed; the report will omit signposts.",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      await writeFile(
+        input.osSignpostPath,
+        '<?xml version="1.0"?><trace-query-result/>\n',
+        "utf8",
       );
     }
 
@@ -257,12 +286,15 @@ export default async function iosLaunchTrace(
   phase("Parse");
   const timeline = await parseSuccessfulTrace({
     timeProfilePath: input.timeProfilePath,
+    osSignpostPath: input.osSignpostPath,
     summary,
     python: input.python,
     targetBinary: input.targetBinary,
     maxSamples: input.maxSamples,
     maxDepth: input.maxDepth,
   });
+  summary.os_signpost_count = timeline.signposts?.length ?? 0;
+  await writeLaunchSummary(input.summaryPath, summary);
 
   phase("Report");
   await writeLaunchReport({
@@ -278,6 +310,7 @@ export default async function iosLaunchTrace(
       `- **HTML:** \`${input.htmlReportPath}\``,
       `- **Rendered samples:** ${timeline.renderedSamples}/${timeline.totalMainThreadRows}`,
       `- **Top frame rows:** ${timeline.topFrames.length}`,
+      `- **os_signpost records:** ${timeline.signposts?.length ?? 0}`,
       "- **Collection:** self-contained TypeScript workflow",
     ].join("\n"),
   );
@@ -294,6 +327,7 @@ export default async function iosLaunchTrace(
     tracePath: input.tracePath,
     tocPath: input.tocPath,
     timeProfilePath: input.timeProfilePath,
+    osSignpostPath: input.osSignpostPath,
     htmlReportPath: input.htmlReportPath,
     symbolicationStatus: summary.symbolication_status ?? "unknown",
     mainThreadRows: summary.main_thread_rows ?? 0,
@@ -323,6 +357,7 @@ interface NormalizedInput {
   tracePath: string;
   tocPath: string;
   timeProfilePath: string;
+  osSignpostPath: string;
   summaryPath: string;
   targetBinary: string;
   businessBinary: string;
@@ -384,6 +419,8 @@ interface PythonThreadPayload {
   samples?: TraceFrame[][];
 }
 
+type PythonSignpostPayload = Omit<TraceSignpost, "lane">;
+
 interface PythonTimelinePayload {
   totalMainThreadRows?: number;
   sampleStride?: number;
@@ -391,6 +428,7 @@ interface PythonTimelinePayload {
   sampleWeightsMs?: number[];
   samples?: TraceFrame[][];
   threads?: PythonThreadPayload[];
+  signposts?: PythonSignpostPayload[];
   traceStartSeconds?: number;
   traceEndSeconds?: number;
   warnings?: string[];
@@ -404,6 +442,7 @@ interface RenderLaunchTraceHtmlInput {
   summary: LaunchTraceSummary;
   summaryPath: string;
   timeProfilePath: string;
+  osSignpostPath?: string;
   stdoutTail?: string;
   stderrTail?: string;
   timeline: ParsedTraceTimeline;
@@ -455,6 +494,7 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
     tracePath: join(outputDir, "launch_target.trace"),
     tocPath: join(outputDir, "toc.xml"),
     timeProfilePath: join(outputDir, "time_profile.xml"),
+    osSignpostPath: join(outputDir, "os_signpost.xml"),
     summaryPath: join(outputDir, "summary.json"),
     targetBinary,
     businessBinary: args.businessBinary?.trim() || DEFAULT_BUSINESS_BINARY,
@@ -912,6 +952,24 @@ export function buildTimeProfileExportCommand(
   ];
 }
 
+/** Builds the xctrace os_signpost XML export command. */
+export function buildOsSignpostExportCommand(
+  tracePath: string,
+  outputPath: string,
+): string[] {
+  return [
+    "xcrun",
+    "xctrace",
+    "export",
+    "--input",
+    tracePath,
+    "--xpath",
+    OS_SIGNPOST_XPATH,
+    "--output",
+    outputPath,
+  ];
+}
+
 /** Waits for two identical non-empty snapshots of the trace bundle tree. */
 export async function waitForTraceTreeToSettle(
   tracePath: string,
@@ -1183,6 +1241,7 @@ async function writeLaunchReport(options: {
     summary: options.summary,
     summaryPath: options.input.summaryPath,
     timeProfilePath: options.input.timeProfilePath,
+    osSignpostPath: options.input.osSignpostPath,
     stdoutTail: tail(options.result.stdout),
     stderrTail: tail(options.result.stderr),
     timeline: options.timeline,
@@ -1193,6 +1252,7 @@ async function writeLaunchReport(options: {
 
 async function parseSuccessfulTrace(options: {
   timeProfilePath: string;
+  osSignpostPath: string;
   summary: LaunchTraceSummary;
   python: string;
   targetBinary: string;
@@ -1203,12 +1263,14 @@ async function parseSuccessfulTrace(options: {
     [
       "## Parsing exported Time Profiler XML",
       `- **Time profile:** \`${options.timeProfilePath}\``,
+      `- **Signposts:** \`${options.osSignpostPath}\``,
       `- **Symbolication:** \`${options.summary.symbolication_status ?? "unknown"}\``,
     ].join("\n"),
   );
 
   return parseTraceTimeline({
     timeProfilePath: options.timeProfilePath,
+    osSignpostPath: options.osSignpostPath,
     targetBinary: options.targetBinary,
     maxSamples: options.maxSamples,
     maxDepth: options.maxDepth,
@@ -1259,6 +1321,7 @@ function collectionFailureReason(
  */
 export async function parseTraceTimeline(options: {
   timeProfilePath: string;
+  osSignpostPath?: string;
   targetBinary: string;
   maxSamples: number;
   maxDepth: number;
@@ -1278,6 +1341,7 @@ export async function parseTraceTimeline(options: {
     options.targetBinary,
     String(options.maxSamples),
     String(options.maxDepth),
+    options.osSignpostPath ?? "",
   ];
   const result = await runCommand(command, process.cwd());
 
@@ -1298,11 +1362,13 @@ export async function parseTraceTimeline(options: {
       warnings: payload.warnings ?? [],
     });
     const threads = buildThreadTimelines(payload.threads ?? []);
+    const signposts = assignSignpostLanes(payload.signposts ?? []);
     const traceStartSeconds = Number(payload.traceStartSeconds ?? 0);
     const traceEndSeconds = Number(payload.traceEndSeconds ?? 0);
     return {
       ...timeline,
       threads,
+      signposts,
       traceStartSeconds,
       traceEndSeconds:
         traceEndSeconds > traceStartSeconds
@@ -1362,6 +1428,36 @@ export function buildThreadTimelines(
       spans: built.spans,
     };
   });
+}
+
+/**
+ * Places overlapping signposts on separate compact lanes.
+ *
+ * @param signposts - Parsed signpost intervals and point events.
+ * @returns Time-sorted signposts with stable lane indexes.
+ */
+export function assignSignpostLanes(
+  signposts: readonly PythonSignpostPayload[],
+): TraceSignpost[] {
+  const laneEnds: number[] = [];
+  return [...signposts]
+    .sort(
+      (left, right) =>
+        left.startTimeSeconds - right.startTimeSeconds ||
+        right.endTimeSeconds - left.endTimeSeconds ||
+        left.name.localeCompare(right.name),
+    )
+    .map((signpost) => {
+      const lane = laneEnds.findIndex(
+        (endTime) => endTime <= signpost.startTimeSeconds,
+      );
+      const resolvedLane = lane >= 0 ? lane : laneEnds.length;
+      laneEnds[resolvedLane] = Math.max(
+        signpost.startTimeSeconds + 0.000_001,
+        signpost.endTimeSeconds,
+      );
+      return { ...signpost, lane: resolvedLane };
+    });
 }
 
 /**
@@ -1475,6 +1571,7 @@ export function buildTraceTimelineFromSamples(
     spans,
     topFrames,
     threads: [],
+    signposts: [],
     traceStartSeconds: sampleTimesSeconds[0] ?? 0,
     traceEndSeconds:
       spans.reduce(
@@ -1579,6 +1676,7 @@ export function renderLaunchTraceHtml(
   input: RenderLaunchTraceHtmlInput,
 ): string {
   const { summary, timeline } = input;
+  const signposts = timeline.signposts ?? [];
   const sampleCount = Math.max(1, timeline.renderedSamples);
   const timelineWidth = Math.max(
     1280,
@@ -2123,6 +2221,7 @@ export function renderLaunchTraceHtml(
       <div class="metric"><strong>${formatInteger(timeline.totalMainThreadRows)}</strong><span>main-thread rows</span></div>
       <div class="metric"><strong>${formatInteger(summary.main_thread_grace_source_rows ?? 0)}</strong><span>source-level app rows</span></div>
       <div class="metric"><strong>${formatInteger(timeline.renderedSamples)}</strong><span>rendered samples</span></div>
+      <div class="metric"><strong>${formatInteger(signposts.length)}</strong><span>os_signpost records</span></div>
       <div class="metric"><strong>${input.exitCode}</strong><span>collection exit code</span></div>
     </div>
   </header>
@@ -2161,7 +2260,7 @@ export function renderLaunchTraceHtml(
     <aside class="workspace-sidebar">
       <div class="workspace-title">Default Workspace</div>
       <div class="process-row">Process ${escapeHtml(summary.bundle_id ?? "target")}</div>
-      <div class="thread-row">${formatInteger(timeline.threads.length)} threads<br>${escapeHtml(summary.bundle_id ?? "")}</div>
+      <div class="thread-row">${formatInteger(timeline.threads.length)} threads<br>${formatInteger(signposts.length)} signposts<br>${escapeHtml(summary.bundle_id ?? "")}</div>
     </aside>
     <div class="timeline-scroll" data-scroll>
       <div class="timeline-spacer" data-spacer>
@@ -2171,16 +2270,16 @@ export function renderLaunchTraceHtml(
       </div>
     </div>
     <aside class="details-panel" aria-live="polite" data-details-panel hidden>
-      <h2>Frame Details</h2>
+      <h2 data-detail-title>Frame Details</h2>
       <dl>
         <dt>Name</dt><dd data-detail-name>No frame selected</dd>
-        <dt>Thread</dt><dd data-detail-thread>-</dd>
-        <dt>Binary</dt><dd data-detail-binary>-</dd>
-        <dt>Source</dt><dd data-detail-source>-</dd>
-        <dt>Samples</dt><dd data-detail-samples>-</dd>
-        <dt>Sample Weight</dt><dd data-detail-duration>-</dd>
+        <dt data-detail-thread-label>Thread</dt><dd data-detail-thread>-</dd>
+        <dt data-detail-binary-label>Binary</dt><dd data-detail-binary>-</dd>
+        <dt data-detail-source-label>Source</dt><dd data-detail-source>-</dd>
+        <dt data-detail-samples-label>Samples</dt><dd data-detail-samples>-</dd>
+        <dt data-detail-duration-label>Sample Weight</dt><dd data-detail-duration>-</dd>
         <dt>Time</dt><dd data-detail-time>-</dd>
-        <dt>Depth</dt><dd data-detail-depth>-</dd>
+        <dt data-detail-depth-label>Depth</dt><dd data-detail-depth>-</dd>
       </dl>
       <p class="detail-note" data-detail-note hidden></p>
     </aside>
@@ -2208,6 +2307,7 @@ export function renderLaunchTraceHtml(
       <dt>Trace</dt><dd>${escapeHtml(summary.trace_path ?? "")}</dd>
       <dt>TOC</dt><dd>${escapeHtml(summary.toc_path ?? "")}</dd>
       <dt>Time Profile</dt><dd>${escapeHtml(input.timeProfilePath)}</dd>
+      <dt>os_signpost</dt><dd>${escapeHtml(input.osSignpostPath ?? summary.os_signpost_path ?? "")}</dd>
       <dt>dSYM UUID</dt><dd>${escapeHtml(summary.dsym_uuid ?? "")}</dd>
       <dt>Trace UUID</dt><dd>${escapeHtml(summary.trace_grace_uuid ?? "")}</dd>
       <dt>Collection error</dt><dd>${escapeHtml(summary.error ?? "")}</dd>
@@ -2225,6 +2325,8 @@ interface ThreadLayout {
   headerHeight: number;
   groupHeaderHeight: number;
   laneGap: number;
+  signpostLaneHeight: number;
+  signpostLaneCount: number;
   contentTop: number;
   timelineHeight: number;
   traceStartSeconds: number;
@@ -2251,9 +2353,16 @@ function buildThreadLayout(
   frameHeight: number,
   fallbackDurationSeconds: number,
 ): ThreadLayout {
+  const signposts = timeline.signposts ?? [];
   const headerHeight = 22;
   const groupHeaderHeight = 26;
   const laneGap = 10;
+  const signpostLaneHeight = 20;
+  const signpostLaneCount =
+    signposts.reduce(
+      (maximum, signpost) => Math.max(maximum, signpost.lane + 1),
+      0,
+    ) || 0;
   const contentTop = TIMELINE_HEADER_OFFSET;
   const threads =
     timeline.threads.length > 0
@@ -2261,7 +2370,11 @@ function buildThreadLayout(
       : fallbackThreadList(timeline);
 
   const groups = new Set<string>();
-  let cursor = contentTop;
+  let cursor =
+    contentTop +
+    (signpostLaneCount > 0
+      ? groupHeaderHeight + signpostLaneCount * signpostLaneHeight + laneGap
+      : 0);
   for (const thread of threads) {
     groups.add(thread.group);
     const depth = Math.max(1, thread.maxDepth);
@@ -2271,16 +2384,31 @@ function buildThreadLayout(
 
   const contentHeight = Math.max(240, cursor - contentTop);
   const timelineHeight = contentTop + contentHeight + 8;
-  const traceStartSeconds = timeline.traceStartSeconds ?? 0;
+  const signpostStartSeconds = signposts.reduce(
+    (minimum, signpost) => Math.min(minimum, signpost.startTimeSeconds),
+    Number.POSITIVE_INFINITY,
+  );
+  const signpostEndSeconds = signposts.reduce(
+    (maximum, signpost) => Math.max(maximum, signpost.endTimeSeconds),
+    Number.NEGATIVE_INFINITY,
+  );
+  const traceStartSeconds = Number.isFinite(signpostStartSeconds)
+    ? Math.min(
+        timeline.traceStartSeconds ?? signpostStartSeconds,
+        signpostStartSeconds,
+      )
+    : (timeline.traceStartSeconds ?? 0);
   const rawEnd = timeline.traceEndSeconds ?? 0;
   const traceEndSeconds =
-    rawEnd > traceStartSeconds
-      ? rawEnd
+    Math.max(rawEnd, signpostEndSeconds) > traceStartSeconds
+      ? Math.max(rawEnd, signpostEndSeconds)
       : traceStartSeconds + fallbackDurationSeconds;
   return {
     headerHeight,
     groupHeaderHeight,
     laneGap,
+    signpostLaneHeight,
+    signpostLaneCount,
     contentTop,
     timelineHeight,
     traceStartSeconds,
@@ -2340,7 +2468,13 @@ function renderViewerDataScript(input: {
     headerHeight: input.layout.headerHeight,
     groupHeaderHeight: input.layout.groupHeaderHeight,
     laneGap: input.layout.laneGap,
+    signpostLaneHeight: input.layout.signpostLaneHeight,
+    signpostLaneCount: input.layout.signpostLaneCount,
     groupOrder: THREAD_GROUP_ORDER,
+    signposts: (input.timeline.signposts ?? []).map((signpost) => ({
+      ...signpost,
+      itemType: "signpost",
+    })),
     threads: orderedThreads.map((thread) => {
       return {
         threadId: thread.threadId,
@@ -2353,6 +2487,7 @@ function renderViewerDataScript(input: {
         startTime: thread.startSeconds,
         endTime: thread.endSeconds,
         spans: thread.spans.map((span) => ({
+          itemType: "frame",
           name: span.name,
           binary: span.binary || "unknown",
           source: formatSource(span),
@@ -2400,6 +2535,8 @@ function renderViewerScript(): string {
   const headerHeight = Number(data.headerHeight || 22);
   const groupHeaderHeight = Number(data.groupHeaderHeight || 26);
   const laneGap = Number(data.laneGap || 10);
+  const signpostLaneHeight = Number(data.signpostLaneHeight || 20);
+  const signpostLaneCount = Number(data.signpostLaneCount || 0);
   const traceStartSeconds = Number(data.traceStartSeconds || 0);
   const rawEndSeconds = Number(data.traceEndSeconds || 0);
   const traceEndSeconds = rawEndSeconds > traceStartSeconds ? rawEndSeconds : traceStartSeconds + durationSeconds;
@@ -2407,6 +2544,15 @@ function renderViewerScript(): string {
 
   const groupOrder = Array.isArray(data.groupOrder) ? data.groupOrder : ["main", "app", "other"];
   const groupLabels = { main: "Main thread", app: "App threads", other: "Other threads" };
+  const signposts = (Array.isArray(data.signposts) ? data.signposts : []).map((signpost, index) => ({
+    ...signpost,
+    key: "signpost-" + String(index),
+    itemType: "signpost",
+    lane: Math.max(0, Number(signpost.lane || 0)),
+    startTime: Number(signpost.startTimeSeconds || 0),
+    endTime: Number(signpost.endTimeSeconds || signpost.startTimeSeconds || 0),
+  }));
+  let signpostTop = contentTop;
 
   let spanKey = 0;
   const threads = (Array.isArray(data.threads) ? data.threads : []).map((thread) => {
@@ -2454,6 +2600,10 @@ function renderViewerScript(): string {
   // threads can fold without touching the underlying span data.
   function relayout() {
     let cursor = contentTop;
+    if (signposts.length > 0) {
+      signpostTop = cursor + groupHeaderHeight;
+      cursor = signpostTop + signpostLaneCount * signpostLaneHeight + laneGap;
+    }
     for (const group of groups) {
       group.headerTop = cursor;
       group.visibleThreads = group.threads.filter((thread) => selectedThreadIds.has(thread.threadId));
@@ -2511,13 +2661,20 @@ function renderViewerScript(): string {
   const threadClear = document.querySelector("[data-thread-clear]");
   const detailPanel = document.querySelector("[data-details-panel]");
   const detail = {
+    title: document.querySelector("[data-detail-title]"),
+    threadLabel: document.querySelector("[data-detail-thread-label]"),
     name: document.querySelector("[data-detail-name]"),
     thread: document.querySelector("[data-detail-thread]"),
+    binaryLabel: document.querySelector("[data-detail-binary-label]"),
     binary: document.querySelector("[data-detail-binary]"),
+    sourceLabel: document.querySelector("[data-detail-source-label]"),
     source: document.querySelector("[data-detail-source]"),
+    samplesLabel: document.querySelector("[data-detail-samples-label]"),
     samples: document.querySelector("[data-detail-samples]"),
+    durationLabel: document.querySelector("[data-detail-duration-label]"),
     duration: document.querySelector("[data-detail-duration]"),
     time: document.querySelector("[data-detail-time]"),
+    depthLabel: document.querySelector("[data-detail-depth-label]"),
     depth: document.querySelector("[data-detail-depth]"),
     note: document.querySelector("[data-detail-note]"),
   };
@@ -2754,6 +2911,32 @@ function renderViewerScript(): string {
     }
   }
 
+  function selectSignpost(signpost) {
+    selectedFrame = signpost;
+    showInspector();
+    const durationMs = Math.max(0, Number(signpost.durationMs || 0));
+    if (detail.title) detail.title.textContent = "Signpost Details";
+    if (detail.threadLabel) detail.threadLabel.textContent = "Begin thread";
+    if (detail.binaryLabel) detail.binaryLabel.textContent = "Subsystem";
+    if (detail.sourceLabel) detail.sourceLabel.textContent = "Category";
+    if (detail.samplesLabel) detail.samplesLabel.textContent = "Kind";
+    if (detail.durationLabel) detail.durationLabel.textContent = "Duration";
+    if (detail.depthLabel) detail.depthLabel.textContent = "Lane";
+    if (detail.name) detail.name.textContent = signpost.name || "";
+    if (detail.thread) detail.thread.textContent = signpost.beginThread || signpost.endThread || "-";
+    if (detail.binary) detail.binary.textContent = signpost.subsystem || "-";
+    if (detail.source) detail.source.textContent = signpost.category || "-";
+    if (detail.samples) detail.samples.textContent = signpost.kind || "event";
+    if (detail.duration) detail.duration.textContent = formatMilliseconds(durationMs);
+    if (detail.time) detail.time.textContent = formatClock(signpost.startTime) + " - " + formatClock(signpost.endTime);
+    if (detail.depth) detail.depth.textContent = String(signpost.lane || 0);
+    if (detail.note) {
+      detail.note.textContent = signpost.message || (signpost.incomplete ? "Incomplete signpost interval" : "");
+      detail.note.hidden = !detail.note.textContent;
+    }
+    scheduleDraw();
+  }
+
   function hideInspector() {
     selectedFrame = null;
     if (detailPanel) {
@@ -2766,6 +2949,13 @@ function renderViewerScript(): string {
   function selectFrame(frame) {
     selectedFrame = frame;
     showInspector();
+    if (detail.title) detail.title.textContent = "Frame Details";
+    if (detail.threadLabel) detail.threadLabel.textContent = "Thread";
+    if (detail.binaryLabel) detail.binaryLabel.textContent = "Binary";
+    if (detail.sourceLabel) detail.sourceLabel.textContent = "Source";
+    if (detail.samplesLabel) detail.samplesLabel.textContent = "Samples";
+    if (detail.durationLabel) detail.durationLabel.textContent = "Sample Weight";
+    if (detail.depthLabel) detail.depthLabel.textContent = "Depth";
 
     const startSeconds = Number(frame.startTime || 0);
     const endSeconds = Math.max(startSeconds, Number(frame.endTime || startSeconds));
@@ -2973,6 +3163,7 @@ function renderViewerScript(): string {
     drawOverview(leftSeconds, rightSeconds, viewportWidth, topY, viewportHeight, fast);
     drawTicks(leftSeconds, rightSeconds, viewportWidth, topY, viewportHeight);
     drawProcessTrack(viewportWidth, topY, viewportHeight);
+    drawSignpostTrack(leftSeconds, rightSeconds, topY, bottomY, xScale, viewportWidth);
 
     for (const group of groups) {
       if (group.hidden) {
@@ -2990,7 +3181,14 @@ function renderViewerScript(): string {
       }
     }
 
-    if (selectedFrame && !isFrameHidden(selectedFrame)) {
+    if (selectedFrame && selectedFrame.itemType === "signpost") {
+      const x = timeToX(selectedFrame.startTime, leftSeconds, xScale);
+      const width = Math.max(3, (selectedFrame.endTime - selectedFrame.startTime) * xScale);
+      const y = signpostTop + selectedFrame.lane * signpostLaneHeight - topY;
+      context.strokeStyle = "#111827";
+      context.lineWidth = 2;
+      context.strokeRect(x + 1, y + 2, Math.max(1, width - 2), signpostLaneHeight - 5);
+    } else if (selectedFrame && !isFrameHidden(selectedFrame)) {
       const owner = threadById.get(selectedFrame.threadId);
       const flameTop = owner ? owner.flameTop : contentTop;
       const x = timeToX(selectedFrame.startTime, leftSeconds, xScale);
@@ -3026,6 +3224,47 @@ function renderViewerScript(): string {
     const shown = group.visibleThreads ? group.visibleThreads.length : group.threads.length;
     const label = chevron + "  " + group.label + "  (" + shown + "/" + group.threads.length + ")";
     context.fillText(label, 8, y + groupHeaderHeight / 2);
+  }
+
+  function drawSignpostTrack(leftSeconds, rightSeconds, topY, bottomY, xScale, viewportWidth) {
+    if (signposts.length === 0) {
+      return;
+    }
+    const viewportHeight = bottomY - topY;
+    const headerY = contentTop - topY;
+    if (headerY + groupHeaderHeight >= 0 && headerY <= viewportHeight) {
+      context.fillStyle = "#4c1d95";
+      context.fillRect(0, headerY, viewportWidth, groupHeaderHeight);
+      context.fillStyle = "#ffffff";
+      context.font = "700 12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+      context.textBaseline = "middle";
+      context.textAlign = "left";
+      context.fillText("os_signpost intervals  (" + signposts.length + ")", 8, headerY + groupHeaderHeight / 2);
+    }
+    for (const signpost of signposts) {
+      if (signpost.endTime < leftSeconds || signpost.startTime > rightSeconds) {
+        continue;
+      }
+      const y = signpostTop + signpost.lane * signpostLaneHeight - topY;
+      if (y + signpostLaneHeight < 0 || y > viewportHeight) {
+        continue;
+      }
+      const x = timeToX(signpost.startTime, leftSeconds, xScale);
+      const width = Math.max(3, (signpost.endTime - signpost.startTime) * xScale);
+      context.fillStyle = signpost.incomplete ? "#f59e0b" : signpost.kind === "event" ? "#c084fc" : "#7c3aed";
+      context.fillRect(Math.round(x), Math.round(y + 2), Math.max(3, Math.ceil(width)), signpostLaneHeight - 5);
+      if (width > 78) {
+        context.save();
+        context.beginPath();
+        context.rect(x + 3, y + 2, Math.max(1, width - 6), signpostLaneHeight - 5);
+        context.clip();
+        context.fillStyle = "#ffffff";
+        context.font = "600 11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+        context.textBaseline = "middle";
+        context.fillText(signpost.name || "Signpost", x + 5, y + signpostLaneHeight / 2);
+        context.restore();
+      }
+    }
   }
 
   function drawThreadBand(thread, leftSeconds, rightSeconds, topY, bottomY, xScale, viewportWidth, fast) {
@@ -3179,6 +3418,22 @@ function renderViewerScript(): string {
     const y = scroll.scrollTop + clientY - rect.top;
     const { leftSeconds, rightSeconds } = visibleTimeRange();
     const seconds = leftSeconds + (x / Math.max(1, rect.width)) * Math.max(0.000001, rightSeconds - leftSeconds);
+
+    if (signposts.length > 0) {
+      const lane = Math.floor((y - signpostTop) / signpostLaneHeight);
+      if (lane >= 0 && lane < signpostLaneCount) {
+        const matches = signposts.filter((signpost) =>
+          signpost.lane === lane &&
+          signpost.startTime <= seconds &&
+          Math.max(signpost.endTime, signpost.startTime + 0.000001) >= seconds
+        );
+        if (matches.length > 0) {
+          return matches.reduce((best, item) =>
+            item.endTime - item.startTime < best.endTime - best.startTime ? item : best
+          );
+        }
+      }
+    }
 
     for (const thread of threads) {
       if (thread.hidden || thread.collapsed) {
@@ -3382,7 +3637,11 @@ function renderViewerScript(): string {
     }
     const frame = frameAt(event.clientX, event.clientY);
     if (frame) {
-      selectFrame(frame);
+      if (frame.itemType === "signpost") {
+        selectSignpost(frame);
+      } else {
+        selectFrame(frame);
+      }
     } else {
       hideInspector();
     }
@@ -3497,6 +3756,7 @@ function emptyTimeline(warnings: string[]): ParsedTraceTimeline {
     spans: [],
     topFrames: [],
     threads: [],
+    signposts: [],
     traceStartSeconds: 0,
     traceEndSeconds: 0,
     warnings,
@@ -3988,6 +4248,7 @@ print(json.dumps({
 const PYTHON_TRACE_PARSER = String.raw`
 import json
 import math
+import os
 import sys
 import xml.etree.ElementTree as ET
 
@@ -3995,6 +4256,7 @@ time_profile_path = sys.argv[1]
 target_binary = sys.argv[2]
 max_samples = max(1, int(sys.argv[3]))
 max_depth = max(1, int(sys.argv[4]))
+signpost_path = sys.argv[5] if len(sys.argv) > 5 else ""
 
 def tag_name(element):
     return element.tag.rsplit("}", 1)[-1]
@@ -4272,6 +4534,124 @@ def thread_sort_key(payload):
 
 thread_payloads.sort(key=thread_sort_key)
 
+def element_value(element, definitions):
+    if element is None:
+        return ""
+    ref = element.get("ref")
+    resolved = definitions.get((tag_name(element), ref), element) if ref else element
+    return (resolved.get("fmt") or resolved.text or "").strip()
+
+def element_text(element, definitions):
+    if element is None:
+        return ""
+    ref = element.get("ref")
+    resolved = definitions.get((tag_name(element), ref), element) if ref else element
+    return (resolved.text or resolved.get("fmt") or "").strip()
+
+def parse_signposts():
+    if not signpost_path or not os.path.isfile(signpost_path):
+        return []
+    try:
+        signpost_root = ET.parse(signpost_path).getroot()
+    except (ET.ParseError, OSError) as error:
+        warnings.append("Could not parse os_signpost XML: " + str(error))
+        return []
+    definitions = {}
+    for element in signpost_root.iter():
+        identifier = element.get("id")
+        if identifier and not element.get("ref"):
+            definitions[(tag_name(element), identifier)] = element
+
+    pending = {}
+    parsed = []
+    for row in signpost_root.iter():
+        if tag_name(row) != "row":
+            continue
+        values = {tag_name(item): element_value(item, definitions) for item in list(row)}
+        process = values.get("process", "")
+        if target_binary and not (process == target_binary or process.startswith(target_binary + " (")):
+            continue
+        event_type = values.get("event-type", "").lower()
+        name = values.get("signpost-name", "") or "Unnamed signpost"
+        identifier = element_text(child(row, "os-signpost-identifier"), definitions)
+        time_text = element_text(child(row, "event-time"), definitions)
+        try:
+            event_time = int(time_text) / 1000000000.0
+        except ValueError:
+            continue
+        event = {
+            "id": identifier,
+            "name": name,
+            "subsystem": values.get("subsystem", ""),
+            "category": values.get("category", ""),
+            "message": values.get("os-log-metadata", ""),
+            "process": process,
+            "thread": values.get("thread", ""),
+            "time": event_time,
+        }
+        key = (process, identifier, name)
+        if event_type == "begin":
+            pending.setdefault(key, []).append(event)
+        elif event_type == "end":
+            starts = pending.get(key, [])
+            if starts:
+                begin = starts.pop()
+                parsed.append({
+                    "id": identifier,
+                    "name": name,
+                    "subsystem": begin["subsystem"] or event["subsystem"],
+                    "category": begin["category"] or event["category"],
+                    "message": event["message"] or begin["message"],
+                    "process": process,
+                    "beginThread": begin["thread"],
+                    "endThread": event["thread"],
+                    "kind": "interval",
+                    "incomplete": False,
+                    "startTimeSeconds": begin["time"],
+                    "endTimeSeconds": max(begin["time"], event_time),
+                    "durationMs": max(0.0, event_time - begin["time"]) * 1000.0,
+                })
+            else:
+                parsed.append({
+                    "id": identifier, "name": name,
+                    "subsystem": event["subsystem"], "category": event["category"],
+                    "message": event["message"], "process": process,
+                    "beginThread": "", "endThread": event["thread"],
+                    "kind": "event", "incomplete": True,
+                    "startTimeSeconds": event_time, "endTimeSeconds": event_time,
+                    "durationMs": 0.0,
+                })
+        else:
+            parsed.append({
+                "id": identifier, "name": name,
+                "subsystem": event["subsystem"], "category": event["category"],
+                "message": event["message"], "process": process,
+                "beginThread": event["thread"], "endThread": event["thread"],
+                "kind": "event", "incomplete": False,
+                "startTimeSeconds": event_time, "endTimeSeconds": event_time,
+                "durationMs": 0.0,
+            })
+
+    fallback_end = trace_end if trace_end is not None else 0.0
+    for starts in pending.values():
+        for begin in starts:
+            end_time = max(begin["time"], fallback_end)
+            parsed.append({
+                "id": begin["id"], "name": begin["name"],
+                "subsystem": begin["subsystem"], "category": begin["category"],
+                "message": begin["message"], "process": begin["process"],
+                "beginThread": begin["thread"], "endThread": "",
+                "kind": "interval", "incomplete": True,
+                "startTimeSeconds": begin["time"], "endTimeSeconds": end_time,
+                "durationMs": max(0.0, end_time - begin["time"]) * 1000.0,
+            })
+    return sorted(parsed, key=lambda item: (item["startTimeSeconds"], item["endTimeSeconds"], item["name"]))
+
+signposts = parse_signposts()
+for signpost in signposts:
+    trace_start = signpost["startTimeSeconds"] if trace_start is None else min(trace_start, signpost["startTimeSeconds"])
+    trace_end = signpost["endTimeSeconds"] if trace_end is None else max(trace_end, signpost["endTimeSeconds"])
+
 main_payload = next((payload for payload in thread_payloads if payload["isMain"]), None)
 if main_payload is None and thread_payloads:
     main_payload = thread_payloads[0]
@@ -4286,6 +4666,7 @@ print(json.dumps({
     "sampleWeightsMs": main_payload["sampleWeightsMs"] if main_payload else [],
     "samples": main_payload["samples"] if main_payload else [],
     "threads": thread_payloads,
+    "signposts": signposts,
     "traceStartSeconds": trace_start if trace_start is not None else 0.0,
     "traceEndSeconds": trace_end if trace_end is not None else 0.0,
     "warnings": warnings,
