@@ -111,3 +111,10 @@ frames only when a dominant unmapped address cluster, a Mach-O-derived ASLR
 base, expected bootstrap anchors, and a high-confidence atos probe all agree.
 The load address is inferred per launch and is not fixed to `0x300000000`;
 unverified addresses remain raw.
+
+With `skipInstall: true`, xctrace can return 55 (`No dSYMs were found or
+relevant`) when the launch trace omits the Debug dylib image entirely. Only
+that specific error falls back to raw-trace XML plus the same fail-closed atos
+validation. The run succeeds only if validation passes; otherwise it still
+fails and callers should use `skipInstall: false` to install the matching App.
+Other xctrace symbolication errors remain fatal.

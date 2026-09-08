@@ -99,3 +99,9 @@ frame 没有 binary UUID。collector 会对无镜像地址做 fail-closed 回填
 占比足够高、能从 Mach-O `__TEXT,__text` 推导本次 ASLR 基址、启动锚点匹配且 atos
 抽样解析率达到阈值时才写回符号。基址不会固定成 `0x300000000`；不同 launch
 可能不同。无法验证的地址继续保留为裸地址。
+
+使用 `skipInstall: true` 时，`xctrace symbolicate` 可能因为 launch trace 完全漏登记
+Debug dylib image 而返回 55（`No dSYMs were found or relevant`）。这类特定错误会
+回退到原始 trace XML，并继续执行上述 fail-closed atos 校验；校验通过才成功，否则
+仍以符号缺失失败，并建议改用 `skipInstall: false` 安装本地配套 App。其他 xctrace
+symbolicate 错误不会降级。
