@@ -27,14 +27,14 @@ Scene、Operator、Task 和 Element 均可从右键菜单执行到目标、基�
 bun run dev -- run examples/app-graph-map-report/workflow.ts \
   --input '{
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    "htmlPath": "/tmp/ios_perf-opt/app-graph-map/map.html"
+    "htmlPath": "/Users/bytedance/.ios_pref_optimizer/app-graph-map/map.html"
   }'
 ```
 
 再启动 Console，并让它服务该 Map 目录：
 
 ```bash
-IOS_UI_GRAPH_MAP_DIRECTORY=/tmp/ios_perf-opt/app-graph-map \
+IOS_UI_GRAPH_MAP_DIRECTORY=/Users/bytedance/.ios_pref_optimizer/app-graph-map \
 IOS_UI_GRAPH_PATH=/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json \
 IOS_UI_GRAPH_CONSOLE_UDID=<device-udid> \
 IOS_UI_GRAPH_CONSOLE_DEVICE_PROFILE_ID=iphone-414x896-portrait \
@@ -71,6 +71,6 @@ examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/
 ```
 
 `graph.json` 中的 `referenceAssets` 使用相对于该文件的路径。单次运行仍将原始证据写入
-`/tmp/ios_perf-opt`；只有写入 Graph 的 Scene 证据会按内容哈希晋级到
+`/Users/bytedance/.ios_pref_optimizer`；只有写入 Graph 的 Scene 证据会按内容哈希晋级到
 `reference-assets`，每个 Scene 最多保留三组有效证据。因此复制整个 Graph 数据包后，
 截图不会依赖原机器的 `/tmp` 或用户目录。

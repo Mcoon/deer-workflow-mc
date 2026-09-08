@@ -34,14 +34,14 @@ Generate the Graph v2 Map first:
 bun run dev -- run examples/app-graph-map-report/workflow.ts \
   --input '{
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    "htmlPath": "/tmp/ios_perf-opt/app-graph-map/map.html"
+    "htmlPath": "/Users/bytedance/.ios_pref_optimizer/app-graph-map/map.html"
   }'
 ```
 
 Start Console with that Map directory:
 
 ```bash
-IOS_UI_GRAPH_MAP_DIRECTORY=/tmp/ios_perf-opt/app-graph-map \
+IOS_UI_GRAPH_MAP_DIRECTORY=/Users/bytedance/.ios_pref_optimizer/app-graph-map \
 IOS_UI_GRAPH_PATH=/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json \
 IOS_UI_GRAPH_CONSOLE_UDID=<device-udid> \
 IOS_UI_GRAPH_CONSOLE_DEVICE_PROFILE_ID=iphone-414x896-portrait \
@@ -83,7 +83,7 @@ examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/
 ```
 
 `referenceAssets` paths in `graph.json` are relative to that file. Raw run
-artifacts remain under `/tmp/ios_perf-opt`; only Scene evidence written to the
+artifacts remain under `/Users/bytedance/.ios_pref_optimizer`; only Scene evidence written to the
 Graph is promoted into the content-addressed `reference-assets` directory,
 with at most three valid references retained per Scene. Copying the Graph
 package therefore does not depend on another machine's temporary or user

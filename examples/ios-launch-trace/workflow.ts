@@ -1,9 +1,12 @@
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
+import { resolveDeveloperDirectory } from "../ios-xcode";
 
 import type {
   IosLaunchTraceInput,
@@ -15,18 +18,21 @@ import type {
   TraceFrameSpan,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
-const DEFAULT_DEVELOPER_DIR = "/Applications/Xcode_26.app/Contents/Developer";
-const DEFAULT_COLLECTOR_SCRIPT_PATH =
-  "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/skills/collection/flow-ios-trace-collection/scripts/collect_trace.py";
+const DEFAULT_ARTIFACT_ROOT = join(homedir(), ".ios_pref_optimizer");
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const DEFAULT_TARGET_BINARY = "Grace";
+const DEFAULT_BUSINESS_BINARY = "FlowDebugBasicDynamic";
 const DEFAULT_TIME_LIMIT = "20s";
 const DEFAULT_MAX_SAMPLES = 12000;
 const DEFAULT_MAX_DEPTH = 72;
+const DEFAULT_EXPORT_ATTEMPTS = 3;
+const DEFAULT_EXPORT_RETRY_DELAY_MS = 1000;
+const DEFAULT_TRACE_SETTLE_ATTEMPTS = 10;
+const DEFAULT_TRACE_SETTLE_DELAY_MS = 500;
 const OUTPUT_TAIL_LENGTH = 4000;
 const TIMELINE_PIXELS_PER_SAMPLE = 2;
-const COLLECTOR_PROGRESS_PREFIX = "__DEER_PROGRESS__ ";
+const TIME_PROFILE_XPATH =
+  '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]';
 
 /**
  * Declares the Workflow's identity and observable phase plan.
@@ -49,7 +55,6 @@ export const meta = {
     repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
     projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
     udid: "00008030-001A286A2229802E",
     bundleId: "com.bot.doubao",
     timeLimit: "20s",
@@ -57,18 +62,22 @@ export const meta = {
 };
 
 /**
- * Runs the launch Time Profiler collection script and writes an HTML report.
+ * Records a launch Time Profiler trace and writes an HTML report.
  *
- * @param args - Trace target, collection script, and output settings.
+ * @param args - Trace target, symbol, and output settings.
  * @returns Paths to the generated trace, XML, summary, and HTML artifacts.
  */
 export default async function iosLaunchTrace(
   args: IosLaunchTraceInput,
 ): Promise<IosLaunchTraceResult> {
   const input = normalizeInput(args);
+  await mkdir(input.outputDir, { recursive: true });
+  const summary = baseLaunchSummary(input);
+  const command = buildLaunchRecordCommand(input);
+  let lastResult: CommandResult = { stdout: "", stderr: "", exitCode: 0 };
+  let recordResult: CommandResult | undefined;
 
   phase("Prepare");
-  await mkdir(input.outputDir, { recursive: true });
   log(
     [
       "## Preparing iOS launch trace collection",
@@ -81,115 +90,217 @@ export default async function iosLaunchTrace(
     ].join("\n"),
   );
 
-  const command = buildCollectorCommand(input);
+  try {
+    await validateLaunchInputs(input, summary);
 
-  phase(input.skipInstall ? "Launch & Record" : "Install");
-  log(
-    [
-      "## Running Time Profiler launch trace",
-      `- **Collector:** \`${input.collectorScriptPath}\``,
-      `- **Install:** ${input.skipInstall ? "skipped" : "enabled"}`,
-      `- **Limit:** \`${input.timeLimit}\``,
-    ].join("\n"),
-  );
-  const collection = await runCollectorCommand(
-    command,
-    input.projectRoot,
-    input.developerDir,
-  );
+    if (!input.skipInstall) {
+      phase("Install");
+      log(
+        [
+          "## Installing the trace-ready App without launching it",
+          `- **App:** \`${input.appPath}\``,
+          `- **Device:** \`${input.udid}\``,
+        ].join("\n"),
+      );
+      lastResult = await runCommand(
+        buildInstallCommand(input),
+        input.projectRoot,
+        input.developerDir,
+      );
+      summary.install = processSummary(lastResult);
+      if (lastResult.exitCode !== 0) {
+        failCollection(summary, "install_failed", "App installation failed.");
+      }
+    } else {
+      log(
+        "## Reusing the installed App\n- Installation was skipped; the installed App must match the supplied dSYMs.",
+      );
+    }
 
-  const expectedSummaryPath = join(input.outputDir, "summary.json");
-  const summary = await readCollectorSummary(
-    expectedSummaryPath,
-    collection.stdout,
-  );
-  summary.repository_root = input.repositoryRoot;
-  summary.project_root = input.projectRoot;
-  summary.build_root = input.buildRoot;
-  validateLaunchSymbolication(summary);
-  await writeFile(
-    expectedSummaryPath,
-    JSON.stringify(summary, null, 2),
-    "utf8",
-  );
-  const summaryPath = summary.summary_path ?? expectedSummaryPath;
-  const tracePath =
-    summary.trace_path ?? join(input.outputDir, "launch_target.trace");
-  const tocPath = summary.toc_path ?? join(input.outputDir, "toc.xml");
-  const timeProfilePath =
-    summary.time_profile_path ?? join(input.outputDir, "time_profile.xml");
-  const collectionSucceeded =
-    collection.exitCode === 0 && summary.success === true;
+    summary.terminate = await terminateRunningAppProcesses(input);
+
+    phase("Launch & Record");
+    await rm(input.tracePath, { recursive: true, force: true });
+    log(
+      [
+        "## Launching under Time Profiler",
+        `- **Bundle:** \`${input.bundleId}\``,
+        `- **Limit:** \`${input.timeLimit}\``,
+        `- **Trace:** \`${input.tracePath}\``,
+      ].join("\n"),
+    );
+    recordResult = await runLaunchRecordCommand(
+      command,
+      input.projectRoot,
+      input.developerDir,
+    );
+    lastResult = recordResult;
+    summary.record = processSummary(lastResult);
+    summary.trace_path = input.tracePath;
+    if (lastResult.exitCode !== 0) {
+      failCollection(
+        summary,
+        "record_failed",
+        `xctrace launch recording failed with return code ${lastResult.exitCode}.`,
+      );
+    }
+    summary.trace_settle = await waitForTraceTreeToSettle(input.tracePath);
+
+    phase("Symbolicate");
+    await rm(input.symbolicatedTracePath, { recursive: true, force: true });
+    lastResult = await runCommand(
+      buildXctraceSymbolicateCommand(input),
+      input.projectRoot,
+      input.developerDir,
+    );
+    summary.symbolicate = processSummary(lastResult);
+    let exportTracePath = input.symbolicatedTracePath;
+    if (lastResult.exitCode === 0) {
+      summary.symbolicated_trace_path = input.symbolicatedTracePath;
+    } else if (isRecoverableMissingImageSymbolication(lastResult)) {
+      exportTracePath = input.tracePath;
+      summary.symbolicate.fallback = "raw_trace_atos_backfill";
+      summary.symbolicate.recoverable = true;
+      log(
+        "## Symbolication fallback\n- xctrace found no registered image matching the dSYMs. Exporting the raw trace for fail-closed atos recovery.",
+      );
+    } else {
+      failCollection(
+        summary,
+        "symbolication_failed",
+        `xctrace symbolicate failed with return code ${lastResult.exitCode}.`,
+      );
+    }
+
+    phase("Export");
+    const tocExport = await runXctraceExportWithRetry({
+      label: "toc",
+      command: buildTocExportCommand(exportTracePath, input.tocPath),
+      outputPath: input.tocPath,
+      cwd: input.projectRoot,
+      outputDir: input.outputDir,
+      developerDir: input.developerDir,
+    });
+    const profileExport = await runXctraceExportWithRetry({
+      label: "time-profile",
+      command: buildTimeProfileExportCommand(
+        exportTracePath,
+        input.timeProfilePath,
+      ),
+      outputPath: input.timeProfilePath,
+      cwd: input.projectRoot,
+      outputDir: input.outputDir,
+      developerDir: input.developerDir,
+    });
+    summary.export_attempts = {
+      toc: tocExport.attempts,
+      time_profile: profileExport.attempts,
+    };
+    summary.toc_path = input.tocPath;
+    summary.time_profile_path = input.timeProfilePath;
+    if (tocExport.result.exitCode !== 0) {
+      lastResult = tocExport.result;
+      failCollection(summary, "toc_export_failed", "TOC export failed.");
+    }
+    if (profileExport.result.exitCode !== 0) {
+      lastResult = profileExport.result;
+      failCollection(
+        summary,
+        "time_profile_export_failed",
+        "Time Profiler XML export failed.",
+      );
+    }
+
+    phase("Backfill Symbols");
+    const recovery = await recoverLaunchSymbols(input);
+    Object.assign(summary, recovery.coverage);
+    summary.symbol_uuids = recovery.symbolUuids;
+    summary.dsym_uuid =
+      recovery.symbolUuids[`${input.targetBinary}.debug.dylib`]?.[0] ??
+      recovery.symbolUuids[input.targetBinary]?.[0] ??
+      null;
+    summary.atos_backfill = recovery.backfill;
+    validateLaunchSymbolication(summary);
+    if (summary.success !== true) {
+      throw new LaunchCollectionError();
+    }
+    await writeLaunchSummary(input.summaryPath, summary);
+  } catch (cause) {
+    if (!(cause instanceof LaunchCollectionError)) {
+      summary.error = summary.error ?? "exception";
+      summary.message = summary.message ?? formatError(cause);
+    }
+    summary.success = false;
+    await writeLaunchSummary(input.summaryPath, summary);
+    const timeline = skippedTimelineForCollectionFailure(
+      summary,
+      lastResult.exitCode,
+    );
+    await writeLaunchReport({
+      input,
+      summary,
+      command,
+      result: lastResult,
+      timeline,
+    });
+    throw new Error(
+      [
+        "iOS launch trace collection failed.",
+        `Reason: ${collectionFailureReason(summary, lastResult.exitCode)}`,
+        `HTML report: ${input.htmlReportPath}`,
+        `Summary: ${input.summaryPath}`,
+      ].join("\n"),
+      { cause },
+    );
+  }
 
   phase("Parse");
-  const timeline = collectionSucceeded
-    ? await parseSuccessfulTrace({
-        timeProfilePath,
-        summary,
-        python: input.python,
-        targetBinary: input.targetBinary,
-        maxSamples: input.maxSamples,
-        maxDepth: input.maxDepth,
-      })
-    : skippedTimelineForCollectionFailure(summary, collection.exitCode);
+  const timeline = await parseSuccessfulTrace({
+    timeProfilePath: input.timeProfilePath,
+    summary,
+    python: input.python,
+    targetBinary: input.targetBinary,
+    maxSamples: input.maxSamples,
+    maxDepth: input.maxDepth,
+  });
 
   phase("Report");
-  const html = renderLaunchTraceHtml({
-    command,
-    exitCode: collection.exitCode,
-    generatedAt: new Date().toISOString(),
-    outputDir: input.outputDir,
+  await writeLaunchReport({
+    input,
     summary,
-    summaryPath,
-    timeProfilePath,
-    stdoutTail: tail(collection.stdout),
-    stderrTail: tail(collection.stderr),
+    command,
+    result: recordResult ?? lastResult,
     timeline,
   });
-  await mkdir(dirname(input.htmlReportPath), { recursive: true });
-  await writeFile(input.htmlReportPath, html, "utf8");
   log(
     [
       "## Launch trace report ready",
       `- **HTML:** \`${input.htmlReportPath}\``,
       `- **Rendered samples:** ${timeline.renderedSamples}/${timeline.totalMainThreadRows}`,
       `- **Top frame rows:** ${timeline.topFrames.length}`,
-      collectionSucceeded
-        ? "- **Collector:** success"
-        : `- **Collector:** failed (${collectionFailureReason(summary, collection.exitCode)})`,
+      "- **Collection:** self-contained TypeScript workflow",
     ].join("\n"),
   );
-
-  if (!collectionSucceeded) {
-    throw new Error(
-      [
-        "iOS launch trace collection failed.",
-        `Reason: ${collectionFailureReason(summary, collection.exitCode)}`,
-        `HTML report: ${input.htmlReportPath}`,
-        `Summary: ${summaryPath}`,
-      ].join("\n"),
-    );
-  }
 
   return {
     success: true,
     repositoryRoot: input.repositoryRoot,
     projectRoot: input.projectRoot,
     buildRoot: input.buildRoot,
-    exitCode: collection.exitCode,
+    exitCode: 0,
     command,
     outputDir: input.outputDir,
-    summaryPath,
-    tracePath,
-    tocPath,
-    timeProfilePath,
+    summaryPath: input.summaryPath,
+    tracePath: input.tracePath,
+    tocPath: input.tocPath,
+    timeProfilePath: input.timeProfilePath,
     htmlReportPath: input.htmlReportPath,
     symbolicationStatus: summary.symbolication_status ?? "unknown",
     mainThreadRows: summary.main_thread_rows ?? 0,
     mainThreadGraceRows: summary.main_thread_grace_rows ?? 0,
     mainThreadGraceSourceRows: summary.main_thread_grace_source_rows ?? 0,
-    stdoutTail: tail(collection.stdout),
-    stderrTail: tail(collection.stderr),
+    stdoutTail: tail((recordResult ?? lastResult).stdout),
+    stderrTail: tail((recordResult ?? lastResult).stderr),
     summary,
   };
 }
@@ -201,15 +312,20 @@ interface NormalizedInput {
   developerDir: string;
   udid: string;
   bundleId: string;
-  collectorScriptPath: string;
   python: string;
   appPath: string;
   dsymPath: string;
   symbolSearchPath: string;
+  symbolicatedTracePath: string;
   timeLimit: string;
   skipInstall: boolean;
   outputDir: string;
+  tracePath: string;
+  tocPath: string;
+  timeProfilePath: string;
+  summaryPath: string;
   targetBinary: string;
+  businessBinary: string;
   htmlReportPath: string;
   maxSamples: number;
   maxDepth: number;
@@ -219,7 +335,43 @@ interface CommandResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+  startedAt?: string;
+  finishedAt?: string;
+  durationMs?: number;
+  observedRecordingStartedAt?: string;
+  observedRecordingFinishedAt?: string;
+  observedRecordingDurationMs?: number;
 }
+
+interface TraceTreeSnapshot {
+  attempt: number;
+  file_count: number;
+  total_bytes: number;
+  newest_mtime_ns: number;
+}
+
+interface ExportAttemptSummary {
+  attempt: number;
+  returncode: number;
+  stdout_path: string;
+  stderr_path: string;
+  stdout_tail: string;
+  stderr_tail: string;
+}
+
+interface LaunchCoverage {
+  trace_grace_uuid?: string;
+  trace_target_uuids: Record<string, string>;
+  main_thread_rows: number;
+  main_thread_grace_rows: number;
+  main_thread_grace_source_rows: number;
+  main_thread_source_rows_by_binary: Record<string, number>;
+  main_thread_unresolved_rows: number;
+  main_thread_unmapped_rows: number;
+  samples: NonNullable<LaunchTraceSummary["samples"]>;
+}
+
+class LaunchCollectionError extends Error {}
 
 interface PythonThreadPayload {
   threadId?: string;
@@ -274,78 +426,210 @@ function normalizeInput(args: IosLaunchTraceInput): NormalizedInput {
   const htmlReportPath = resolve(
     args.htmlReportPath?.trim() || join(outputDir, "launch-trace-report.html"),
   );
+  const targetBinary = args.targetBinary?.trim() || DEFAULT_TARGET_BINARY;
+  const dsymPath = resolve(
+    args.dsymPath?.trim() ||
+      join(buildRoot, ".vscode-out", "dSYM", `${targetBinary}.app.dSYM`),
+  );
 
   return {
     repositoryRoot,
     projectRoot,
     buildRoot,
-    developerDir: args.developerDir?.trim()
-      ? resolve(args.developerDir.trim())
-      : DEFAULT_DEVELOPER_DIR,
+    developerDir: resolveDeveloperDirectory(args.developerDir),
     udid,
     bundleId: args.bundleId?.trim() || DEFAULT_BUNDLE_ID,
-    collectorScriptPath: resolve(
-      args.collectorScriptPath?.trim() || DEFAULT_COLLECTOR_SCRIPT_PATH,
-    ),
     python: args.python?.trim() || "python3",
-    appPath: args.appPath?.trim() || "",
-    dsymPath: args.dsymPath?.trim() || "",
-    symbolSearchPath: args.symbolSearchPath?.trim() || "",
+    appPath: resolve(
+      args.appPath?.trim() ||
+        join(buildRoot, ".vscode-out", `${targetBinary}.app`),
+    ),
+    dsymPath,
+    symbolSearchPath: resolve(
+      args.symbolSearchPath?.trim() || dirname(dsymPath),
+    ),
+    symbolicatedTracePath: join(outputDir, "symbolicated.trace"),
     timeLimit: args.timeLimit?.trim() || DEFAULT_TIME_LIMIT,
     skipInstall: args.skipInstall === true,
     outputDir,
-    targetBinary: args.targetBinary?.trim() || DEFAULT_TARGET_BINARY,
+    tracePath: join(outputDir, "launch_target.trace"),
+    tocPath: join(outputDir, "toc.xml"),
+    timeProfilePath: join(outputDir, "time_profile.xml"),
+    summaryPath: join(outputDir, "summary.json"),
+    targetBinary,
+    businessBinary: args.businessBinary?.trim() || DEFAULT_BUSINESS_BINARY,
     htmlReportPath,
     maxSamples: boundedInteger(args.maxSamples, 40, 50000, DEFAULT_MAX_SAMPLES),
     maxDepth: boundedInteger(args.maxDepth, 4, 120, DEFAULT_MAX_DEPTH),
   };
 }
 
-export function buildCollectorCommand(input: NormalizedInput): string[] {
-  const command = [
-    input.python,
-    input.collectorScriptPath,
-    "--mode",
-    "launch",
-    "--project-root",
-    input.projectRoot,
-    "--build-root",
-    input.buildRoot,
-    "--udid",
+/** Builds the xctrace command that launches and records the target App. */
+export function buildLaunchRecordCommand(input: {
+  udid: string;
+  bundleId: string;
+  timeLimit: string;
+  tracePath: string;
+}): string[] {
+  return [
+    "xcrun",
+    "xctrace",
+    "record",
+    "--template",
+    "Time Profiler",
+    "--device",
     input.udid,
-    "--bundle-id",
-    input.bundleId,
     "--time-limit",
     input.timeLimit,
-    "--output-dir",
-    input.outputDir,
+    "--output",
+    input.tracePath,
+    "--no-prompt",
+    "--launch",
+    "--",
+    input.bundleId,
   ];
+}
 
-  if (input.appPath) {
-    command.push("--app-path", input.appPath);
-  }
-  if (input.dsymPath) {
-    command.push("--dsym-path", input.dsymPath);
-  }
-  if (input.symbolSearchPath) {
-    command.push("--symbol-search-path", input.symbolSearchPath);
-  }
-  command.push("--target-binary", input.targetBinary);
-  if (input.skipInstall) {
-    command.push("--skip-install");
-  }
+/** Builds the install-only devicectl command used before a cold launch. */
+export function buildInstallCommand(input: {
+  udid: string;
+  appPath: string;
+}): string[] {
+  return [
+    "xcrun",
+    "devicectl",
+    "device",
+    "install",
+    "app",
+    "--device",
+    input.udid,
+    input.appPath,
+  ];
+}
 
-  return command;
+/** Builds the devicectl command that force-terminates one device process. */
+export function buildTerminateCommand(input: {
+  udid: string;
+  pid: number;
+}): string[] {
+  return [
+    "xcrun",
+    "devicectl",
+    "device",
+    "process",
+    "terminate",
+    "--device",
+    input.udid,
+    "--pid",
+    String(input.pid),
+    "--kill",
+  ];
+}
+
+async function terminateRunningAppProcesses(
+  input: NormalizedInput,
+): Promise<NonNullable<LaunchTraceSummary["terminate"]>> {
+  const processes = await listDeviceProcesses(input);
+  const executableSuffix = `/${input.targetBinary}.app/${input.targetBinary}`;
+  const pids = processes
+    .filter((process) => process.executable.endsWith(executableSuffix))
+    .map((process) => process.pid);
+  const results: CommandResult[] = [];
+  for (const pid of pids) {
+    results.push(
+      await runCommand(
+        buildTerminateCommand({ udid: input.udid, pid }),
+        input.projectRoot,
+        input.developerDir,
+      ),
+    );
+  }
+  return {
+    returncode: results.find((result) => result.exitCode !== 0)?.exitCode ?? 0,
+    stdout_tail: tail(results.map((result) => result.stdout).join("\n")),
+    stderr_tail: tail(results.map((result) => result.stderr).join("\n")),
+    requested_target: input.targetBinary,
+    resolved_pids: pids,
+    terminated_pids: pids.filter((_, index) => results[index]?.exitCode === 0),
+  };
+}
+
+async function listDeviceProcesses(
+  input: NormalizedInput,
+): Promise<Array<{ pid: number; executable: string }>> {
+  const outputPath = join(input.outputDir, "device-processes.json");
+  const logPath = join(input.outputDir, "device-processes.log");
+  const result = await runCommand(
+    [
+      "xcrun",
+      "devicectl",
+      "device",
+      "info",
+      "processes",
+      "--device",
+      input.udid,
+      "--columns",
+      "*",
+      "--json-output",
+      outputPath,
+      "--log-output",
+      logPath,
+      "--timeout",
+      "10",
+      "--quiet",
+    ],
+    input.projectRoot,
+    input.developerDir,
+  );
+  if (result.exitCode !== 0 || !(await fileExists(outputPath))) {
+    return [];
+  }
+  try {
+    const payload = JSON.parse(await Bun.file(outputPath).text()) as {
+      result?: {
+        runningProcesses?: Array<{
+          executable?: string;
+          processIdentifier?: number;
+        }>;
+      };
+    };
+    return (payload.result?.runningProcesses ?? [])
+      .map((process) => ({
+        pid: Number(process.processIdentifier),
+        executable: normalizeExecutableUrl(process.executable ?? ""),
+      }))
+      .filter(
+        (process) =>
+          Number.isFinite(process.pid) && process.executable.length > 0,
+      );
+  } catch {
+    return [];
+  }
+}
+
+function normalizeExecutableUrl(value: string): string {
+  if (!value.startsWith("file://")) {
+    return value;
+  }
+  try {
+    return decodeURIComponent(new URL(value).pathname);
+  } catch {
+    return value.replace(/^file:\/\//u, "");
+  }
 }
 
 async function runCommand(
   command: readonly string[],
   cwd: string,
   developerDir = "",
+  environment: Record<string, string | undefined> = {},
 ): Promise<CommandResult> {
-  const env = developerDir
-    ? { ...process.env, DEVELOPER_DIR: developerDir }
-    : undefined;
+  const startedAt = new Date();
+  const env = {
+    ...process.env,
+    ...environment,
+    ...(developerDir ? { DEVELOPER_DIR: developerDir } : {}),
+  };
   const subprocess = Bun.spawn([...command], {
     cwd,
     env,
@@ -359,31 +643,24 @@ async function runCommand(
     subprocess.exited,
   ]);
 
-  return { stdout, stderr, exitCode };
+  const finishedAt = new Date();
+  return {
+    stdout,
+    stderr,
+    exitCode,
+    startedAt: startedAt.toISOString(),
+    finishedAt: finishedAt.toISOString(),
+    durationMs: finishedAt.getTime() - startedAt.getTime(),
+  };
 }
 
-interface CollectorProgressEvent {
-  stage?: string;
-  status?: string;
-  message?: string;
-  duration_ms?: number;
-  resolved_frames?: number;
-  time_limit?: string;
-}
-
-const COLLECTOR_PHASES: Record<string, string> = {
-  install: "Install",
-  record: "Launch & Record",
-  symbolicate: "Symbolicate",
-  export: "Export",
-  backfill: "Backfill Symbols",
-};
-
-export async function runCollectorCommand(
+/** Runs xctrace while observing its launch and recording-limit messages. */
+export async function runLaunchRecordCommand(
   command: readonly string[],
   cwd: string,
   developerDir = "",
 ): Promise<CommandResult> {
+  const startedAt = new Date();
   const subprocess = Bun.spawn([...command], {
     cwd,
     env: developerDir
@@ -394,20 +671,46 @@ export async function runCollectorCommand(
   });
   let stdout = "";
   let stderr = "";
-  const observation = { pendingLine: "" };
+  const stdoutObservation: {
+    pendingLine?: string;
+    startedAt?: string;
+    finishedAt?: string;
+  } = {};
+  const stderrObservation: typeof stdoutObservation = {};
 
   await Promise.all([
     readProcessStream(subprocess.stdout, (chunk) => {
       stdout += chunk;
+      observeLaunchRecordOutput(chunk, stdoutObservation);
     }),
     readProcessStream(subprocess.stderr, (chunk) => {
       stderr += chunk;
-      observeCollectorProgress(chunk, observation);
+      observeLaunchRecordOutput(chunk, stderrObservation);
     }),
   ]);
-  observeCollectorProgress("\n", observation);
+  observeLaunchRecordOutput("\n", stdoutObservation);
+  observeLaunchRecordOutput("\n", stderrObservation);
   const exitCode = await subprocess.exited;
-  return { stdout, stderr, exitCode };
+  const finishedAt = new Date();
+  const observedStartedAt =
+    stdoutObservation.startedAt ?? stderrObservation.startedAt;
+  const observedFinishedAt =
+    stdoutObservation.finishedAt ?? stderrObservation.finishedAt;
+  return {
+    stdout,
+    stderr,
+    exitCode,
+    startedAt: startedAt.toISOString(),
+    finishedAt: finishedAt.toISOString(),
+    durationMs: finishedAt.getTime() - startedAt.getTime(),
+    observedRecordingStartedAt: observedStartedAt,
+    observedRecordingFinishedAt: observedFinishedAt,
+    observedRecordingDurationMs:
+      observedStartedAt && observedFinishedAt
+        ? new Date(observedFinishedAt).getTime() -
+          new Date(observedStartedAt).getTime()
+        : undefined,
+  };
 }
 
 async function readProcessStream(
@@ -434,105 +737,458 @@ async function readProcessStream(
   }
 }
 
-export function observeCollectorProgress(
+/** Updates launch timing when complete xctrace output lines arrive. */
+export function observeLaunchRecordOutput(
   chunk: string,
-  observation: { pendingLine?: string },
-  onPhase: (title: string) => void = phase,
-  onLog: (message: string) => void = log,
-): void {
+  observation: {
+    pendingLine?: string;
+    startedAt?: string;
+    finishedAt?: string;
+  },
+): typeof observation {
   const combined = `${observation.pendingLine ?? ""}${chunk}`;
   const lines = combined.split(/\r?\n/u);
   observation.pendingLine = lines.pop() ?? "";
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line.startsWith(COLLECTOR_PROGRESS_PREFIX)) {
+    if (!line) {
       continue;
     }
-    let event: CollectorProgressEvent;
-    try {
-      event = JSON.parse(
-        line.slice(COLLECTOR_PROGRESS_PREFIX.length),
-      ) as CollectorProgressEvent;
-    } catch {
-      continue;
+    if (!observation.startedAt && line.includes("Launching process:")) {
+      observation.startedAt = new Date().toISOString();
+      log(
+        [
+          "## Time Profiler launched the App and started recording",
+          `- **xctrace:** ${line}`,
+        ].join("\n"),
+      );
+    } else if (
+      observation.startedAt &&
+      !observation.finishedAt &&
+      line === "Reached specified time limit, ending recording..."
+    ) {
+      observation.finishedAt = new Date().toISOString();
+      log(
+        "## Time Profiler reached the recording limit\n- Waiting for xctrace to save the trace bundle.",
+      );
     }
-    const title = event.stage ? COLLECTOR_PHASES[event.stage] : undefined;
-    if (title && event.status === "started") {
-      onPhase(title);
-    }
-    const details = [];
-    if (typeof event.duration_ms === "number") {
-      details.push(`duration ${formatProgressDuration(event.duration_ms)}`);
-    }
-    if (typeof event.resolved_frames === "number") {
-      details.push(`resolved ${event.resolved_frames} frames`);
-    }
-    if (event.time_limit) {
-      details.push(`recording limit ${event.time_limit}`);
-    }
-    onLog(
-      [
-        `## ${title ?? "Collector"}: ${event.status ?? "progress"}`,
-        event.message ? `- ${event.message}` : "",
-        details.length ? `- ${details.join(" · ")}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n"),
+  }
+  return observation;
+}
+
+/** Returns whether xctrace failed only because the launch image was omitted. */
+export function isRecoverableMissingImageSymbolication(
+  result: CommandResult,
+): boolean {
+  return (
+    result.exitCode === 55 &&
+    `${result.stdout}\n${result.stderr}`.includes(
+      "No dSYMs were found or relevant to this trace",
+    )
+  );
+}
+
+function baseLaunchSummary(input: NormalizedInput): LaunchTraceSummary {
+  return {
+    success: false,
+    mode: "launch",
+    repository_root: input.repositoryRoot,
+    project_root: input.projectRoot,
+    build_root: input.buildRoot,
+    udid: input.udid,
+    bundle_id: input.bundleId,
+    app_path: input.appPath,
+    dsym_path: input.dsymPath,
+    symbol_search_path: input.symbolSearchPath,
+    target_binary: input.targetBinary,
+    output_dir: input.outputDir,
+    summary_path: input.summaryPath,
+  };
+}
+
+async function validateLaunchInputs(
+  input: NormalizedInput,
+  summary: LaunchTraceSummary,
+): Promise<void> {
+  if (!(await fileExists(input.appPath))) {
+    failCollection(
+      summary,
+      "missing_app",
+      `App bundle was not found at ${input.appPath}. Run ios-build-install first.`,
+    );
+  }
+  if (!(await fileExists(input.dsymPath))) {
+    failCollection(
+      summary,
+      "missing_dsym",
+      `App dSYM was not found at ${input.dsymPath}. Run ios-build-install with symbols enabled.`,
+    );
+  }
+  if (!(await fileExists(input.symbolSearchPath))) {
+    failCollection(
+      summary,
+      "missing_symbol_search_path",
+      `Symbol search path was not found at ${input.symbolSearchPath}.`,
     );
   }
 }
 
-function formatProgressDuration(durationMs: number): string {
-  if (durationMs < 1000) {
-    return `${Math.round(durationMs)}ms`;
-  }
-  const seconds = durationMs / 1000;
-  if (seconds < 60) {
-    return `${seconds.toFixed(1)}s`;
-  }
-  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
-}
-
-function validateLaunchSymbolication(summary: LaunchTraceSummary): void {
-  if (summary.success !== true || summary.symbolication_status !== "missing") {
-    return;
-  }
+function failCollection(
+  summary: LaunchTraceSummary,
+  error: string,
+  message: string,
+): never {
   summary.success = false;
-  summary.error = "missing_symbols";
-  summary.message =
-    "The collector reported missing target source symbols. " +
-    "Check the target/business binary coverage and matching dsymPath/symbolSearchPath. " +
-    "The raw trace has been preserved.";
+  summary.error = error;
+  summary.message = message;
+  throw new LaunchCollectionError(message);
 }
 
-async function readCollectorSummary(
-  summaryPath: string,
-  stdout: string,
-): Promise<LaunchTraceSummary> {
-  if (await fileExists(summaryPath)) {
-    return JSON.parse(
-      await readFile(summaryPath, "utf8"),
-    ) as LaunchTraceSummary;
-  }
+function processSummary(result: CommandResult) {
+  return {
+    returncode: result.exitCode,
+    stdout_tail: tail(result.stdout),
+    stderr_tail: tail(result.stderr),
+    started_at: result.startedAt,
+    finished_at: result.finishedAt,
+    duration_ms: result.durationMs,
+    observed_recording_started_at: result.observedRecordingStartedAt,
+    observed_recording_finished_at: result.observedRecordingFinishedAt,
+    observed_recording_duration_ms: result.observedRecordingDurationMs,
+  };
+}
 
-  const trimmed = stdout.trim();
-  if (trimmed) {
-    try {
-      return JSON.parse(trimmed) as LaunchTraceSummary;
-    } catch {
-      return {
-        success: false,
-        error: "summary_parse_failed",
-        message: "Collector stdout was not valid summary JSON.",
-      };
+/** Builds the command that applies matching dSYMs to a launch trace. */
+export function buildXctraceSymbolicateCommand(input: {
+  tracePath: string;
+  symbolicatedTracePath: string;
+  symbolSearchPath: string;
+}): string[] {
+  return [
+    "xcrun",
+    "xctrace",
+    "symbolicate",
+    "--input",
+    input.tracePath,
+    "--output",
+    input.symbolicatedTracePath,
+    "--dsym",
+    input.symbolSearchPath,
+  ];
+}
+
+/** Builds the xctrace table-of-contents export command. */
+export function buildTocExportCommand(
+  tracePath: string,
+  outputPath: string,
+): string[] {
+  return [
+    "xcrun",
+    "xctrace",
+    "export",
+    "--input",
+    tracePath,
+    "--toc",
+    "--output",
+    outputPath,
+  ];
+}
+
+/** Builds the xctrace Time Profiler XML export command. */
+export function buildTimeProfileExportCommand(
+  tracePath: string,
+  outputPath: string,
+): string[] {
+  return [
+    "xcrun",
+    "xctrace",
+    "export",
+    "--input",
+    tracePath,
+    "--xpath",
+    TIME_PROFILE_XPATH,
+    "--output",
+    outputPath,
+  ];
+}
+
+/** Waits for two identical non-empty snapshots of the trace bundle tree. */
+export async function waitForTraceTreeToSettle(
+  tracePath: string,
+  options: { attempts?: number; delayMs?: number } = {},
+): Promise<{ settled: boolean; snapshots: TraceTreeSnapshot[] }> {
+  const attempts = boundedInteger(
+    options.attempts,
+    1,
+    100,
+    DEFAULT_TRACE_SETTLE_ATTEMPTS,
+  );
+  const delayMs = boundedInteger(
+    options.delayMs,
+    0,
+    60_000,
+    DEFAULT_TRACE_SETTLE_DELAY_MS,
+  );
+  const snapshots: TraceTreeSnapshot[] = [];
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const snapshot = await snapshotTraceTree(tracePath, attempt);
+    snapshots.push(snapshot);
+    const previous = snapshots.at(-2);
+    if (
+      previous &&
+      snapshot.file_count > 0 &&
+      previous.file_count === snapshot.file_count &&
+      previous.total_bytes === snapshot.total_bytes &&
+      previous.newest_mtime_ns === snapshot.newest_mtime_ns
+    ) {
+      return { settled: true, snapshots };
+    }
+    if (attempt < attempts) {
+      await delay(delayMs);
     }
   }
+  return { settled: false, snapshots };
+}
 
+async function snapshotTraceTree(
+  tracePath: string,
+  attempt: number,
+): Promise<TraceTreeSnapshot> {
+  let fileCount = 0;
+  let totalBytes = 0;
+  let newestMtimeNs = 0;
+
+  async function visit(path: string): Promise<void> {
+    let stats;
+    try {
+      stats = await stat(path, { bigint: true });
+    } catch {
+      return;
+    }
+    if (stats.isDirectory()) {
+      let entries: string[];
+      try {
+        entries = await readdir(path);
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        await visit(join(path, entry));
+      }
+      return;
+    }
+    fileCount += 1;
+    totalBytes += Number(stats.size);
+    newestMtimeNs = Math.max(newestMtimeNs, Number(stats.mtimeNs));
+  }
+
+  await visit(tracePath);
   return {
-    success: false,
-    error: "summary_missing",
-    message: `No summary.json was found at ${summaryPath}.`,
+    attempt,
+    file_count: fileCount,
+    total_bytes: totalBytes,
+    newest_mtime_ns: newestMtimeNs,
   };
+}
+
+/** Runs an xctrace export with bounded retries and attempt diagnostics. */
+export async function runXctraceExportWithRetry(options: {
+  label: string;
+  command: readonly string[];
+  outputPath: string;
+  cwd: string;
+  outputDir: string;
+  developerDir?: string;
+  attempts?: number;
+  retryDelayMs?: number;
+  runner?: (
+    command: readonly string[],
+    cwd: string,
+    developerDir?: string,
+  ) => Promise<CommandResult>;
+}): Promise<{ result: CommandResult; attempts: ExportAttemptSummary[] }> {
+  const attempts = boundedInteger(
+    options.attempts,
+    1,
+    20,
+    DEFAULT_EXPORT_ATTEMPTS,
+  );
+  const retryDelayMs = boundedInteger(
+    options.retryDelayMs,
+    0,
+    60_000,
+    DEFAULT_EXPORT_RETRY_DELAY_MS,
+  );
+  const runner = options.runner ?? runCommand;
+  const attemptSummaries: ExportAttemptSummary[] = [];
+  let result: CommandResult = { stdout: "", stderr: "", exitCode: -1 };
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    await rm(options.outputPath, { recursive: true, force: true });
+    result = await runner(options.command, options.cwd, options.developerDir);
+    const prefix = join(
+      options.outputDir,
+      `xctrace-export-${safeSegment(options.label)}-attempt-${attempt}`,
+    );
+    const stdoutPath = `${prefix}.stdout.txt`;
+    const stderrPath = `${prefix}.stderr.txt`;
+    await Promise.all([
+      writeFile(stdoutPath, result.stdout, "utf8"),
+      writeFile(stderrPath, result.stderr, "utf8"),
+    ]);
+    attemptSummaries.push({
+      attempt,
+      returncode: result.exitCode,
+      stdout_path: stdoutPath,
+      stderr_path: stderrPath,
+      stdout_tail: tail(result.stdout),
+      stderr_tail: tail(result.stderr),
+    });
+    if (result.exitCode === 0) {
+      return { result, attempts: attemptSummaries };
+    }
+    if (attempt < attempts) {
+      await delay(retryDelayMs);
+    }
+  }
+  return { result, attempts: attemptSummaries };
+}
+
+interface LaunchSymbolRecoveryInput {
+  python: string;
+  timeProfilePath: string;
+  symbolSearchPath: string;
+  dsymPath: string;
+  targetBinary: string;
+  businessBinary: string;
+  projectRoot: string;
+  developerDir: string;
+  environment?: Record<string, string | undefined>;
+}
+
+/** Runs the bundled UUID-aware, fail-closed symbol recovery pass. */
+export async function recoverLaunchSymbols(
+  input: LaunchSymbolRecoveryInput,
+): Promise<{
+  coverage: LaunchCoverage;
+  symbolUuids: Record<string, string[]>;
+  backfill: NonNullable<LaunchTraceSummary["atos_backfill"]>;
+}> {
+  const result = await runCommand(
+    [
+      input.python,
+      "-c",
+      PYTHON_SYMBOL_RECOVERY,
+      input.timeProfilePath,
+      input.symbolSearchPath,
+      input.dsymPath,
+      input.targetBinary,
+      input.businessBinary,
+    ],
+    input.projectRoot,
+    input.developerDir,
+    input.environment,
+  );
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `Bundled symbol recovery failed with return code ${result.exitCode}: ${tail(result.stderr)}`,
+    );
+  }
+  try {
+    return JSON.parse(result.stdout) as {
+      coverage: LaunchCoverage;
+      symbolUuids: Record<string, string[]>;
+      backfill: NonNullable<LaunchTraceSummary["atos_backfill"]>;
+    };
+  } catch (cause) {
+    throw new Error(
+      `Bundled symbol recovery returned invalid JSON: ${formatError(cause)}`,
+      { cause },
+    );
+  }
+}
+
+/** Applies same-image UUID and source-coverage validation to a summary. */
+export function validateLaunchSymbolication(summary: LaunchTraceSummary): void {
+  if (summary.success === false && summary.error) {
+    return;
+  }
+  const traceUuids = summary.trace_target_uuids ?? {};
+  const symbolUuids = summary.symbol_uuids ?? {};
+  const mismatches = Object.fromEntries(
+    Object.entries(traceUuids).filter(
+      ([name, uuid]) =>
+        symbolUuids[name] && !symbolUuids[name]!.includes(uuid.toUpperCase()),
+    ),
+  );
+  if (Object.keys(mismatches).length > 0) {
+    summary.success = false;
+    summary.symbolication_status = "mismatch";
+    summary.error = "dsym_uuid_mismatch";
+    summary.message =
+      `No matching dSYM UUID for recorded images: ${JSON.stringify(mismatches)}. ` +
+      "Supply symbols from the recorded App build. The raw trace is preserved.";
+    return;
+  }
+
+  const sourceImages = summary.main_thread_source_rows_by_binary ?? {};
+  if (Object.keys(sourceImages).length === 0) {
+    summary.success = false;
+    summary.symbolication_status = "missing";
+    summary.error = "missing_symbols";
+    summary.message =
+      "No target source symbols were found. The raw trace is preserved.";
+    return;
+  }
+
+  const allSourceImagesVerified = Object.keys(sourceImages).every((name) => {
+    const traceUuid = traceUuids[name]?.toUpperCase();
+    return Boolean(traceUuid && symbolUuids[name]?.includes(traceUuid));
+  });
+  const unresolvedRows = summary.main_thread_unresolved_rows ?? 0;
+  summary.success = true;
+  summary.symbolication_status =
+    unresolvedRows === 0 && allSourceImagesVerified ? "ready" : "partial";
+  delete summary.error;
+  delete summary.message;
+  if (unresolvedRows > 0) {
+    summary.warning =
+      `${unresolvedRows} main-thread samples still contain raw addresses; ` +
+      `${summary.main_thread_unmapped_rows ?? 0} lack an image mapping. ` +
+      "Available source symbols do not imply complete symbolication.";
+  }
+}
+
+async function writeLaunchSummary(
+  path: string,
+  summary: LaunchTraceSummary,
+): Promise<void> {
+  await writeFile(path, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
+}
+
+async function writeLaunchReport(options: {
+  input: NormalizedInput;
+  summary: LaunchTraceSummary;
+  command: string[];
+  result: CommandResult;
+  timeline: ParsedTraceTimeline;
+}): Promise<void> {
+  const html = renderLaunchTraceHtml({
+    command: options.command,
+    exitCode:
+      options.summary.success === true ? 0 : options.result.exitCode || 1,
+    generatedAt: new Date().toISOString(),
+    outputDir: options.input.outputDir,
+    summary: options.summary,
+    summaryPath: options.input.summaryPath,
+    timeProfilePath: options.input.timeProfilePath,
+    stdoutTail: tail(options.result.stdout),
+    stderrTail: tail(options.result.stderr),
+    timeline: options.timeline,
+  });
+  await mkdir(dirname(options.input.htmlReportPath), { recursive: true });
+  await writeFile(options.input.htmlReportPath, html, "utf8");
 }
 
 async function parseSuccessfulTrace(options: {
@@ -568,9 +1224,9 @@ function skippedTimelineForCollectionFailure(
   log(
     [
       "## Skipping Time Profiler XML parsing",
-      `- **Collector:** failed`,
+      `- **Collection:** failed`,
       `- **Reason:** ${reason}`,
-      "- No Time Profiler XML will be parsed for this failed collector run.",
+      "- No Time Profiler XML will be parsed for this failed collection.",
     ].join("\n"),
   );
 
@@ -592,7 +1248,7 @@ function collectionFailureReason(
   if (code) {
     return code;
   }
-  return `collector exited with status ${exitCode}`;
+  return `collection exited with status ${exitCode}`;
 }
 
 /**
@@ -916,7 +1572,7 @@ function sampleWeightedEndTimeSeconds(
 /**
  * Renders a self-contained Instruments-inspired HTML report.
  *
- * @param input - Collector summary and parsed timeline data.
+ * @param input - Collection summary and parsed timeline data.
  * @returns Complete HTML document.
  */
 export function renderLaunchTraceHtml(
@@ -955,7 +1611,7 @@ export function renderLaunchTraceHtml(
           .map((warning) => `<li>${escapeHtml(warning)}</li>`)
           .join("")}</ul></section>`
       : "";
-  const diagnostics = renderCollectorDiagnostics(input);
+  const diagnostics = renderCollectionDiagnostics(input);
   const commandLine = input.command.map(shellQuote).join(" ");
   const status = summary.symbolication_status ?? "unknown";
   const viewerScript = renderViewerScript();
@@ -1463,11 +2119,11 @@ export function renderLaunchTraceHtml(
     <h1>iOS Launch Trace Timeline</h1>
     <div class="summary-grid">
       <div class="metric"><strong><span class="status ${escapeAttribute(statusClass(status))}">${escapeHtml(status)}</span></strong><span>symbolication</span></div>
-      <div class="metric"><strong>${summary.success === true ? "success" : "failed"}</strong><span>collector result</span></div>
+      <div class="metric"><strong>${summary.success === true ? "success" : "failed"}</strong><span>collection result</span></div>
       <div class="metric"><strong>${formatInteger(timeline.totalMainThreadRows)}</strong><span>main-thread rows</span></div>
       <div class="metric"><strong>${formatInteger(summary.main_thread_grace_source_rows ?? 0)}</strong><span>source-level app rows</span></div>
       <div class="metric"><strong>${formatInteger(timeline.renderedSamples)}</strong><span>rendered samples</span></div>
-      <div class="metric"><strong>${input.exitCode}</strong><span>collector exit code</span></div>
+      <div class="metric"><strong>${input.exitCode}</strong><span>collection exit code</span></div>
     </div>
   </header>
 
@@ -1554,8 +2210,8 @@ export function renderLaunchTraceHtml(
       <dt>Time Profile</dt><dd>${escapeHtml(input.timeProfilePath)}</dd>
       <dt>dSYM UUID</dt><dd>${escapeHtml(summary.dsym_uuid ?? "")}</dd>
       <dt>Trace UUID</dt><dd>${escapeHtml(summary.trace_grace_uuid ?? "")}</dd>
-      <dt>Collector error</dt><dd>${escapeHtml(summary.error ?? "")}</dd>
-      <dt>Collector message</dt><dd>${escapeHtml(summary.message ?? "")}</dd>
+      <dt>Collection error</dt><dd>${escapeHtml(summary.error ?? "")}</dd>
+      <dt>Collection message</dt><dd>${escapeHtml(summary.message ?? "")}</dd>
       <dt>Command</dt><dd><code>${escapeHtml(commandLine)}</code></dd>
     </dl>
   </section>
@@ -2753,7 +3409,9 @@ function renderViewerScript(): string {
 </script>`;
 }
 
-function renderCollectorDiagnostics(input: RenderLaunchTraceHtmlInput): string {
+function renderCollectionDiagnostics(
+  input: RenderLaunchTraceHtmlInput,
+): string {
   const exportDiagnostics = Object.entries(input.summary.export_attempts ?? {})
     .flatMap(([label, attempts]) =>
       attempts.map((attempt) =>
@@ -2785,7 +3443,7 @@ function renderCollectorDiagnostics(input: RenderLaunchTraceHtmlInput): string {
     return "";
   }
 
-  return `<section class="band diagnostics"><h2>Collector Diagnostics</h2><pre>${escapeHtml(diagnostics.join("\n\n"))}</pre></section>`;
+  return `<section class="band diagnostics"><h2>Collection Diagnostics</h2><pre>${escapeHtml(diagnostics.join("\n\n"))}</pre></section>`;
 }
 
 function parseTimeLimitFromCommand(command: readonly string[]): number | null {
@@ -2989,6 +3647,343 @@ function escapeScriptJson(value: string): string {
     .replaceAll("\u2028", "\\u2028")
     .replaceAll("\u2029", "\\u2029");
 }
+
+const PYTHON_SYMBOL_RECOVERY = String.raw`
+import json
+import re
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+xml_path = Path(sys.argv[1])
+symbol_root = Path(sys.argv[2])
+primary_dsym = Path(sys.argv[3])
+target_binary = sys.argv[4]
+business_binary = sys.argv[5]
+raw_address = re.compile(r"0x[0-9a-fA-F]+")
+target_names = {target_binary, target_binary + ".debug.dylib", business_binary}
+tree = ET.parse(xml_path)
+root = tree.getroot()
+
+def tag_name(element):
+    return element.tag.rsplit("}", 1)[-1]
+
+def child(element, name):
+    if element is None:
+        return None
+    for item in list(element):
+        if tag_name(item) == name:
+            return item
+    return None
+
+definitions = {}
+for element in root.iter():
+    element_id = element.get("id")
+    if element_id:
+        definitions[(tag_name(element), element_id)] = element
+
+def resolve_ref(element):
+    seen = set()
+    while element is not None and element.get("ref"):
+        key = (tag_name(element), element.get("ref"))
+        if key in seen or key not in definitions:
+            return None
+        seen.add(key)
+        element = definitions[key]
+    return element
+
+binary_definitions = {}
+for element in root.iter():
+    if tag_name(element) == "binary" and element.get("id"):
+        binary_definitions[element.get("id")] = element
+
+def binary_info(binary):
+    if binary is None:
+        return None
+    resolved = binary_definitions.get(binary.get("ref"), binary)
+    return {
+        "name": binary.get("name") or resolved.get("name") or "",
+        "uuid": (binary.get("UUID") or resolved.get("UUID") or "").upper(),
+        "load_addr": binary.get("load-addr") or resolved.get("load-addr") or "",
+    }
+
+def source_info(frame):
+    source = resolve_ref(child(frame, "source"))
+    if source is None:
+        return "", ""
+    line = source.get("line") or ""
+    path = child(source, "path")
+    if path is None:
+        return "", line
+    resolved = resolve_ref(path)
+    return ((resolved.text or "") if resolved is not None else ""), line
+
+def run(command):
+    return subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+def dwarf_images():
+    bundles = set()
+    for base in (symbol_root, primary_dsym):
+        if base.name.endswith(".dSYM") and base.exists():
+            bundles.add(base)
+        if base.is_dir():
+            bundles.update(base.rglob("*.dSYM"))
+    images = {}
+    symbols = {}
+    for bundle in sorted(bundles):
+        dwarf_dir = bundle / "Contents" / "Resources" / "DWARF"
+        if not dwarf_dir.is_dir():
+            continue
+        for dwarf in sorted(dwarf_dir.iterdir()):
+            if not dwarf.is_file():
+                continue
+            result = run(["dwarfdump", "--uuid", str(dwarf)])
+            if result.returncode != 0:
+                continue
+            for match in re.finditer(r"UUID:\s+([0-9A-Fa-f-]+)\s+\(arm64\)", result.stdout):
+                uuid = match.group(1).upper()
+                images.setdefault(uuid, dwarf)
+                symbols.setdefault(dwarf.name, []).append(uuid)
+    return images, {name: sorted(set(uuids)) for name, uuids in symbols.items()}
+
+uuid_images, symbol_uuids = dwarf_images()
+
+def parse_atos(line):
+    text = (line or "").strip()
+    if not text or raw_address.fullmatch(text):
+        return None
+    match = re.match(r"^(.*) \(in [^)]+\)(?: \((.+):(\d+)\))?\s*$", text)
+    if not match or raw_address.fullmatch(match.group(1).strip()):
+        return None
+    return match.group(1).strip(), match.group(2), match.group(3)
+
+def atos(dwarf, load_addr, addresses):
+    output = []
+    for start in range(0, len(addresses), 8000):
+        chunk = addresses[start:start + 8000]
+        result = run(["atos", "-o", str(dwarf), "-arch", "arm64", "-l", load_addr, *chunk])
+        if result.returncode != 0:
+            return None
+        output.extend(result.stdout.splitlines())
+    return output if len(output) == len(addresses) else None
+
+def add_source(frame, source_file, source_line):
+    if not source_file or not source_line:
+        return
+    existing = child(frame, "source")
+    if existing is not None:
+        frame.remove(existing)
+    source = ET.SubElement(frame, "source")
+    source.set("line", source_line)
+    path = ET.SubElement(source, "path")
+    path.text = source_file
+
+def mapped_backfill():
+    groups = {}
+    for frame in root.iter():
+        if tag_name(frame) != "frame" or not raw_address.fullmatch(frame.get("name", "")):
+            continue
+        info = binary_info(child(frame, "binary"))
+        if not info or not info["uuid"] or not info["load_addr"]:
+            continue
+        if info["uuid"] not in uuid_images:
+            continue
+        groups.setdefault((info["uuid"], info["load_addr"]), []).append(frame)
+    resolved = 0
+    images = {}
+    for (uuid, load_addr), frames in groups.items():
+        addresses = list(dict.fromkeys(frame.get("name") for frame in frames))
+        results = atos(uuid_images[uuid], load_addr, addresses)
+        if results is None:
+            continue
+        parsed = dict(zip(addresses, map(parse_atos, results)))
+        image_count = 0
+        for frame in frames:
+            value = parsed.get(frame.get("name"))
+            if value is None:
+                continue
+            frame.set("name", value[0])
+            add_source(frame, value[1], value[2])
+            image_count += 1
+        if image_count:
+            images[uuid] = image_count
+            resolved += image_count
+    return resolved, images
+
+def text_vmaddr(dwarf):
+    result = run(["otool", "-arch", "arm64", "-l", str(dwarf)])
+    if result.returncode != 0:
+        return None
+    waiting = False
+    for raw_line in result.stdout.splitlines():
+        line = raw_line.strip()
+        if line == "sectname __text":
+            waiting = True
+        elif waiting and line.startswith("addr " ):
+            try:
+                return int(line.split(None, 1)[1], 16)
+            except ValueError:
+                return None
+    return None
+
+def infer_debug_image():
+    debug_name = target_binary + ".debug.dylib"
+    candidates = [(uuid, path) for uuid, path in uuid_images.items() if path.name == debug_name]
+    if len(candidates) != 1:
+        return None
+    debug_uuid, dwarf = candidates[0]
+    raw_frames = []
+    for frame in root.iter():
+        if tag_name(frame) != "frame" or child(frame, "binary") is not None:
+            continue
+        name = frame.get("name", "")
+        if raw_address.fullmatch(name):
+            raw_frames.append((int(name, 16), frame, name))
+    if len(raw_frames) < 20:
+        return None
+    blocks = {}
+    for address, frame, name in raw_frames:
+        blocks.setdefault(address & ~((1 << 32) - 1), []).append((frame, name))
+    vmaddr = text_vmaddr(dwarf)
+    if vmaddr is None:
+        return None
+    matches = []
+    for items in blocks.values():
+        if len(items) < 20:
+            continue
+        addresses = sorted(set(name for _, name in items), key=lambda value: int(value, 16))
+        load_addr = hex((int(addresses[0], 16) & ~((1 << 14) - 1)) - vmaddr)
+        first = atos(dwarf, load_addr, addresses[:1])
+        if not first or not first[0].startswith("__debug_main_executable_dylib_entry_point "):
+            continue
+        probe = addresses
+        if len(probe) > 200:
+            probe = [probe[round(index * (len(probe) - 1) / 199)] for index in range(200)]
+        probe_result = atos(dwarf, load_addr, probe)
+        if not probe_result:
+            continue
+        ratio = sum(parse_atos(line) is not None for line in probe_result) / len(probe_result)
+        if ratio >= 0.90:
+            matches.append((items, addresses, load_addr, ratio))
+    if len(matches) != 1:
+        return None
+    items, addresses, load_addr, ratio = matches[0]
+    results = atos(dwarf, load_addr, addresses)
+    if results is None:
+        return None
+    parsed = dict(zip(addresses, map(parse_atos, results)))
+    resolved = 0
+    for frame, address in items:
+        value = parsed.get(address)
+        if value is None:
+            continue
+        frame.set("name", value[0])
+        binary = ET.SubElement(frame, "binary")
+        binary.set("name", debug_name)
+        binary.set("UUID", debug_uuid)
+        binary.set("load-addr", load_addr)
+        add_source(frame, value[1], value[2])
+        resolved += 1
+    return {
+        "uuid": debug_uuid,
+        "load_addr": load_addr,
+        "candidate_frames": len(items),
+        "resolved_frames": resolved,
+        "validation_ratio": round(ratio, 4),
+    } if resolved else None
+
+def coverage():
+    target_uuids = {}
+    source_rows_by_binary = {}
+    main_thread_ids = set()
+    main_rows = 0
+    app_rows = 0
+    source_rows = 0
+    unresolved_rows = 0
+    unmapped_rows = 0
+    samples = []
+    for row in root.iter():
+        if tag_name(row) != "row":
+            continue
+        thread = resolve_ref(child(row, "thread"))
+        if thread is None:
+            continue
+        thread_id = thread.get("id") or thread.get("ref") or ""
+        fmt = thread.get("fmt") or ""
+        if "Main Thread" in fmt and thread_id:
+            main_thread_ids.add(thread_id)
+        if "Main Thread" not in fmt and thread_id not in main_thread_ids:
+            continue
+        main_rows += 1
+        row_app = False
+        row_source = False
+        row_raw = False
+        row_unmapped = False
+        source_images = set()
+        backtrace = resolve_ref(child(row, "backtrace"))
+        if backtrace is None:
+            continue
+        for item in backtrace.iter():
+            if tag_name(item) != "frame":
+                continue
+            frame = resolve_ref(item)
+            if frame is None:
+                continue
+            frame_name = frame.get("name", "")
+            binary = child(frame, "binary")
+            info = binary_info(binary)
+            if raw_address.fullmatch(frame_name):
+                row_raw = True
+                row_unmapped = row_unmapped or info is None
+            if not info or info["name"] not in target_names:
+                continue
+            row_app = True
+            if info["uuid"]:
+                target_uuids.setdefault(info["name"], info["uuid"])
+            source_path, source_line = source_info(frame)
+            if source_path and source_line and source_line != "0":
+                row_source = True
+                source_images.add(info["name"])
+                if len(samples) < 12:
+                    samples.append({
+                        "name": frame_name,
+                        "source_path": source_path,
+                        "line": source_line,
+                        "uuid": info["uuid"],
+                    })
+        app_rows += int(row_app)
+        source_rows += int(row_source)
+        unresolved_rows += int(row_raw)
+        unmapped_rows += int(row_unmapped)
+        for name in source_images:
+            source_rows_by_binary[name] = source_rows_by_binary.get(name, 0) + 1
+    return {
+        "trace_grace_uuid": target_uuids.get(target_binary + ".debug.dylib") or target_uuids.get(target_binary),
+        "trace_target_uuids": target_uuids,
+        "main_thread_rows": main_rows,
+        "main_thread_grace_rows": app_rows,
+        "main_thread_grace_source_rows": source_rows,
+        "main_thread_source_rows_by_binary": source_rows_by_binary,
+        "main_thread_unresolved_rows": unresolved_rows,
+        "main_thread_unmapped_rows": unmapped_rows,
+        "samples": samples,
+    }
+
+mapped_resolved, mapped_images = mapped_backfill()
+inferred = infer_debug_image()
+resolved_frames = mapped_resolved + (inferred["resolved_frames"] if inferred else 0)
+if resolved_frames:
+    tree.write(xml_path, encoding="utf-8", xml_declaration=True)
+backfill = {"resolved_frames": resolved_frames, "images": mapped_images}
+if inferred:
+    backfill["inferred_images"] = {target_binary + ".debug.dylib": inferred}
+print(json.dumps({
+    "coverage": coverage(),
+    "symbolUuids": symbol_uuids,
+    "backfill": backfill,
+}, ensure_ascii=False))
+`;
 
 const PYTHON_TRACE_PARSER = String.raw`
 import json

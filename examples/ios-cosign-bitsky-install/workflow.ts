@@ -1,15 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
+import { resolveDeveloperDirectory } from "../ios-xcode";
 
 import type {
   IosCosignBitskyInstallInput,
   IosCosignBitskyInstallResult,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+const DEFAULT_ARTIFACT_ROOT = join(homedir(), ".ios_pref_optimizer");
 const OUTPUT_TAIL_LENGTH = 4000;
 
 export const meta = {
@@ -29,7 +31,6 @@ export const meta = {
     udid: "00008030-001A286A2229802E",
     target: "Grace",
     configuration: "Debug",
-    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
   },
 };
 
@@ -233,7 +234,7 @@ function normalizeInput(args: IosCosignBitskyInstallInput): NormalizedInput {
     udid,
     target: args.target ?? "Grace",
     configuration: args.configuration ?? "Debug",
-    developerDir: args.developerDir?.trim() ? resolve(args.developerDir) : "",
+    developerDir: resolveDeveloperDirectory(args.developerDir),
     cosignScriptPath: resolve(
       args.cosignScriptPath?.trim() ||
         join(projectRoot, "Scripts", "cosign.sh"),

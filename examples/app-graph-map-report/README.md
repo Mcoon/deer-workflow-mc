@@ -18,7 +18,7 @@ Element. The final request remains one goal-scoped, depth-zero Discovery action.
 bun run dev -- run examples/app-graph-map-report/workflow.ts \
   --input '{
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    "htmlPath": "/tmp/ios_perf-opt/app-graph-map/map.html"
+    "htmlPath": "/Users/bytedance/.ios_pref_optimizer/app-graph-map/map.html"
   }'
 ```
 

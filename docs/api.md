@@ -750,7 +750,7 @@ compiled.
   `phase()`, `pipeline()`, `log()`, and `WorkflowRunner`.
 - [iOS Cosign and BitSky Install](../examples/ios-cosign-bitsky-install/README.md)
   runs `Scripts/cosign.sh`, `orbit bundle install`, and `bitsky_install` serially
-  from the iOS project root, persisting diagnostics under `/tmp/ios_perf-opt`.
+  from the iOS project root, persisting diagnostics under `/Users/bytedance/.ios_pref_optimizer`.
 - [iOS Build and Install](../examples/ios-build-install/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
   BitSky device build output and install-only devicectl deployment. It exports
@@ -758,12 +758,13 @@ compiled.
   recursive symbol search path, and defaults the business binary to
   `FlowDebugBasicDynamic`.
 - [iOS Launch Trace](../examples/ios-launch-trace/README.md) combines
-  deterministic TypeScript orchestration, `phase()`, and `log()` with a local
-  xctrace collector and HTML timeline renderer. It passes `projectRoot` and
+  self-contained TypeScript orchestration, `phase()`, and `log()` with direct
+  `devicectl`/`xctrace` execution and an HTML timeline renderer. It requires no
+  external collector checkout and passes `projectRoot` and
   `buildRoot` separately so default app/dSYM lookup stays under the iOS build
-  root. It preserves the raw trace but fails if the collector verifies an image/dSYM UUID mismatch
-  or the collector reports missing symbols. Its `developerDir` defaults to
-  `/Applications/Xcode_26.app/Contents/Developer` and accepts an input override.
+  root. It preserves the raw trace but fails on a verified image/dSYM UUID mismatch
+  or missing symbols. Its optional `developerDir` checks `Xcode_26.app` first,
+  then falls back to the standard `Xcode.app`, and accepts an input override.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
   `xctrace record --attach`, automatic dSYM resolution, `xctrace symbolicate`,
@@ -773,8 +774,8 @@ compiled.
   `flow-ios-bitsky/*/summary.json`; missing matching symbols are a hard failure
   after the raw trace is preserved, not a successful partial report.
   Remaining raw addresses make source coverage partial rather than ready.
-  Its `developerDir` defaults to `/Applications/Xcode_26.app/Contents/Developer`
-  and can be overridden through the input.
+  Its optional `developerDir` uses the same `Xcode_26.app` then `Xcode.app`
+  detection and can be overridden through the input.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)
   consumes validated case assets, serializes every device action, and writes
   per-case evidence plus an HTML report.

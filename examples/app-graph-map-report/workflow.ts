@@ -20,7 +20,7 @@ export const meta = {
   exampleArgs: {
     graphPath:
       "../ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    htmlPath: "/tmp/ios_perf-opt/app-graph-map/map.html",
+    htmlPath: "/Users/bytedance/.ios_pref_optimizer/app-graph-map/map.html",
   },
 };
 

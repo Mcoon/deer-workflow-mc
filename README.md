@@ -130,7 +130,7 @@ their documented commands.
 
 Pass `--trace` to `deer-workflow run` to persist `trace.jsonl`, `summary.json`,
 `result.json`, and an expandable `trace.html` under
-`/tmp/ios_perf-opt/deer-workflow-traces/<run-id>/`. Use `--trace-dir` to
+`/Users/bytedance/.ios_pref_optimizer/deer-workflow-traces/<run-id>/`. Use `--trace-dir` to
 override the root. Workflow events, traced commands, and default `agent()`
 prompt/schema/model/response/error data are captured. Environment variables are
 never stored; common authorization, cookie, password, token, and API-key values

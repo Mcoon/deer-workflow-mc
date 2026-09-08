@@ -67,7 +67,7 @@ deer-workflow run /Users/bytedance/Documents/deer-workflow-mc/examples/ios-funct
 ## 输出
 
 ```text
-/tmp/ios_perf-opt/ios-functional-regression/<run_id>/
+/Users/bytedance/.ios_pref_optimizer/ios-functional-regression/<run_id>/
   case-run/<case_id>/
     *.png
     *.ui.json

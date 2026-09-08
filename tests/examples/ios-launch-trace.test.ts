@@ -1,18 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
 import {
-  buildCollectorCommand,
+  buildInstallCommand,
+  buildLaunchRecordCommand,
+  buildTerminateCommand,
   buildThreadTimelines,
   buildTraceTimelineFromSamples,
+  buildXctraceSymbolicateCommand,
+  isRecoverableMissingImageSymbolication,
   meta,
-  observeCollectorProgress,
+  observeLaunchRecordOutput,
   parseTraceTimeline,
+  recoverLaunchSymbols,
   renderLaunchTraceHtml,
+  validateLaunchSymbolication,
 } from "../../examples/ios-launch-trace/workflow";
-import { WorkflowRunner } from "@deerwork-ai/deer-workflow/runner";
 import type {
   IosLaunchTraceResult,
   LaunchTraceSummary,
@@ -20,7 +25,7 @@ import type {
 } from "../../examples/ios-launch-trace/types";
 
 describe("iOS Launch Trace report", () => {
-  test("shows collector sub-stages instead of one opaque Collect phase", () => {
+  test("shows self-contained launch collection stages", () => {
     expect(meta.phases.map((item) => item.title)).toEqual([
       "Prepare",
       "Install",
@@ -33,68 +38,239 @@ describe("iOS Launch Trace report", () => {
     ]);
   });
 
-  test("turns streamed collector events into phases and progress logs", () => {
-    const phases: string[] = [];
-    const logs: string[] = [];
-    const observation = { pendingLine: "" };
+  test("observes the real launch recording window from xctrace output", () => {
+    const observation: {
+      pendingLine?: string;
+      startedAt?: string;
+      finishedAt?: string;
+    } = { pendingLine: "" };
 
-    observeCollectorProgress(
-      '__DEER_PROGRESS__ {"stage":"record","status":"started",',
+    observeLaunchRecordOutput("Launching pro", observation);
+    observeLaunchRecordOutput(
+      "cess: Grace\nReached specified time limit, ending recording...\n",
       observation,
-      (title) => phases.push(title),
-      (message) => logs.push(message),
-    );
-    observeCollectorProgress(
-      '"message":"Starting xctrace","time_limit":"20s"}\n' +
-        '__DEER_PROGRESS__ {"stage":"record","status":"completed",' +
-        '"message":"Saved","duration_ms":81234}\n' +
-        '__DEER_PROGRESS__ {"stage":"backfill","status":"started",' +
-        '"message":"Recovering"}\n' +
-        '__DEER_PROGRESS__ {"stage":"backfill","status":"completed",' +
-        '"message":"Recovered","duration_ms":124000,' +
-        '"resolved_frames":24345}\n',
-      observation,
-      (title) => phases.push(title),
-      (message) => logs.push(message),
     );
 
-    expect(phases).toEqual(["Launch & Record", "Backfill Symbols"]);
-    expect(logs.join("\n")).toContain("recording limit 20s");
-    expect(logs.join("\n")).toContain("duration 1m 21s");
-    expect(logs.join("\n")).toContain("resolved 24345 frames");
+    expect(observation.startedAt).toBeDefined();
+    expect(observation.finishedAt).toBeDefined();
   });
 
-  test("passes the Florak iOS build root to the collector", () => {
-    const command = buildCollectorCommand({
-      repositoryRoot: "/repo/Florak",
-      projectRoot: "/repo/Florak/flow/ios",
-      buildRoot: "/repo/Florak/flow/ios",
-      developerDir: "/Applications/Xcode.app/Contents/Developer",
-      udid: "device-1",
-      bundleId: "com.bot.doubao",
-      collectorScriptPath: "/tmp/collect_trace.py",
+  test("builds the install, terminate, launch, and symbolication commands", () => {
+    expect(
+      buildInstallCommand({ udid: "device-1", appPath: "/tmp/Grace.app" }),
+    ).toEqual([
+      "xcrun",
+      "devicectl",
+      "device",
+      "install",
+      "app",
+      "--device",
+      "device-1",
+      "/tmp/Grace.app",
+    ]);
+    expect(
+      buildTerminateCommand({
+        udid: "device-1",
+        pid: 6823,
+      }),
+    ).toEqual(expect.arrayContaining(["terminate", "--pid", "6823", "--kill"]));
+    expect(
+      buildLaunchRecordCommand({
+        udid: "device-1",
+        bundleId: "com.bot.doubao",
+        timeLimit: "20s",
+        tracePath: "/tmp/launch.trace",
+      }),
+    ).toEqual(expect.arrayContaining(["--launch", "--", "com.bot.doubao"]));
+    expect(
+      buildXctraceSymbolicateCommand({
+        tracePath: "/tmp/launch.trace",
+        symbolicatedTracePath: "/tmp/symbolicated.trace",
+        symbolSearchPath: "/tmp/dSYM",
+      }),
+    ).toEqual(expect.arrayContaining(["symbolicate", "--dsym", "/tmp/dSYM"]));
+  });
+
+  test("only treats xctrace 55 missing-image symbolication as recoverable", () => {
+    expect(
+      isRecoverableMissingImageSymbolication({
+        exitCode: 55,
+        stdout: "",
+        stderr: "No dSYMs were found or relevant to this trace",
+      }),
+    ).toBe(true);
+    expect(
+      isRecoverableMissingImageSymbolication({
+        exitCode: 55,
+        stdout: "",
+        stderr: "trace is corrupted",
+      }),
+    ).toBe(false);
+  });
+
+  test("runs bundled UUID-aware atos recovery without an external checkout", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "ios-launch-recovery-"));
+    const binDir = join(dir, "bin");
+    const dsymPath = join(dir, "Grace.app.dSYM");
+    const dwarfDir = join(dsymPath, "Contents/Resources/DWARF");
+    const dwarfPath = join(dwarfDir, "FlowDebugBasicDynamic");
+    const xmlPath = join(dir, "time_profile.xml");
+    await mkdir(binDir, { recursive: true });
+    await mkdir(dwarfDir, { recursive: true });
+    await writeFile(dwarfPath, "stub");
+    await writeFile(
+      join(binDir, "dwarfdump"),
+      '#!/bin/sh\necho "UUID: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE (arm64) $2"\n',
+      { mode: 0o755 },
+    );
+    await writeFile(
+      join(binDir, "atos"),
+      '#!/bin/sh\necho "FlowBoot.start() (in FlowDebugBasicDynamic) (Start.swift:42)"\n',
+      { mode: 0o755 },
+    );
+    await writeFile(
+      xmlPath,
+      `<?xml version="1.0"?>
+      <trace-query-result>
+        <binary id="business" name="FlowDebugBasicDynamic" UUID="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE" load-addr="0x100000000"/>
+        <row><thread id="main" fmt="Main Thread"/><backtrace>
+          <frame name="0x100001000"><binary ref="business"/></frame>
+        </backtrace></row>
+      </trace-query-result>`,
+    );
+
+    const result = await recoverLaunchSymbols({
       python: "python3",
-      appPath: "",
-      dsymPath: "",
-      symbolSearchPath: "",
-      timeLimit: "20s",
-      skipInstall: false,
-      outputDir: "/tmp/ios_perf-opt/ios-launch-trace/test",
+      timeProfilePath: xmlPath,
+      symbolSearchPath: dir,
+      dsymPath,
       targetBinary: "Grace",
-      htmlReportPath: "/tmp/report.html",
-      maxSamples: 12000,
-      maxDepth: 72,
+      businessBinary: "FlowDebugBasicDynamic",
+      projectRoot: dir,
+      developerDir: "",
+      environment: { PATH: `${binDir}:${process.env.PATH ?? ""}` },
     });
 
-    expect(command).toContain("--project-root");
-    expect(command[command.indexOf("--project-root") + 1]).toBe(
-      "/repo/Florak/flow/ios",
+    expect(result.backfill.resolved_frames).toBe(1);
+    expect(result.coverage.main_thread_grace_source_rows).toBe(1);
+    expect(result.coverage.main_thread_unresolved_rows).toBe(0);
+    expect(await readFile(xmlPath, "utf8")).toContain("FlowBoot.start()");
+  });
+
+  test("runs the self-contained launch workflow without an external checkout", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "ios-launch-self-contained-"));
+    const binDir = join(dir, "bin");
+    const appPath = join(dir, "build/.vscode-out/Grace.app");
+    const dsymPath = join(dir, "build/.vscode-out/dSYM/Grace.app.dSYM");
+    const dwarfDir = join(dsymPath, "Contents/Resources/DWARF");
+    const outputDir = join(dir, "output");
+    await mkdir(binDir, { recursive: true });
+    await mkdir(appPath, { recursive: true });
+    await mkdir(dwarfDir, { recursive: true });
+    await writeFile(join(dwarfDir, "FlowDebugBasicDynamic"), "stub");
+    await writeFile(
+      join(binDir, "dwarfdump"),
+      '#!/bin/sh\necho "UUID: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE (arm64) $2"\n',
+      { mode: 0o755 },
     );
-    expect(command).toContain("--build-root");
-    expect(command[command.indexOf("--build-root") + 1]).toBe(
-      "/repo/Florak/flow/ios",
+    await writeFile(
+      join(binDir, "xcrun"),
+      `#!/bin/sh
+set -eu
+if [ "$1" = "devicectl" ]; then exit 0; fi
+shift
+action="$1"
+shift
+output=""
+previous=""
+for argument in "$@"; do
+  if [ "$previous" = "--output" ]; then output="$argument"; fi
+  previous="$argument"
+done
+if [ "$action" = "record" ]; then
+  mkdir -p "$output"
+  echo trace > "$output/data"
+  echo "Launching process: Grace"
+  echo "Reached specified time limit, ending recording..."
+  exit 0
+fi
+if [ "$action" = "symbolicate" ]; then
+  mkdir -p "$output"
+  echo trace > "$output/data"
+  exit 0
+fi
+if [ "$action" = "export" ]; then
+  if printf '%s\n' "$@" | grep -q -- '--toc'; then
+    echo '<trace-toc/>' > "$output"
+  else
+    cat > "$output" <<'XML'
+<trace-query-result>
+  <row><sample-time id="time">1000000</sample-time><weight id="weight">1000000</weight><thread id="main" fmt="Main Thread"/><backtrace>
+    <frame name="FlowBoot.start()"><binary name="FlowDebugBasicDynamic" UUID="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"/><source line="42"><path>Start.swift</path></source></frame>
+  </backtrace></row>
+</trace-query-result>
+XML
+  fi
+  exit 0
+fi
+exit 1
+`,
+      { mode: 0o755 },
     );
-    expect(command).toContain("--target-binary");
+
+    const workflowPath = new URL(
+      "../../examples/ios-launch-trace/workflow.ts",
+      import.meta.url,
+    ).pathname;
+    const args = {
+      projectRoot: dir,
+      buildRoot: join(dir, "build"),
+      udid: "device-1",
+      appPath,
+      dsymPath,
+      symbolSearchPath: dirname(dsymPath),
+      outputDir,
+    };
+    try {
+      const subprocess = Bun.spawn(
+        [
+          process.execPath,
+          "run",
+          "src/cli.ts",
+          "run",
+          workflowPath,
+          "--input",
+          JSON.stringify(args),
+        ],
+        {
+          cwd: new URL("../..", import.meta.url).pathname,
+          env: {
+            ...process.env,
+            PATH: `${binDir}:${process.env.PATH ?? ""}`,
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+      const [stdout, stderr, exitCode] = await Promise.all([
+        new Response(subprocess.stdout).text(),
+        new Response(subprocess.stderr).text(),
+        subprocess.exited,
+      ]);
+      expect(exitCode, stderr).toBe(0);
+      const result = JSON.parse(stdout) as IosLaunchTraceResult;
+      expect(result.success).toBe(true);
+      expect(result.command).toContain("--launch");
+      expect(result.symbolicationStatus).toBe("ready");
+      expect(await readFile(result.htmlReportPath, "utf8")).toContain(
+        "iOS Launch Trace Timeline",
+      );
+      expect(JSON.parse(await readFile(result.summaryPath, "utf8"))).toEqual(
+        expect.objectContaining({ success: true }),
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 
   test("merges adjacent frame samples into timeline spans", () => {
@@ -205,11 +381,13 @@ describe("iOS Launch Trace report", () => {
 
     const html = renderLaunchTraceHtml({
       command: [
-        "python3",
-        "collect_trace.py",
+        "xcrun",
+        "xctrace",
+        "record",
         "--time-limit",
         "10s",
-        "--bundle-id",
+        "--launch",
+        "--",
         "com.bot.doubao",
       ],
       exitCode: 0,
@@ -286,9 +464,9 @@ describe("iOS Launch Trace report", () => {
     expect(html).not.toContain("baseBitmap");
   });
 
-  test("renders collector diagnostics when preflight collection fails", () => {
+  test("renders collection diagnostics when preflight fails", () => {
     const html = renderLaunchTraceHtml({
-      command: ["python3", "collect_trace.py", "--time-limit", "10s"],
+      command: ["xcrun", "xctrace", "record", "--time-limit", "10s"],
       exitCode: 2,
       generatedAt: "2026-08-11T12:00:00.000Z",
       outputDir: "/tmp/ios_perf-opt/ios-launch-trace/missing-dsym",
@@ -310,16 +488,16 @@ describe("iOS Launch Trace report", () => {
       }),
     });
 
-    expect(html).toContain("Collector Diagnostics");
+    expect(html).toContain("Collection Diagnostics");
     expect(html).toContain("missing_dsym");
     expect(html).toContain("Grace.app.dSYM is missing");
-    expect(html).toContain("collector result");
+    expect(html).toContain("collection result");
     expect(html).toContain("failed");
   });
 
   test("renders xctrace export retry diagnostics", () => {
     const html = renderLaunchTraceHtml({
-      command: ["python3", "collect_trace.py"],
+      command: ["xcrun", "xctrace", "record"],
       exitCode: 0,
       generatedAt: "2026-08-13T03:18:11.000Z",
       outputDir: "/tmp/ios_perf-opt/ios-launch-trace/recovered",
@@ -621,7 +799,7 @@ describe("iOS Launch Trace report", () => {
 describe("iOS launch symbolication validation", () => {
   test.each([
     {
-      name: "rejects a successful collector result with missing symbols",
+      name: "rejects a successful collection result with missing symbols",
       summary: {
         success: true,
         symbolication_status: "missing",
@@ -638,6 +816,8 @@ describe("iOS launch symbolication validation", () => {
           Grace: "STUB-UUID",
           FlowDebugBasicDynamic: "BUSINESS-UUID",
         },
+        symbol_uuids: { FlowDebugBasicDynamic: ["BUSINESS-UUID"] },
+        main_thread_source_rows_by_binary: { FlowDebugBasicDynamic: 3 },
       },
       error: "",
     },
@@ -648,16 +828,21 @@ describe("iOS launch symbolication validation", () => {
         symbolication_status: "partial",
         dsym_uuid: "DEBUG-UUID",
         trace_grace_uuid: "STUB-UUID",
+        trace_target_uuids: { Grace: "STUB-UUID" },
+        main_thread_source_rows_by_binary: { Grace: 1 },
       },
       error: "",
     },
     {
-      name: "preserves a verified same-image UUID mismatch from the collector",
+      name: "preserves a verified same-image UUID mismatch",
       summary: {
         success: false,
         symbolication_status: "mismatch",
         error: "dsym_uuid_mismatch",
         message: "FlowDebugBasicDynamic UUID mismatch",
+        trace_target_uuids: { FlowDebugBasicDynamic: "RECORDED-UUID" },
+        symbol_uuids: { FlowDebugBasicDynamic: ["OTHER-UUID"] },
+        main_thread_source_rows_by_binary: { FlowDebugBasicDynamic: 1 },
       },
       error: "dsym_uuid_mismatch",
     },
@@ -666,58 +851,15 @@ describe("iOS launch symbolication validation", () => {
       summary: { success: false, error: "install_failed" },
       error: "install_failed",
     },
-  ])("$name", async ({ summary, error }) => {
-    const artifactRoot = "/tmp/ios_perf-opt";
-    await mkdir(artifactRoot, { recursive: true });
-    const dir = await mkdtemp(join(artifactRoot, "launch-symbolication-test-"));
-    const collectorPath = join(dir, "collector.py");
-    const tracePath = join(dir, "launch_target.trace");
-    await writeFile(tracePath, "preserved trace");
-    await writeFile(
-      join(dir, "time_profile.xml"),
-      "<trace-query-result></trace-query-result>",
-    );
-    await writeFile(
-      collectorPath,
-      `print(${JSON.stringify(JSON.stringify({ ...summary, trace_path: tracePath }))})\n`,
-    );
-    const runner = new WorkflowRunner({ logWriter: () => {} });
-    try {
-      const run = runner.run<IosLaunchTraceResult>(
-        new URL("../../examples/ios-launch-trace/workflow.ts", import.meta.url)
-          .pathname,
-        {
-          projectRoot: dir,
-          udid: "mock-device",
-          skipInstall: true,
-          outputDir: dir,
-          collectorScriptPath: collectorPath,
-        },
-      );
-      if (error) {
-        await expect(run).rejects.toThrow(error);
-      } else {
-        expect((await run).success).toBe(true);
+  ])("$name", ({ summary: fixture, error }) => {
+    const summary = fixture as LaunchTraceSummary;
+    validateLaunchSymbolication(summary);
+    expect(summary.success).toBe(!error);
+    if (error) {
+      expect(summary.error).toBe(error);
+      if (error === "dsym_uuid_mismatch") {
+        expect(summary.message).toContain("FlowDebugBasicDynamic");
       }
-      const saved = JSON.parse(
-        await readFile(join(dir, "summary.json"), "utf8"),
-      ) as LaunchTraceSummary;
-      expect(saved.success).toBe(!error);
-      if (error) {
-        expect(saved.error).toBe(error);
-        const html = await readFile(
-          join(dir, "launch-trace-report.html"),
-          "utf8",
-        );
-        expect(html).toContain(error);
-        if (error === "dsym_uuid_mismatch") {
-          expect(saved.message).toContain("FlowDebugBasicDynamic");
-        }
-      }
-      expect(await readFile(tracePath, "utf8")).toBe("preserved trace");
-    } finally {
-      runner.dispose();
-      await rm(dir, { recursive: true, force: true });
     }
   });
 });

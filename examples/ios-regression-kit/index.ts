@@ -7,6 +7,7 @@ import {
   rename,
   writeFile,
 } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { runTracedCommand } from "@deerwork-ai/deer-workflow/trace";
 
@@ -39,7 +40,7 @@ export {
 } from "./navigation";
 export type { PageResolution } from "./navigation";
 
-export const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+export const DEFAULT_ARTIFACT_ROOT = join(homedir(), ".ios_pref_optimizer");
 export const DEFAULT_ASSET_ROOT =
   "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/assets/app-regression";
 export const DEFAULT_MOBILECLI_PREFLIGHT =

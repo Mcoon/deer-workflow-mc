@@ -131,7 +131,7 @@ bun run dev -- run examples/app-graph/workflow.ts --trace --input '{
 }'
 ```
 
-默认输出到 `/tmp/ios_perf-opt/deer-workflow-traces/<run-id>/`：
+默认输出到 `/Users/bytedance/.ios_pref_optimizer/deer-workflow-traces/<run-id>/`：
 
 - `trace.jsonl`：严格时间序列，包含 Workflow event、Phase、Command、Agent 请求/回复；
 - `summary.json`：总耗时、事件数、命令数、Agent 调用数和产物路径；

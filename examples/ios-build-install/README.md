@@ -18,10 +18,14 @@ deer-workflow run ./examples/ios-build-install/workflow.ts \
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "target": "Grace",
-    "mode": "Debug",
-    "developerDir": "/Applications/Xcode_26.app/Contents/Developer"
+    "mode": "Debug"
   }'
 ```
+
+`developerDir` is optional. The Workflow checks
+`/Applications/Xcode_26.app/Contents/Developer` first and falls back to
+`/Applications/Xcode.app/Contents/Developer`; pass it explicitly for another
+Xcode installation.
 
 The build command is equivalent to:
 
@@ -36,7 +40,7 @@ Stable artifacts:
 - App: `.vscode-out/Grace.app`
 - Main dSYM: `.vscode-out/dSYM/Grace.app.dSYM`
 - Recursive symbols: `.vscode-out/dSYM`
-- Workflow summary: `/tmp/ios_perf-opt/ios-build-install/<runId>/build-summary.json`
+- Workflow summary: `/Users/bytedance/.ios_pref_optimizer/ios-build-install/<runId>/build-summary.json`
 
 For Debug builds, the main dSYM matches `Grace.debug.dylib`; the Workflow checks
 both the app stub and Debug dylib UUIDs. The default business binary for attach

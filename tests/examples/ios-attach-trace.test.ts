@@ -60,6 +60,33 @@ describe("iOS Attach Trace workflow helpers", () => {
     ]);
   });
 
+  test("uses the current build root when dSYMs already exist", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ios-attach-build-root-"));
+    const symbolRoot = join(root, ".vscode-out", "dSYM");
+    const appDsym = join(symbolRoot, "Grace.app.dSYM");
+    const businessDsym = join(
+      symbolRoot,
+      "FlowDebugBasicDynamic.framework.dSYM",
+    );
+    await mkdir(appDsym, { recursive: true });
+    await mkdir(businessDsym, { recursive: true });
+
+    await expect(
+      resolveAttachSymbolContext({
+        projectRoot: root,
+        buildRoot: root,
+        targetBinary: "Grace",
+        businessBinary: "FlowDebugBasicDynamic",
+        buildArtifactRoot: join(root, "missing-build-summaries"),
+        bitskyArtifactRoot: join(root, "missing-bitsky-summaries"),
+      }),
+    ).resolves.toEqual({
+      dsymPath: appDsym,
+      searchPath: symbolRoot,
+      source: "build-root-dsym",
+    });
+  });
+
   test("uses the newest matching build summary for GraceCore symbols", async () => {
     const root = await mkdtemp(join(tmpdir(), "ios-attach-symbols-"));
     const projectRoot = join(root, "Dbao", "flow_iOS");
@@ -179,7 +206,7 @@ describe("iOS Attach Trace workflow helpers", () => {
       expect.objectContaining({
         dsymPath: appDsym,
         searchPath: symbolRoot,
-        source: "recent-build-summary",
+        source: "build-root-dsym",
       }),
     );
   });

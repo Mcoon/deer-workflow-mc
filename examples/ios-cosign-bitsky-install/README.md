@@ -13,13 +13,17 @@ deer-workflow run ./examples/ios-cosign-bitsky-install/workflow.ts \
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "target": "Grace",
-    "configuration": "Debug",
-    "developerDir": "/Applications/Xcode_26.app/Contents/Developer"
+    "configuration": "Debug"
   }'
 ```
 
+`developerDir` is optional. The Workflow checks
+`/Applications/Xcode_26.app/Contents/Developer` first and falls back to
+`/Applications/Xcode.app/Contents/Developer`; pass it explicitly for another
+Xcode installation.
+
 Outputs are written under
-`/tmp/ios_perf-opt/ios-cosign-bitsky-install/<runId>/`. Continue with
+`/Users/bytedance/.ios_pref_optimizer/ios-cosign-bitsky-install/<runId>/`. Continue with
 [`ios-build-install`](../ios-build-install/README.md) to build dSYMs and install
 without launching.
 

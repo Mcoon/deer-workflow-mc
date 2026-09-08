@@ -31,7 +31,7 @@ bun run dev -- run examples/app-graph-plan/workflow.ts \
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
     "deviceProfileId": "iphone-414x896-portrait",
     "planOnly": true,
-    "outputDir": "/tmp/ios_perf-opt/app-graph-plan"
+    "outputDir": "/Users/bytedance/.ios_pref_optimizer/app-graph-plan"
   }'
 ```
 
@@ -51,7 +51,7 @@ another character after the closing quote. For complex inputs, write the JSON
 to a file and use `--input-file <path>`.
 
 The adjacent `ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json` is the default
-Graph. The default output root is `/tmp/ios_perf-opt/app-graph-plan`. Each run
+Graph. The default output root is `/Users/bytedance/.ios_pref_optimizer/app-graph-plan`. Each run
 writes `plan.json` under a timestamped child directory.
 
 ## Parameterized goals
@@ -66,7 +66,7 @@ bun run dev -- run examples/app-graph-plan/workflow.ts \
       "text": "GraphV2 测试消息"
     },
     "planOnly": true,
-    "outputDir": "/tmp/ios_perf-opt/app-graph-plan"
+    "outputDir": "/Users/bytedance/.ios_pref_optimizer/app-graph-plan"
   }'
 ```
 

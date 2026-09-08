@@ -17,7 +17,7 @@ export interface IosAttachTraceInput {
 
   /**
    * Full Xcode Developer directory exported as DEVELOPER_DIR.
-   * Defaults to `/Applications/Xcode_26.app/Contents/Developer`.
+   * Auto-detects `Xcode_26.app`, then the standard `Xcode.app`.
    */
   developerDir?: string;
 

@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
@@ -21,7 +22,7 @@ import type {
 
 export { meta } from "./types";
 
-const DEFAULT_OUTPUT_ROOT = "/tmp/ios_perf-opt/app-graph";
+const DEFAULT_OUTPUT_ROOT = join(homedir(), ".ios_pref_optimizer", "app-graph");
 const DEFAULT_GRAPH_PATH = resolve(
   dirname(import.meta.path),
   "../ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",

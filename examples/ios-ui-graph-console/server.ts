@@ -1,4 +1,5 @@
 import { extname, join, normalize, resolve } from "node:path";
+import { homedir } from "node:os";
 import {
   getReferenceAssetsDir,
   loadGraph,
@@ -28,8 +29,9 @@ const DEFAULT_GRAPH_PATH = resolve(
 );
 const DEFAULT_MAP_DIRECTORY =
   "/Users/bytedance/Documents/BDWorkSpace/ios-perf-optimizer/assets/app-regression/com.bot.doubao/ui-map";
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt/ios-ui-graph-console";
-const ARTIFACT_FILE_ROOT = resolve("/tmp/ios_perf-opt");
+const ARTIFACT_FILE_ROOT = resolve(homedir(), ".ios_pref_optimizer");
+const LEGACY_ARTIFACT_FILE_ROOT = resolve("/tmp/ios_perf-opt");
+const DEFAULT_ARTIFACT_ROOT = join(ARTIFACT_FILE_ROOT, "ios-ui-graph-console");
 
 interface NormalizedOptions {
   host: string;
@@ -289,13 +291,15 @@ async function serveArtifact(
   if (
     filePath !== ARTIFACT_FILE_ROOT &&
     !filePath.startsWith(`${ARTIFACT_FILE_ROOT}/`) &&
+    filePath !== LEGACY_ARTIFACT_FILE_ROOT &&
+    !filePath.startsWith(`${LEGACY_ARTIFACT_FILE_ROOT}/`) &&
     filePath !== referenceAssetsRoot &&
     !filePath.startsWith(`${referenceAssetsRoot}/`)
   ) {
     return json(
       {
         error:
-          "Artifact path is outside Graph reference assets and /tmp/ios_perf-opt.",
+          "Artifact path is outside Graph reference assets and ~/.ios_pref_optimizer.",
       },
       400,
     );

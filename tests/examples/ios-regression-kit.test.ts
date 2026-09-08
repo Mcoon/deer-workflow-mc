@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 import {
   buildMobilecliActionCommand,
+  DEFAULT_ARTIFACT_ROOT,
   denormalizePoint,
   matchUiElement,
   normalizePoint,
@@ -26,6 +29,10 @@ const profile: DeviceProfile = {
   orientation: "portrait",
   updatedAt: "2026-08-12T00:00:00.000Z",
 };
+
+test("uses the persistent per-user artifact root by default", () => {
+  expect(DEFAULT_ARTIFACT_ROOT).toBe(join(homedir(), ".ios_pref_optimizer"));
+});
 
 const sendControl: UiControl = {
   schemaVersion: "ios-ui-control/v1",

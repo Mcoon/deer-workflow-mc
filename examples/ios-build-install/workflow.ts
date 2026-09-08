@@ -1,8 +1,10 @@
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
+import { resolveDeveloperDirectory } from "../ios-xcode";
 
 import type {
   FlowIosBuildError,
@@ -11,7 +13,7 @@ import type {
   IosBuildInstallResult,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
+const DEFAULT_ARTIFACT_ROOT = join(homedir(), ".ios_pref_optimizer");
 const DEFAULT_MODE = "Debug";
 const DEFAULT_TARGET = "Grace";
 const DEFAULT_INSTALL_TIMEOUT_SECONDS = 180;
@@ -36,7 +38,6 @@ export const meta = {
     udid: "00008030-001A286A2229802E",
     target: "Grace",
     mode: "Debug",
-    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
   },
 };
 
@@ -263,7 +264,7 @@ function normalizeInput(args: IosBuildInstallInput): NormalizedInput {
     repositoryRoot,
     projectRoot,
     buildRoot,
-    developerDir: args.developerDir?.trim() ? resolve(args.developerDir) : "",
+    developerDir: resolveDeveloperDirectory(args.developerDir),
     udid,
     existingBuildSummaryPath: args.existingBuildSummaryPath?.trim()
       ? resolve(args.existingBuildSummaryPath)

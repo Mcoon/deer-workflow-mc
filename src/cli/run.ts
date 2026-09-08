@@ -111,7 +111,7 @@ Output:
                 stdout: one JSON Workflow event per line; no separate result
                 stderr: CLI diagnostics only
   --trace       Write trace.jsonl, summary.json, result.json, and trace.html
-  --trace-dir   Override the default /tmp/ios_perf-opt/deer-workflow-traces root
+  --trace-dir   Override the default ~/.ios_pref_optimizer/deer-workflow-traces root
 `);
 }
 

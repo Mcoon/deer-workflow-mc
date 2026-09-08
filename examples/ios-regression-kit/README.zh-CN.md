@@ -13,7 +13,7 @@
 
 关键原则：
 
-- 运行证据放 `/tmp/ios_perf-opt`；
+- 运行证据放 `/Users/bytedance/.ios_pref_optimizer`；
 - 可复用 UI/case/binding/baseline 资产放
   `ios-perf-optimizer/assets/app-regression`；
 - 人看的长期决策和使用说明放 Head KB；

@@ -9,7 +9,7 @@ run the Workflow, operate the phone while the recording is active, and let
 ## What It Does
 
 1. prepares an output directory under
-   `/tmp/ios_perf-opt/ios-attach-trace/`;
+   `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/`;
 2. runs `xcrun xctrace record --template "Time Profiler" --attach <target>` for
    the requested duration;
 3. resolves a recursive dSYM search path from explicit input, the newest
@@ -32,7 +32,6 @@ deer-workflow run ./examples/ios-attach-trace/workflow.ts \
     "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    "developerDir": "/Applications/Xcode_26.app/Contents/Developer",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "attachTarget": "Grace",
@@ -52,9 +51,8 @@ The Workflow then exports and renders the report.
 - `projectRoot`: target iOS source root.
 - `buildRoot`: BitSky root containing `.vscode-out`; defaults to `projectRoot`.
 - `developerDir`: optional full Xcode Developer directory used through
-  `DEVELOPER_DIR`, without changing system `xcode-select`. Defaults to
-  `/Applications/Xcode_26.app/Contents/Developer`; set it explicitly for other
-  Xcode installations.
+  `DEVELOPER_DIR`, without changing system `xcode-select`. The Workflow checks
+  `Xcode_26.app` first, then `Xcode.app`; set it explicitly for other installs.
 - `udid`: real-device UDID passed to `xctrace`.
 - `bundleId`: bundle identifier recorded in the summary and report. Defaults to
   `com.bot.doubao`.
@@ -67,15 +65,16 @@ The Workflow then exports and renders the report.
 - `template`: xctrace template name or path. Defaults to `Time Profiler`.
 - `timeLimit`: recording limit, defaults to `30s`.
 - `outputDir`: output directory. Defaults to
-  `/tmp/ios_perf-opt/ios-attach-trace/<runId>`.
+  `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/<runId>`.
 - `htmlReportPath`: report destination. Defaults to
   `<outputDir>/attach-trace-report.html`.
 - `targetBinary`: binary highlighted as app code in the HTML timeline. Defaults
   to `Grace`.
 - `symbolSearchPath`: directory recursively searched by `xctrace symbolicate`.
-  If omitted, the Workflow first discovers the newest matching
-  `/tmp/ios_perf-opt/ios-build-install/*/build-summary.json`, then falls back
-  to `/tmp/ios_perf-opt/flow-ios-bitsky/*/summary.json` and its `products/dSYM`.
+  If omitted, the Workflow first uses `<buildRoot>/.vscode-out/dSYM` when it
+  contains both the app and business dSYMs, then discovers the newest matching
+  `/Users/bytedance/.ios_pref_optimizer/ios-build-install/*/build-summary.json`, then falls back
+  to `/Users/bytedance/.ios_pref_optimizer/flow-ios-bitsky/*/summary.json` and its `products/dSYM`.
 - `businessBinary`: business framework used for source-coverage validation.
   Defaults to `FlowDebugBasicDynamic` for current BitSky Debug builds.
 - `maxSamples` / `maxDepth`: rendering limits for large traces.
@@ -116,7 +115,7 @@ were applied. A valid source-level result has all of these fields in
 
 - non-empty `symbol_search_path`;
 - `symbol_search_source` equal to `explicit-symbol-search-path`,
-  `recent-build-summary`, or `recent-bitsky-summary`;
+  `build-root-dsym`, `recent-build-summary`, or `recent-bitsky-summary`;
 - non-empty `symbolicated_trace_path`;
 - `symbolication_status=ready`;
 - `main_thread_grace_source_rows > 0`.

@@ -73,7 +73,7 @@ debugging, place the full Plan result in an input file and run:
 
 ```bash
 bun run dev -- run examples/app-graph-exec/workflow.ts \
-  --input-file /tmp/ios_perf-opt/app-graph-exec-input.json
+  --input-file /Users/bytedance/.ios_pref_optimizer/app-graph-exec-input.json
 ```
 
 Use `planOnly=true` to validate the Plan against the current Graph without

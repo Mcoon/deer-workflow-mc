@@ -733,7 +733,7 @@ export default async function(args){phase("Work");await appendFile(${JSON.string
       expect(outsideScreenshot.status).toBe(400);
       expect(await outsideScreenshot.json()).toEqual({
         error:
-          "Artifact path is outside Graph reference assets and /tmp/ios_perf-opt.",
+          "Artifact path is outside Graph reference assets and ~/.ios_pref_optimizer.",
       });
 
       const blockedArtifact = await fetch(
@@ -745,7 +745,7 @@ export default async function(args){phase("Work");await appendFile(${JSON.string
       expect(blockedArtifact.status).toBe(400);
       expect(await blockedArtifact.json()).toEqual({
         error:
-          "Artifact path is outside Graph reference assets and /tmp/ios_perf-opt.",
+          "Artifact path is outside Graph reference assets and ~/.ios_pref_optimizer.",
       });
 
       const runtimeReady = await fetch(

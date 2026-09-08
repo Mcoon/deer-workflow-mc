@@ -17,10 +17,13 @@ deer-workflow run ./examples/ios-build-install/workflow.ts \
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "target": "Grace",
-    "mode": "Debug",
-    "developerDir": "/Applications/Xcode_26.app/Contents/Developer"
+    "mode": "Debug"
   }'
 ```
+
+`developerDir` 可选。Workflow 优先检查
+`/Applications/Xcode_26.app/Contents/Developer`，不存在时回退到
+`/Applications/Xcode.app/Contents/Developer`；其他 Xcode 路径需显式传入。
 
 等价构建命令：
 
@@ -35,7 +38,7 @@ orbit bundle exec bitsky_build \
 - App：`.vscode-out/Grace.app`
 - 主 dSYM：`.vscode-out/dSYM/Grace.app.dSYM`
 - 递归符号目录：`.vscode-out/dSYM`
-- Workflow summary：`/tmp/ios_perf-opt/ios-build-install/<runId>/build-summary.json`
+- Workflow summary：`/Users/bytedance/.ios_pref_optimizer/ios-build-install/<runId>/build-summary.json`
 
 Debug 构建的主 dSYM 匹配 `Grace.debug.dylib`，Workflow 会同时检查 App stub 与
 Debug dylib UUID。Attach Trace 默认业务二进制为 `FlowDebugBasicDynamic`。普通真机包

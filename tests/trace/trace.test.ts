@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 
 import { bindAgent } from "../../src/agents/agent";
 import type { Agent } from "../../src/agents/types";
@@ -11,6 +11,13 @@ import { TraceRecorder } from "../../src/trace/recorder";
 import type { TraceEntry } from "../../src/trace/types";
 
 describe("Workflow trace", () => {
+  test("uses the persistent per-user trace root by default", () => {
+    const recorder = new TraceRecorder("trace-default-root.ts");
+    expect(recorder.outputDirectory).toStartWith(
+      join(homedir(), ".ios_pref_optimizer", "deer-workflow-traces"),
+    );
+  });
+
   test("captures commands and redacts sensitive arguments", async () => {
     const root = await mkdtemp(join(tmpdir(), "deer-trace-command-"));
     const recorder = new TraceRecorder("trace-command-test.ts", {

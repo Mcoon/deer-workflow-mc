@@ -7,7 +7,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { setTimeout as delay } from "node:timers/promises";
 import { StringDecoder } from "node:string_decoder";
 
@@ -19,6 +19,7 @@ import {
   renderLaunchTraceHtml,
 } from "../ios-launch-trace/workflow";
 import type { ParsedTraceTimeline } from "../ios-launch-trace/types";
+import { resolveDeveloperDirectory } from "../ios-xcode";
 
 import type {
   AttachTargetResolution,
@@ -27,8 +28,7 @@ import type {
   IosAttachTraceSummary,
 } from "./types";
 
-const DEFAULT_ARTIFACT_ROOT = "/tmp/ios_perf-opt";
-const DEFAULT_DEVELOPER_DIR = "/Applications/Xcode_26.app/Contents/Developer";
+const DEFAULT_ARTIFACT_ROOT = join(homedir(), ".ios_pref_optimizer");
 const DEFAULT_BUNDLE_ID = "com.bot.doubao";
 const DEFAULT_TARGET_BINARY = "Grace";
 const DEFAULT_TEMPLATE = "Time Profiler";
@@ -39,8 +39,14 @@ const DEFAULT_EXPORT_ATTEMPTS = 3;
 const DEFAULT_EXPORT_RETRY_DELAY_MS = 1000;
 const DEFAULT_TRACE_SETTLE_ATTEMPTS = 10;
 const DEFAULT_TRACE_SETTLE_DELAY_MS = 500;
-const DEFAULT_BUILD_ARTIFACT_ROOT = "/tmp/ios_perf-opt/ios-build-install";
-const DEFAULT_BITSKY_ARTIFACT_ROOT = "/tmp/ios_perf-opt/flow-ios-bitsky";
+const DEFAULT_BUILD_ARTIFACT_ROOT = join(
+  DEFAULT_ARTIFACT_ROOT,
+  "ios-build-install",
+);
+const DEFAULT_BITSKY_ARTIFACT_ROOT = join(
+  DEFAULT_ARTIFACT_ROOT,
+  "flow-ios-bitsky",
+);
 const DEFAULT_BUSINESS_BINARY = "FlowDebugBasicDynamic";
 const OUTPUT_TAIL_LENGTH = 4000;
 const TIME_PROFILE_XPATH =
@@ -67,7 +73,6 @@ export const meta = {
     repositoryRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak",
     projectRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     buildRoot: "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    developerDir: "/Applications/Xcode_26.app/Contents/Developer",
     udid: "00008030-001A286A2229802E",
     bundleId: "com.bot.doubao",
     attachTarget: "Grace",
@@ -423,6 +428,7 @@ interface AttachSymbolContext {
   searchPath: string;
   source:
     | "explicit-symbol-search-path"
+    | "build-root-dsym"
     | "recent-build-summary"
     | "recent-bitsky-summary"
     | "explicit-dsym"
@@ -498,9 +504,7 @@ function normalizeInput(args: IosAttachTraceInput): NormalizedInput {
     repositoryRoot,
     projectRoot,
     buildRoot,
-    developerDir: args.developerDir?.trim()
-      ? resolve(args.developerDir.trim())
-      : DEFAULT_DEVELOPER_DIR,
+    developerDir: resolveDeveloperDirectory(args.developerDir),
     udid,
     bundleId: args.bundleId?.trim() || DEFAULT_BUNDLE_ID,
     attachTarget: args.attachTarget?.trim() || targetBinary,
@@ -618,6 +622,27 @@ export async function resolveAttachSymbolContext(input: {
       dsymPath: input.explicitDsymPath?.trim() ?? "",
       searchPath: resolve(explicitSearchPath),
       source: "explicit-symbol-search-path",
+    };
+  }
+
+  const buildRoot = resolve(input.buildRoot?.trim() || input.projectRoot);
+  const buildSymbolSearchPath = join(buildRoot, ".vscode-out", "dSYM");
+  const buildAppDsymPath = join(
+    buildSymbolSearchPath,
+    `${input.targetBinary}.app.dSYM`,
+  );
+  const buildBusinessDsymPath = join(
+    buildSymbolSearchPath,
+    `${input.businessBinary}.framework.dSYM`,
+  );
+  if (
+    (await pathExists(buildAppDsymPath)) &&
+    (await pathExists(buildBusinessDsymPath))
+  ) {
+    return {
+      dsymPath: resolve(input.explicitDsymPath?.trim() || buildAppDsymPath),
+      searchPath: resolve(buildSymbolSearchPath),
+      source: "build-root-dsym",
     };
   }
 

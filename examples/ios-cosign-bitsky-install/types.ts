@@ -15,7 +15,7 @@ export interface IosCosignBitskyInstallInput {
   /** BitSky configuration prepared by bitsky_install. Defaults to Debug. */
   configuration?: "Debug" | "Inhouse" | "InhouseRelease" | "Adhoc" | "Release";
 
-  /** Optional full Xcode Developer directory exported as DEVELOPER_DIR. */
+  /** Optional Xcode path; auto-detects Xcode_26.app, then Xcode.app. */
   developerDir?: string;
 
   /** Override for the repository-native cosign script. */

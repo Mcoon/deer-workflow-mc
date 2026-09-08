@@ -350,7 +350,7 @@ Pi 0.84.1 没有内置操作系统 Sandbox。`PiAgent` 通过非修改型工具 
 
 `deer-workflow run <workflow> --trace` 会生成 `trace.jsonl`、`summary.json`、
 `result.json` 和 `trace.html`。默认根目录是
-`/tmp/ios_perf-opt/deer-workflow-traces`，可用 `--trace-dir` 覆盖。默认 `agent()` 自动记录
+`/Users/bytedance/.ios_pref_optimizer/deer-workflow-traces`，可用 `--trace-dir` 覆盖。默认 `agent()` 自动记录
 请求与回复；命令使用 `runTracedCommand()` 后记录命令、cwd、耗时、exit code、stdout/stderr。
 环境变量不进入 Trace，常见凭证会脱敏。
 

@@ -15,7 +15,7 @@ export interface IosLaunchTraceInput {
 
   /**
    * Full Xcode Developer directory exported as DEVELOPER_DIR.
-   * Defaults to `/Applications/Xcode_26.app/Contents/Developer`.
+   * Auto-detects `Xcode_26.app`, then the standard `Xcode.app`.
    */
   developerDir?: string;
 
@@ -25,10 +25,7 @@ export interface IosLaunchTraceInput {
   /** Bundle identifier launched under Time Profiler. */
   bundleId?: string;
 
-  /** Path to the flow-ios-trace-collection `collect_trace.py` script. */
-  collectorScriptPath?: string;
-
-  /** Python executable used to run the collector script. */
+  /** Python executable used by the bundled XML parser and symbol recovery. */
   python?: string;
 
   /** Existing `.app` bundle to install before tracing. */
@@ -55,6 +52,9 @@ export interface IosLaunchTraceInput {
   /** Binary name highlighted as application code in the rendered timeline. */
   targetBinary?: string;
 
+  /** Business framework used to validate source-level symbol coverage. */
+  businessBinary?: string;
+
   /** HTML report path. Defaults to `<outputDir>/launch-trace-report.html`. */
   htmlReportPath?: string;
 
@@ -66,7 +66,7 @@ export interface IosLaunchTraceInput {
 }
 
 /**
- * Summary shape emitted by `collect_trace.py`.
+ * Summary emitted by the self-contained launch trace Workflow.
  */
 export interface LaunchTraceSummary {
   success?: boolean;
@@ -87,18 +87,28 @@ export interface LaunchTraceSummary {
   time_profile_path?: string;
   summary_path?: string;
   symbolication_status?: string;
+  install?: LaunchTraceProcessSummary;
+  terminate?: LaunchTraceProcessSummary;
+  record?: LaunchTraceProcessSummary;
   symbolicate?: {
     returncode?: number;
     stdout_tail?: string;
     stderr_tail?: string;
+    fallback?: string;
+    recoverable?: boolean;
   };
   dsym_uuid?: string | null;
   trace_grace_uuid?: string | null;
   trace_target_uuids?: Record<string, string>;
+  symbol_uuids?: Record<string, string[]>;
   main_thread_rows?: number;
   main_thread_grace_rows?: number;
   main_thread_grace_source_rows?: number;
+  main_thread_source_rows_by_binary?: Record<string, number>;
+  main_thread_unresolved_rows?: number;
+  main_thread_unmapped_rows?: number;
   samples?: LaunchTraceSymbolSample[];
+  atos_backfill?: LaunchTraceAtosBackfillSummary;
   error?: string;
   message?: string;
   warning?: string;
@@ -124,6 +134,39 @@ export interface LaunchTraceSummary {
   >;
   recovered_from_export_failure?: boolean;
   recovery_note?: string;
+}
+
+/** Captured command timing and diagnostics for one launch collection stage. */
+export interface LaunchTraceProcessSummary {
+  returncode?: number;
+  stdout_tail?: string;
+  stderr_tail?: string;
+  started_at?: string;
+  finished_at?: string;
+  duration_ms?: number;
+  observed_recording_started_at?: string;
+  observed_recording_finished_at?: string;
+  observed_recording_duration_ms?: number;
+  requested_target?: string;
+  resolved_pids?: number[];
+  terminated_pids?: number[];
+}
+
+/** Result of the bundled fail-closed atos recovery pass. */
+export interface LaunchTraceAtosBackfillSummary {
+  resolved_frames?: number;
+  images?: Record<string, number>;
+  inferred_images?: Record<
+    string,
+    {
+      uuid?: string;
+      load_addr?: string;
+      candidate_frames?: number;
+      resolved_frames?: number;
+      validation_ratio?: number;
+    }
+  >;
+  skipped?: boolean;
 }
 
 /**

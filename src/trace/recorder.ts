@@ -1,5 +1,6 @@
 import { appendFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
 import type { WorkflowEvent } from "../events";
@@ -13,7 +14,11 @@ import type {
   TraceOptions,
 } from "./types";
 
-const DEFAULT_TRACE_ROOT = "/tmp/ios_perf-opt/deer-workflow-traces";
+const DEFAULT_TRACE_ROOT = join(
+  homedir(),
+  ".ios_pref_optimizer",
+  "deer-workflow-traces",
+);
 const DEFAULT_MAX_TEXT = 100_000;
 
 export class TraceRecorder {

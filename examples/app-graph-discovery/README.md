@@ -34,9 +34,9 @@ Compile the discovery plan without touching a device:
 bun run dev -- run examples/app-graph-discovery/workflow.ts \
   --input '{
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    "discoveryRequestPath": "/tmp/ios_perf-opt/app-graph-exec/.../discovery-request.json",
+    "discoveryRequestPath": "/Users/bytedance/.ios_pref_optimizer/app-graph-exec/.../discovery-request.json",
     "planOnly": true,
-    "outputDir": "/tmp/ios_perf-opt/app-graph-discovery"
+    "outputDir": "/Users/bytedance/.ios_pref_optimizer/app-graph-discovery"
   }'
 ```
 

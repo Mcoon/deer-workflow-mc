@@ -696,17 +696,17 @@ path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
   `agent()`、`phase()`、`pipeline()`、`log()` 和 `WorkflowRunner`。
 - [iOS 签名与 BitSky Install](../examples/ios-cosign-bitsky-install/README.zh-CN.md)：
   从 iOS 工程根串行执行 `Scripts/cosign.sh`、`orbit bundle install` 和
-  `bitsky_install`，诊断产物统一落到 `/tmp/ios_perf-opt`。
+  `bitsky_install`，诊断产物统一落到 `/Users/bytedance/.ios_pref_optimizer`。
 - [iOS Build and Install](../examples/ios-build-install/README.zh-CN.md)：组合
   确定性 TypeScript 编排、`phase()`、`log()`、BitSky 真机构建和 install-only
   devicectl 安装；App 和 dSYM 导出到 `<buildRoot>/.vscode-out`，同时返回主 App
   dSYM 与递归符号搜索目录，默认业务二进制为 `FlowDebugBasicDynamic`。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md)：组合确定性
-  TypeScript 编排、`phase()`、`log()`、本地 xctrace collector 和 HTML 时间线
-  renderer；分开传递 `projectRoot` 与 `buildRoot`，默认 app/dSYM 从 iOS
-  构建根解析。collector 确认同一二进制/dSYM UUID 不一致或符号缺失时，保留原始 trace 并报错。
-  `developerDir` 默认使用
-  `/Applications/Xcode_26.app/Contents/Developer`，可通过输入参数覆盖。
+  TypeScript 编排、`phase()`、`log()`、直接 `devicectl`/`xctrace` 执行和 HTML 时间线
+  renderer；无需外部 collector checkout，分开传递 `projectRoot` 与 `buildRoot`，默认
+  app/dSYM 从 iOS 构建根解析。同一二进制/dSYM UUID 不一致或符号缺失时，保留原始 trace 并报错。
+  可选 `developerDir` 优先使用 `Xcode_26.app`，不存在时回退到标准
+  `Xcode.app`，也可通过输入参数覆盖。
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、`xctrace record --attach`、自动 dSYM
   解析、`xctrace symbolicate`、Time Profiler XML 导出和共享 HTML 时间线
@@ -714,8 +714,8 @@ path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
   `ios-build-install/*/build-summary.json` 与 `flow-ios-bitsky/*/summary.json`。
   找不到匹配符号时会保留原始 trace 并明确失败，不再返回成功的 partial 报告。
   仍包含裸地址帧时，源码覆盖状态为 partial，而非 ready。
-  `developerDir` 默认使用 `/Applications/Xcode_26.app/Contents/Developer`，
-  可通过输入参数覆盖。
+  可选 `developerDir` 使用相同的 `Xcode_26.app` → `Xcode.app` 探测，也可
+  通过输入参数覆盖。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)：
   消费验证通过的 case 资产，串行执行设备动作，并输出逐 case 证据和 HTML 报告。
 - [App Graph v2 Plan](../examples/app-graph-plan/README.zh-CN.md)、

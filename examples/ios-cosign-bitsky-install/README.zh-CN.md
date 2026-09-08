@@ -12,12 +12,15 @@ deer-workflow run ./examples/ios-cosign-bitsky-install/workflow.ts \
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "udid": "00008030-001A286A2229802E",
     "target": "Grace",
-    "configuration": "Debug",
-    "developerDir": "/Applications/Xcode_26.app/Contents/Developer"
+    "configuration": "Debug"
   }'
 ```
 
-产物统一写入 `/tmp/ios_perf-opt/ios-cosign-bitsky-install/<runId>/`。完成后运行
+`developerDir` 可选。Workflow 优先检查
+`/Applications/Xcode_26.app/Contents/Developer`，不存在时回退到
+`/Applications/Xcode.app/Contents/Developer`；其他 Xcode 路径需显式传入。
+
+产物统一写入 `/Users/bytedance/.ios_pref_optimizer/ios-cosign-bitsky-install/<runId>/`。完成后运行
 [`ios-build-install`](../ios-build-install/README.zh-CN.md)，生成 dSYM 并只安装不启动。
 
 旧路径 `examples/ios-cosign-jojo-install/workflow.ts` 继续保留为兼容入口，内部已转发到该 BitSky Workflow。

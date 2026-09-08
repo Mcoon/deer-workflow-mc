@@ -33,7 +33,7 @@ bun run dev -- run examples/app-graph-accept/workflow.ts \
     },
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
     "planOnly": true,
-    "outputDir": "/tmp/ios_perf-opt/app-graph-accept"
+    "outputDir": "/Users/bytedance/.ios_pref_optimizer/app-graph-accept"
   }'
 ```
 

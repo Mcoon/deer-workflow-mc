@@ -39,7 +39,7 @@ export interface IosBuildInstallInput {
   /** Business binary used by attach-trace source coverage checks. */
   businessBinary?: string;
 
-  /** Optional full Xcode Developer directory exported as DEVELOPER_DIR. */
+  /** Optional Xcode path; auto-detects Xcode_26.app, then Xcode.app. */
   developerDir?: string;
 
   /** Stable run id used when deriving the workflow diagnostics directory. */

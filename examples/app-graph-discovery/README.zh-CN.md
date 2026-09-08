@@ -28,9 +28,9 @@ viewport 重复或无变化才视为边界并换向。历史坐标不决定方�
 bun run dev -- run examples/app-graph-discovery/workflow.ts \
   --input '{
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    "discoveryRequestPath": "/tmp/ios_perf-opt/app-graph-exec/.../discovery-request.json",
+    "discoveryRequestPath": "/Users/bytedance/.ios_pref_optimizer/app-graph-exec/.../discovery-request.json",
     "planOnly": true,
-    "outputDir": "/tmp/ios_perf-opt/app-graph-discovery"
+    "outputDir": "/Users/bytedance/.ios_pref_optimizer/app-graph-discovery"
   }'
 ```
 

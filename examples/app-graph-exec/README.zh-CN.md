@@ -69,7 +69,7 @@ Exec 会在重启 App 前返回 `task_replan_required`。
 
 ```bash
 bun run dev -- run examples/app-graph-exec/workflow.ts \
-  --input-file /tmp/ios_perf-opt/app-graph-exec-input.json
+  --input-file /Users/bytedance/.ios_pref_optimizer/app-graph-exec-input.json
 ```
 
 输入文件示例：

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 
 import { agent } from "@deerwork-ai/deer-workflow/agents";
 import type {
@@ -35,6 +36,8 @@ const SAFE_CORRECTION_STATUSES = new Set<GraphEntityStatus>([
   "blocked",
   "disabled",
 ]);
+const ARTIFACT_ROOT = resolve(homedir(), ".ios_pref_optimizer");
+const LEGACY_ARTIFACT_ROOT = resolve("/tmp/ios_perf-opt");
 
 const chatResponseSchema = {
   type: "object",
@@ -786,9 +789,15 @@ export async function runGraphConsoleChat(options: {
     proposalId: randomUUID(),
     graphRevision: revision,
     summary: decision.correctionSummary || decision.message,
-    evidencePaths: decision.evidencePaths.filter((path) =>
-      path.startsWith("/tmp/ios_perf-opt/"),
-    ),
+    evidencePaths: decision.evidencePaths.filter((path) => {
+      const candidate = resolve(path);
+      return (
+        candidate === ARTIFACT_ROOT ||
+        candidate.startsWith(`${ARTIFACT_ROOT}/`) ||
+        candidate === LEGACY_ARTIFACT_ROOT ||
+        candidate.startsWith(`${LEGACY_ARTIFACT_ROOT}/`)
+      );
+    }),
     changes,
     requiresExploration: decision.requiresExploration,
     explorationGoal: decision.explorationGoal,

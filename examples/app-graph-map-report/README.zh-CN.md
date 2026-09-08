@@ -21,7 +21,7 @@ Element、Operator、Task、风险、状态和 revision；通过 iOS UI Graph Co
 bun run dev -- run examples/app-graph-map-report/workflow.ts \
   --input '{
     "graphPath": "/Users/bytedance/Documents/deer-workflow-mc/examples/ios-ui-graph-manager/graphs/com.bot.doubao.chat-full-v2/graph.json",
-    "htmlPath": "/tmp/ios_perf-opt/app-graph-map/map.html"
+    "htmlPath": "/Users/bytedance/.ios_pref_optimizer/app-graph-map/map.html"
   }'
 ```
 

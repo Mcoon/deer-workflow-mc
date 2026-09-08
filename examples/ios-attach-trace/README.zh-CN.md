@@ -6,7 +6,7 @@ Workflow，在录制阶段操作手机，等 `xctrace` 到达时间上限后自�
 
 ## 功能
 
-1. 在 `/tmp/ios_perf-opt/ios-attach-trace/` 下准备输出目录；
+1. 在 `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/` 下准备输出目录；
 2. 按指定时长运行 `xcrun xctrace record --template "Time Profiler" --attach <target>`；
 3. 从显式输入、最近一次匹配的 `ios-build-install` summary 或
    `flow-ios-bitsky` summary 解析完整 dSYM 目录，执行 `xctrace symbolicate`；
@@ -26,7 +26,6 @@ deer-workflow run ./examples/ios-attach-trace/workflow.ts \
     "repositoryRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak",
     "projectRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
     "buildRoot": "/Users/bytedance/Documents/BDWorkSpace/Florak/flow/ios",
-    "developerDir": "/Applications/Xcode_26.app/Contents/Developer",
     "udid": "00008030-001A286A2229802E",
     "bundleId": "com.bot.doubao",
     "attachTarget": "Grace",
@@ -45,8 +44,8 @@ Workflow 会导出 XML 并生成 HTML 报告。
 - `projectRoot`：目标 iOS 源码根。
 - `buildRoot`：包含 `.vscode-out` 的 BitSky 构建根，默认等于 `projectRoot`。
 - `developerDir`：可选完整 Xcode Developer 目录，通过 `DEVELOPER_DIR` 注入，
-  不修改系统 `xcode-select`。默认是
-  `/Applications/Xcode_26.app/Contents/Developer`；其他 Xcode 安装路径需显式传入。
+  不修改系统 `xcode-select`。Workflow 先检查 `Xcode_26.app`，再检查标准
+  `Xcode.app`；其他 Xcode 安装路径需显式传入。
 - `udid`：传给 `xctrace` 的真机 UDID。
 - `bundleId`：写入 summary 和报告的 bundle identifier，默认
   `com.bot.doubao`。
@@ -57,14 +56,15 @@ Workflow 会导出 XML 并生成 HTML 报告。
 - `template`：xctrace template 名称或路径，默认 `Time Profiler`。
 - `timeLimit`：录制时长，默认 `30s`。
 - `outputDir`：输出目录，默认
-  `/tmp/ios_perf-opt/ios-attach-trace/<runId>`。
+  `/Users/bytedance/.ios_pref_optimizer/ios-attach-trace/<runId>`。
 - `htmlReportPath`：HTML 报告目标路径，默认
   `<outputDir>/attach-trace-report.html`。
 - `targetBinary`：HTML 中高亮为业务代码的 binary，默认 `Grace`。
 - `symbolSearchPath`：供 `xctrace symbolicate` 递归搜索的 dSYM 目录。不传时，
-  Workflow 会先读取最近一次匹配项目的
-  `/tmp/ios_perf-opt/ios-build-install/*/build-summary.json`；没有匹配项时继续读取
-  `/tmp/ios_perf-opt/flow-ios-bitsky/*/summary.json`，使用其 `products/dSYM`。
+  Workflow 会先检查 `<buildRoot>/.vscode-out/dSYM` 是否同时包含 App 与业务
+  dSYM；没有时再读取最近一次匹配项目的
+  `/Users/bytedance/.ios_pref_optimizer/ios-build-install/*/build-summary.json`；没有匹配项时继续读取
+  `/Users/bytedance/.ios_pref_optimizer/flow-ios-bitsky/*/summary.json`，使用其 `products/dSYM`。
 - `businessBinary`：用于校验业务源码覆盖率的 framework，默认
   `FlowDebugBasicDynamic`。
 - `maxSamples` / `maxDepth`：大 trace 的渲染上限。
@@ -100,7 +100,7 @@ summary 还会记录符号目录、解析来源以及 `FlowDebugBasicDynamic` �
 
 - `symbol_search_path` 非空；
 - `symbol_search_source` 为 `explicit-symbol-search-path`、
-  `recent-build-summary` 或 `recent-bitsky-summary`；
+  `build-root-dsym`、`recent-build-summary` 或 `recent-bitsky-summary`；
 - `symbolicated_trace_path` 非空；
 - `symbolication_status=ready`；
 - `main_thread_grace_source_rows > 0`。

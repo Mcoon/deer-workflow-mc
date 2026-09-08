@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Moved default Workflow and CLI trace artifacts from the temporary directory
+  to the persistent `~/.ios_pref_optimizer` root.
+- Added shared Xcode Developer-directory detection across iOS signing, build,
+  launch-trace, and attach-trace workflows, with `Xcode.app` fallback.
+- Made attach trace discover complete dSYMs directly from the current
+  `<buildRoot>/.vscode-out/dSYM` before consulting build summaries.
+- Made iOS launch tracing self-contained in the TypeScript Workflow by running
+  `devicectl` and `xctrace` directly, including UUID-aware fail-closed symbol
+  recovery, without requiring an external `ios-perf-optimizer` checkout.
 - Replaced the legacy Flow iOS JoJo preparation and build paths with BitSky,
   exported trace-ready App/dSYM artifacts to `.vscode-out`, and taught launch
   and attach traces to consume BitSky Debug symbols.

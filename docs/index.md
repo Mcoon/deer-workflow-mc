@@ -374,7 +374,7 @@ the complete Agent Loop to a single model completion.
 ### Execution trace
 
 `deer-workflow run <workflow> --trace` writes `trace.jsonl`, `summary.json`,
-`result.json`, and `trace.html` under `/tmp/ios_perf-opt/deer-workflow-traces`
+`result.json`, and `trace.html` under `/Users/bytedance/.ios_pref_optimizer/deer-workflow-traces`
 by default; `--trace-dir` overrides the root. The default `agent()` is traced
 automatically. Commands executed through `runTracedCommand()` include command,
 cwd, duration, exit code, stdout, and stderr. Environment variables are omitted
