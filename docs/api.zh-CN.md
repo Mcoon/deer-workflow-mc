@@ -704,7 +704,8 @@ path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
 - [iOS Launch Trace](../examples/ios-launch-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、本地 xctrace collector 和 HTML 时间线
   renderer；分开传递 `projectRoot` 与 `buildRoot`，默认 app/dSYM 从 iOS
-  构建根解析。`developerDir` 默认使用
+  构建根解析。collector 确认同一二进制/dSYM UUID 不一致或符号缺失时，保留原始 trace 并报错。
+  `developerDir` 默认使用
   `/Applications/Xcode_26.app/Contents/Developer`，可通过输入参数覆盖。
 - [iOS Attach Trace](../examples/ios-attach-trace/README.zh-CN.md)：组合确定性
   TypeScript 编排、`phase()`、`log()`、`xctrace record --attach`、自动 dSYM
@@ -712,6 +713,7 @@ path，stale 的纯导航 recipe 可以按当前 Graph 重规划。
   renderer；最近 build summary 的复用限制在显式 iOS 源码/构建根内，并同时识别
   `ios-build-install/*/build-summary.json` 与 `flow-ios-bitsky/*/summary.json`。
   找不到匹配符号时会保留原始 trace 并明确失败，不再返回成功的 partial 报告。
+  仍包含裸地址帧时，源码覆盖状态为 partial，而非 ready。
   `developerDir` 默认使用 `/Applications/Xcode_26.app/Contents/Developer`，
   可通过输入参数覆盖。
 - [iOS Functional Regression](../examples/ios-functional-regression/README.zh-CN.md)：

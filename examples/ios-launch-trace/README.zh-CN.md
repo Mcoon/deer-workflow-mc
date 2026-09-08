@@ -13,6 +13,11 @@
 4. 生成 `launch-trace-report.html`，包含时间标尺、采样密度条、主线程
    flame timeline、Top sampled frames 和产物路径。
 
+终端会把 collector 的长耗时步骤显示为独立阶段：`Install`、
+`Launch & Record`、`Symbolicate`、`Export` 和 `Backfill Symbols`。其中
+`timeLimit` 只计算 xctrace 真正开始录制后的时长；设备握手、trace 保存、符号化、
+XML 导出和 atos 回填可能继续耗时，但不会再统一显示成一个不透明的 `Collect`。
+
 Workflow 不会修改 `ios-perf-optimizer` 或目标 App。除非设置 `skipInstall`，否则
 底层 collector 可能会安装传入的 `.app`。
 
@@ -81,3 +86,16 @@ weight 和 wall-clock range 分开显示，避免把 `main` 这类入口 frame �
 
 如果 collector 在 `xctrace` 启动前失败，例如默认 dSYM 缺失，Workflow 会先写出
 HTML 诊断报告，然后以失败退出，不再把这类情况展示成成功采集。
+collector 确认同一二进制与 dSYM 的 UUID 不一致，或符号状态为 `missing` 时，也会保留原始 trace
+并报错。使用 `skipInstall: true` 时，必须提供设备上该构建对应的符号；也可改为
+`skipInstall: false`，安装本地 App 后重新采集。Debug 包的 `Grace.app.dSYM`
+可能存放 `Grace.debug.dylib` 的符号，必须按 DWARF 二进制名比较 UUID，不能按
+dSYM 包名比较。collector 会统计 `FlowDebugBasicDynamic`，并展开 XML 中的
+frame/backtrace 引用后计算源码覆盖。主线程仍有裸地址时，状态为 `partial`，并记录
+未解析及缺少镜像映射的采样数；不能仅凭部分源码覆盖判定全部符号解析成功。
+
+`xctrace --launch` 的早期样本偶尔不会登记 `Grace.debug.dylib` image，导致第一方
+frame 没有 binary UUID。collector 会对无镜像地址做 fail-closed 回填：只有主地址簇
+占比足够高、能从 Mach-O `__TEXT,__text` 推导本次 ASLR 基址、启动锚点匹配且 atos
+抽样解析率达到阈值时才写回符号。基址不会固定成 `0x300000000`；不同 launch
+可能不同。无法验证的地址继续保留为裸地址。

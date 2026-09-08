@@ -1,5 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 
 import { phase } from "@deerwork-ai/deer-workflow/flow";
 import { log } from "@deerwork-ai/deer-workflow/logging";
@@ -25,6 +26,7 @@ const DEFAULT_MAX_SAMPLES = 12000;
 const DEFAULT_MAX_DEPTH = 72;
 const OUTPUT_TAIL_LENGTH = 4000;
 const TIMELINE_PIXELS_PER_SAMPLE = 2;
+const COLLECTOR_PROGRESS_PREFIX = "__DEER_PROGRESS__ ";
 
 /**
  * Declares the Workflow's identity and observable phase plan.
@@ -35,7 +37,11 @@ export const meta = {
     "Collects an iOS launch Time Profiler trace and renders a local HTML timeline.",
   phases: [
     { title: "Prepare" },
-    { title: "Collect" },
+    { title: "Install" },
+    { title: "Launch & Record" },
+    { title: "Symbolicate" },
+    { title: "Export" },
+    { title: "Backfill Symbols" },
     { title: "Parse" },
     { title: "Report" },
   ],
@@ -77,7 +83,7 @@ export default async function iosLaunchTrace(
 
   const command = buildCollectorCommand(input);
 
-  phase("Collect");
+  phase(input.skipInstall ? "Launch & Record" : "Install");
   log(
     [
       "## Running Time Profiler launch trace",
@@ -86,7 +92,7 @@ export default async function iosLaunchTrace(
       `- **Limit:** \`${input.timeLimit}\``,
     ].join("\n"),
   );
-  const collection = await runCommand(
+  const collection = await runCollectorCommand(
     command,
     input.projectRoot,
     input.developerDir,
@@ -100,6 +106,7 @@ export default async function iosLaunchTrace(
   summary.repository_root = input.repositoryRoot;
   summary.project_root = input.projectRoot;
   summary.build_root = input.buildRoot;
+  validateLaunchSymbolication(summary);
   await writeFile(
     expectedSummaryPath,
     JSON.stringify(summary, null, 2),
@@ -353,6 +360,149 @@ async function runCommand(
   ]);
 
   return { stdout, stderr, exitCode };
+}
+
+interface CollectorProgressEvent {
+  stage?: string;
+  status?: string;
+  message?: string;
+  duration_ms?: number;
+  resolved_frames?: number;
+  time_limit?: string;
+}
+
+const COLLECTOR_PHASES: Record<string, string> = {
+  install: "Install",
+  record: "Launch & Record",
+  symbolicate: "Symbolicate",
+  export: "Export",
+  backfill: "Backfill Symbols",
+};
+
+export async function runCollectorCommand(
+  command: readonly string[],
+  cwd: string,
+  developerDir = "",
+): Promise<CommandResult> {
+  const subprocess = Bun.spawn([...command], {
+    cwd,
+    env: developerDir
+      ? { ...process.env, DEVELOPER_DIR: developerDir }
+      : undefined,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  let stdout = "";
+  let stderr = "";
+  const observation = { pendingLine: "" };
+
+  await Promise.all([
+    readProcessStream(subprocess.stdout, (chunk) => {
+      stdout += chunk;
+    }),
+    readProcessStream(subprocess.stderr, (chunk) => {
+      stderr += chunk;
+      observeCollectorProgress(chunk, observation);
+    }),
+  ]);
+  observeCollectorProgress("\n", observation);
+  const exitCode = await subprocess.exited;
+  return { stdout, stderr, exitCode };
+}
+
+async function readProcessStream(
+  stream: ReadableStream<Uint8Array> | null,
+  onChunk: (chunk: string) => void,
+): Promise<void> {
+  if (!stream) {
+    return;
+  }
+  const reader = stream.getReader();
+  const decoder = new StringDecoder("utf8");
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    if (value) {
+      onChunk(decoder.write(Buffer.from(value)));
+    }
+  }
+  const rest = decoder.end();
+  if (rest) {
+    onChunk(rest);
+  }
+}
+
+export function observeCollectorProgress(
+  chunk: string,
+  observation: { pendingLine?: string },
+  onPhase: (title: string) => void = phase,
+  onLog: (message: string) => void = log,
+): void {
+  const combined = `${observation.pendingLine ?? ""}${chunk}`;
+  const lines = combined.split(/\r?\n/u);
+  observation.pendingLine = lines.pop() ?? "";
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line.startsWith(COLLECTOR_PROGRESS_PREFIX)) {
+      continue;
+    }
+    let event: CollectorProgressEvent;
+    try {
+      event = JSON.parse(
+        line.slice(COLLECTOR_PROGRESS_PREFIX.length),
+      ) as CollectorProgressEvent;
+    } catch {
+      continue;
+    }
+    const title = event.stage ? COLLECTOR_PHASES[event.stage] : undefined;
+    if (title && event.status === "started") {
+      onPhase(title);
+    }
+    const details = [];
+    if (typeof event.duration_ms === "number") {
+      details.push(`duration ${formatProgressDuration(event.duration_ms)}`);
+    }
+    if (typeof event.resolved_frames === "number") {
+      details.push(`resolved ${event.resolved_frames} frames`);
+    }
+    if (event.time_limit) {
+      details.push(`recording limit ${event.time_limit}`);
+    }
+    onLog(
+      [
+        `## ${title ?? "Collector"}: ${event.status ?? "progress"}`,
+        event.message ? `- ${event.message}` : "",
+        details.length ? `- ${details.join(" · ")}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+}
+
+function formatProgressDuration(durationMs: number): string {
+  if (durationMs < 1000) {
+    return `${Math.round(durationMs)}ms`;
+  }
+  const seconds = durationMs / 1000;
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)}s`;
+  }
+  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+}
+
+function validateLaunchSymbolication(summary: LaunchTraceSummary): void {
+  if (summary.success !== true || summary.symbolication_status !== "missing") {
+    return;
+  }
+  summary.success = false;
+  summary.error = "missing_symbols";
+  summary.message =
+    "The collector reported missing target source symbols. " +
+    "Check the target/business binary coverage and matching dsymPath/symbolSearchPath. " +
+    "The raw trace has been preserved.";
 }
 
 async function readCollectorSummary(

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -7,12 +7,63 @@ import {
   buildCollectorCommand,
   buildThreadTimelines,
   buildTraceTimelineFromSamples,
+  meta,
+  observeCollectorProgress,
   parseTraceTimeline,
   renderLaunchTraceHtml,
 } from "../../examples/ios-launch-trace/workflow";
-import type { TraceFrame } from "../../examples/ios-launch-trace/types";
+import { WorkflowRunner } from "@deerwork-ai/deer-workflow/runner";
+import type {
+  IosLaunchTraceResult,
+  LaunchTraceSummary,
+  TraceFrame,
+} from "../../examples/ios-launch-trace/types";
 
 describe("iOS Launch Trace report", () => {
+  test("shows collector sub-stages instead of one opaque Collect phase", () => {
+    expect(meta.phases.map((item) => item.title)).toEqual([
+      "Prepare",
+      "Install",
+      "Launch & Record",
+      "Symbolicate",
+      "Export",
+      "Backfill Symbols",
+      "Parse",
+      "Report",
+    ]);
+  });
+
+  test("turns streamed collector events into phases and progress logs", () => {
+    const phases: string[] = [];
+    const logs: string[] = [];
+    const observation = { pendingLine: "" };
+
+    observeCollectorProgress(
+      '__DEER_PROGRESS__ {"stage":"record","status":"started",',
+      observation,
+      (title) => phases.push(title),
+      (message) => logs.push(message),
+    );
+    observeCollectorProgress(
+      '"message":"Starting xctrace","time_limit":"20s"}\n' +
+        '__DEER_PROGRESS__ {"stage":"record","status":"completed",' +
+        '"message":"Saved","duration_ms":81234}\n' +
+        '__DEER_PROGRESS__ {"stage":"backfill","status":"started",' +
+        '"message":"Recovering"}\n' +
+        '__DEER_PROGRESS__ {"stage":"backfill","status":"completed",' +
+        '"message":"Recovered","duration_ms":124000,' +
+        '"resolved_frames":24345}\n',
+      observation,
+      (title) => phases.push(title),
+      (message) => logs.push(message),
+    );
+
+    expect(phases).toEqual(["Launch & Record", "Backfill Symbols"]);
+    expect(logs.join("\n")).toContain("recording limit 20s");
+    expect(logs.join("\n")).toContain("duration 1m 21s");
+    expect(logs.join("\n")).toContain("resolved 24345 frames");
+  });
+
   test("passes the Florak iOS build root to the collector", () => {
     const command = buildCollectorCommand({
       repositoryRoot: "/repo/Florak",
@@ -564,6 +615,110 @@ describe("iOS Launch Trace report", () => {
     expect(timeline.spans[0]).toEqual(
       expect.objectContaining({ binary: "Grace.debug.dylib", appFrame: true }),
     );
+  });
+});
+
+describe("iOS launch symbolication validation", () => {
+  test.each([
+    {
+      name: "rejects a successful collector result with missing symbols",
+      summary: {
+        success: true,
+        symbolication_status: "missing",
+      },
+      error: "missing_symbols",
+    },
+    {
+      name: "accepts ready Debug symbols with a separate launcher UUID",
+      summary: {
+        success: true,
+        symbolication_status: "ready",
+        dsym_uuid: "DEBUG-UUID",
+        trace_target_uuids: {
+          Grace: "STUB-UUID",
+          FlowDebugBasicDynamic: "BUSINESS-UUID",
+        },
+      },
+      error: "",
+    },
+    {
+      name: "preserves partial symbolication without comparing different images",
+      summary: {
+        success: true,
+        symbolication_status: "partial",
+        dsym_uuid: "DEBUG-UUID",
+        trace_grace_uuid: "STUB-UUID",
+      },
+      error: "",
+    },
+    {
+      name: "preserves a verified same-image UUID mismatch from the collector",
+      summary: {
+        success: false,
+        symbolication_status: "mismatch",
+        error: "dsym_uuid_mismatch",
+        message: "FlowDebugBasicDynamic UUID mismatch",
+      },
+      error: "dsym_uuid_mismatch",
+    },
+    {
+      name: "preserves an existing collection failure",
+      summary: { success: false, error: "install_failed" },
+      error: "install_failed",
+    },
+  ])("$name", async ({ summary, error }) => {
+    const artifactRoot = "/tmp/ios_perf-opt";
+    await mkdir(artifactRoot, { recursive: true });
+    const dir = await mkdtemp(join(artifactRoot, "launch-symbolication-test-"));
+    const collectorPath = join(dir, "collector.py");
+    const tracePath = join(dir, "launch_target.trace");
+    await writeFile(tracePath, "preserved trace");
+    await writeFile(
+      join(dir, "time_profile.xml"),
+      "<trace-query-result></trace-query-result>",
+    );
+    await writeFile(
+      collectorPath,
+      `print(${JSON.stringify(JSON.stringify({ ...summary, trace_path: tracePath }))})\n`,
+    );
+    const runner = new WorkflowRunner({ logWriter: () => {} });
+    try {
+      const run = runner.run<IosLaunchTraceResult>(
+        new URL("../../examples/ios-launch-trace/workflow.ts", import.meta.url)
+          .pathname,
+        {
+          projectRoot: dir,
+          udid: "mock-device",
+          skipInstall: true,
+          outputDir: dir,
+          collectorScriptPath: collectorPath,
+        },
+      );
+      if (error) {
+        await expect(run).rejects.toThrow(error);
+      } else {
+        expect((await run).success).toBe(true);
+      }
+      const saved = JSON.parse(
+        await readFile(join(dir, "summary.json"), "utf8"),
+      ) as LaunchTraceSummary;
+      expect(saved.success).toBe(!error);
+      if (error) {
+        expect(saved.error).toBe(error);
+        const html = await readFile(
+          join(dir, "launch-trace-report.html"),
+          "utf8",
+        );
+        expect(html).toContain(error);
+        if (error === "dsym_uuid_mismatch") {
+          expect(saved.message).toContain("FlowDebugBasicDynamic");
+        }
+      }
+      expect(await readFile(tracePath, "utf8")).toBe("preserved trace");
+    } finally {
+      runner.dispose();
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
 

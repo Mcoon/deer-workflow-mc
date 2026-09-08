@@ -249,7 +249,9 @@ Most Workflows need only their first `args` parameter.
 The repository's `ios-attach-trace` and `ios-launch-trace` examples default
 `developerDir` to
 `/Applications/Xcode_26.app/Contents/Developer` and accepts an explicit input
-override for other Xcode installations.
+override for other Xcode installations. Launch trace also rejects mismatched
+image/dSYM UUIDs verified by the collector and missing symbols, preserving the raw trace for recovery. Both launch and attach report partial
+coverage while raw-address main-thread frames remain.
 
 ## Repository App Graph example contract
 

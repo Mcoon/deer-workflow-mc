@@ -761,7 +761,8 @@ compiled.
   deterministic TypeScript orchestration, `phase()`, and `log()` with a local
   xctrace collector and HTML timeline renderer. It passes `projectRoot` and
   `buildRoot` separately so default app/dSYM lookup stays under the iOS build
-  root. Its `developerDir` defaults to
+  root. It preserves the raw trace but fails if the collector verifies an image/dSYM UUID mismatch
+  or the collector reports missing symbols. Its `developerDir` defaults to
   `/Applications/Xcode_26.app/Contents/Developer` and accepts an input override.
 - [iOS Attach Trace](../examples/ios-attach-trace/README.md) combines
   deterministic TypeScript orchestration, `phase()`, and `log()` with
@@ -771,6 +772,7 @@ compiled.
   both `ios-build-install/*/build-summary.json` and
   `flow-ios-bitsky/*/summary.json`; missing matching symbols are a hard failure
   after the raw trace is preserved, not a successful partial report.
+  Remaining raw addresses make source coverage partial rather than ready.
   Its `developerDir` defaults to `/Applications/Xcode_26.app/Contents/Developer`
   and can be overridden through the input.
 - [iOS Functional Regression](../examples/ios-functional-regression/README.md)

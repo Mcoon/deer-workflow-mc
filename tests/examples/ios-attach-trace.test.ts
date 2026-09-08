@@ -307,6 +307,21 @@ describe("iOS Attach Trace workflow helpers", () => {
         "FlowDebugBasicDynamic",
       ),
     ).toEqual({ status: "ready", appRows: 1, businessSourceRows: 1 });
+    const unresolved = {
+      ...sourceSpan,
+      name: "0x30000813b",
+      binary: "",
+      sourcePath: "",
+      line: "",
+      appFrame: false,
+    };
+    expect(
+      summarizeTimelineSymbolication(
+        { ...timeline, spans: [sourceSpan, unresolved] },
+        "Grace",
+        "FlowDebugBasicDynamic",
+      ),
+    ).toEqual({ status: "partial", appRows: 1, businessSourceRows: 1 });
   });
 
   test("ignores a newer build summary from another project", async () => {

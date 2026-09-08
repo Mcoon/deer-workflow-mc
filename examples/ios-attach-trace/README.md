@@ -102,7 +102,9 @@ whether a long-looking `Collect` phase was actual Time Profiler recording time
 or setup time before `xctrace` attached.
 It also records the selected symbol search path, its resolution source, and
 source-level `FlowDebugBasicDynamic` coverage. `symbolicationStatus=ready` means
-the exported main-thread stacks actually contain business source locations.
+the rendered main-thread stacks contain business source locations and no remaining
+raw-address frames. `partial` can mean some source frames resolved while other
+frames still lack names; it does not necessarily mean symbolication was skipped.
 If no matching dSYM directory is found, the Workflow preserves the raw trace
 and fails clearly instead of reporting an unsymbolicated export as success.
 

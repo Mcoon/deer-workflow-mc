@@ -89,7 +89,8 @@ HTML viewer 和 launch trace 报告保持一致：打开时默认 fit 到全局�
 字段判断耗时是真正的 Time Profiler 录制、`xctrace` attach 前准备，还是录制结束后的
 trace 保存。
 summary 还会记录符号目录、解析来源以及 `FlowDebugBasicDynamic` 源码覆盖率。只有
-导出的主线程栈中确实出现业务源码位置时，`symbolicationStatus` 才会是 `ready`。
+渲染的主线程栈中出现业务源码位置且不再包含裸地址帧时，`symbolicationStatus` 才会是 `ready`。
+`partial` 也可能表示部分源码已解析、其他帧仍缺少名称，不代表一定没有运行 symbolicate。
 找不到匹配 dSYM 时 Workflow 会保留原始 trace 并明确失败，不再把未符号化导出报告为成功。
 
 ## 符号化诊断

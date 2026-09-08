@@ -302,6 +302,10 @@ export default async function iosAttachTrace(
   summary.main_thread_grace_source_rows = symbolCoverage.businessSourceRows;
   summary.success = true;
   summary.symbolication_status = symbolCoverage.status;
+  if (symbolCoverage.status === "partial") {
+    summary.warning =
+      "Some main-thread frames lack resolved names or business source symbols; partial source coverage does not imply complete symbolication.";
+  }
   summary.summary_path = input.summaryPath;
   await writeSummary(input.summaryPath, summary);
 
@@ -827,7 +831,10 @@ export function summarizeTimelineSymbolication(
   const mainThread = timeline.threads.find((thread) => thread.isMain);
   const appRows = new Set<number>();
   const businessSourceRows = new Set<number>();
+  let hasUnresolvedFrames = false;
   for (const span of mainThread?.spans ?? timeline.spans) {
+    hasUnresolvedFrames ||=
+      /^0x[0-9a-f]+$/iu.test(span.name) || span.name === "unknown";
     const isTargetBinary =
       span.binary === targetBinary || span.binary === businessBinary;
     const hasBusinessSource =
@@ -847,7 +854,7 @@ export function summarizeTimelineSymbolication(
   }
   return {
     status:
-      businessSourceRows.size > 0
+      businessSourceRows.size > 0 && !hasUnresolvedFrames
         ? "ready"
         : appRows.size > 0
           ? "partial"

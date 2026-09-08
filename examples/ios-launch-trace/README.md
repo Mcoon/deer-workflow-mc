@@ -15,6 +15,12 @@ needed for the trace capture itself.
 4. renders `launch-trace-report.html` with a time ruler, density strip,
    main-thread flame timeline, top sampled frames, and artifact paths.
 
+The terminal exposes the collector's long-running work as separate phases:
+`Install`, `Launch & Record`, `Symbolicate`, `Export`, and `Backfill Symbols`.
+The configured `timeLimit` starts only after xctrace completes its launch
+handshake; trace saving, symbolication, XML export, and atos recovery may take
+longer but are no longer hidden behind a single opaque `Collect` phase.
+
 The Workflow does not modify `ios-perf-optimizer` or the target app. The
 collector may install the supplied `.app` unless `skipInstall` is set.
 
@@ -88,4 +94,20 @@ based on `timeLimit`.
 
 If the collector fails before `xctrace` starts, such as when the default dSYM is
 missing, the Workflow writes the HTML diagnostics report and then exits with a
-failure instead of reporting a successful collection.
+failure instead of reporting a successful collection. A collector-verified image/dSYM
+UUID mismatch or a `missing` symbolication status also fails with diagnostics while
+preserving the raw trace. With `skipInstall: true`, supply symbols from the exact
+installed build; otherwise use `skipInstall: false` to install the local App
+before collecting again. Debug builds may put `Grace.debug.dylib` symbols inside
+`Grace.app.dSYM`; compare UUIDs by the DWARF binary name, not the bundle name.
+The collector includes `FlowDebugBasicDynamic` and expands XML frame/backtrace
+references when counting source-symbol coverage. If any main-thread samples still
+contain raw addresses, the collector reports `partial` and records unresolved
+and unmapped sample counts; source coverage alone does not mean full symbolication.
+
+Early `xctrace --launch` samples can omit the `Grace.debug.dylib` image record,
+leaving first-party frames without a binary UUID. The collector recovers such
+frames only when a dominant unmapped address cluster, a Mach-O-derived ASLR
+base, expected bootstrap anchors, and a high-confidence atos probe all agree.
+The load address is inferred per launch and is not fixed to `0x300000000`;
+unverified addresses remain raw.
